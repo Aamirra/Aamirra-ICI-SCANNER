@@ -1,0 +1,228 @@
+package com.aamir.iciscreener.services
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.work.*
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.aamir.iciscreener.MainActivity
+import com.aamir.iciscreener.core.Alert
+import com.aamir.iciscreener.core.PairData
+import com.aamir.iciscreener.utils.AlertManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
+
+class AlertWorker(
+    private val context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
+
+    companion object {
+        const val CHANNEL_ID   = "ICI_ALERTS"
+        const val CHANNEL_NAME = "ICI Scanner Alerts"
+
+        fun createChannel(context: Context) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val ch = NotificationChannel(
+                    CHANNEL_ID,
+                    CHANNEL_NAME,
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "ICI Scanner trading alerts"
+                    enableVibration(true)
+                    enableLights(true)
+                }
+                context.getSystemService(NotificationManager::class.java)
+                    .createNotificationChannel(ch)
+            }
+        }
+    }
+
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        try {
+            val activeAlerts = AlertManager.getActive(context)
+            if (activeAlerts.isEmpty()) return@withContext Result.success()
+
+            val freshData = getLastKnownData()
+            if (freshData.isEmpty()) return@withContext Result.retry()
+
+            freshData.forEach { pair ->
+                activeAlerts
+                    .filter { it.pair == pair.name }
+                    .forEach { alert ->
+                        if (conditionMet(alert, pair)) {
+                            sendNotification(alert, pair)
+                            if (alert.frequency == "Only Once") {
+                                AlertManager.deactivate(context, alert.id)
+                            }
+                            broadcastToApp(alert, pair)
+                        }
+                    }
+            }
+            Result.success()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.retry()
+        }
+    }
+
+    // ✅ Updated: ab sabhi conditions handle karta hai
+    private fun conditionMet(alert: Alert, pair: PairData): Boolean {
+        return when (alert.condition) {
+            // ── Price / EMA conditions ──
+            "PRICE_ABOVE_EMA20" -> {
+                pair.currentPrice != null && pair.ema20 != null && pair.currentPrice > pair.ema20
+            }
+            "PRICE_BELOW_EMA20" -> {
+                pair.currentPrice != null && pair.ema20 != null && pair.currentPrice < pair.ema20
+            }
+            "PRICE_ABOVE_VAL" -> {
+                pair.currentPrice != null && alert.targetPrice != null && pair.currentPrice >= alert.targetPrice
+            }
+            "PRICE_BELOW_VAL" -> {
+                pair.currentPrice != null && alert.targetPrice != null && pair.currentPrice <= alert.targetPrice
+            }
+
+            // ── Sentiment conditions ──
+            "SENT_ABOVE_60" -> pair.sentiment > 60
+            "SENT_BELOW_60" -> pair.sentiment < 60
+            "SENT_ABOVE_75" -> pair.sentiment > 75
+            "SENT_BELOW_25" -> pair.sentiment < 25
+
+            // (optional) agar kabhi signal-based alerts use karo
+            "BULL_SIGNAL" -> if (alert.timeframe == "Any")
+                listOf(pair.h1, pair.h4, pair.d1, pair.w1).any { it.equals("bull", true) }
+            else pair.getSignal(alert.timeframe).equals("bull", true)
+
+            "BEAR_SIGNAL" -> if (alert.timeframe == "Any")
+                listOf(pair.h1, pair.h4, pair.d1, pair.w1).any { it.equals("bear", true) }
+            else pair.getSignal(alert.timeframe).equals("bear", true)
+
+            "ALL_BULL" -> pair.h1.equals("bull", true) && pair.h4.equals("bull", true) &&
+                          pair.d1.equals("bull", true) && pair.w1.equals("bull", true)
+            "ALL_BEAR" -> pair.h1.equals("bear", true) && pair.h4.equals("bear", true) &&
+                          pair.d1.equals("bear", true) && pair.w1.equals("bear", true)
+
+            else -> false
+        }
+    }
+
+    private fun sendNotification(alert: Alert, pair: PairData) {
+        val time = java.text.SimpleDateFormat("HH:mm", java.util.Locale.US)
+            .format(java.util.Date())
+        val message = alert.message
+            .replace("{{ticker}}", pair.name)
+            .replace("{{price}}", pair.currentPrice?.toString() ?: "")
+            .replace("{{ema20}}", pair.ema20?.toString() ?: "")
+            .replace("{{time}}", time)
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("from_alert", true)
+            putExtra("alert_pair", pair.name)
+        }
+        val pi = PendingIntent.getActivity(
+            context, alert.id.toInt(), intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notif = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info) // apna icon laga sakte ho
+            .setContentTitle("🔔 ${alert.name}")
+            .setContentText("${pair.name}: $message")
+            .setStyle(NotificationCompat.BigTextStyle().bigText("${pair.name}: $message"))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pi)
+            .apply {
+                if (alert.sound) {
+                    setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_VIBRATE)
+                } else {
+                    setDefaults(NotificationCompat.DEFAULT_VIBRATE)
+                }
+            }
+            .build()
+
+        try {
+            NotificationManagerCompat.from(context).notify(
+                "${pair.name}_${alert.id}".hashCode(),
+                notif
+            )
+        } catch (e: SecurityException) { }
+    }
+
+    private fun broadcastToApp(alert: Alert, pair: PairData) {
+        val time = java.text.SimpleDateFormat("HH:mm", java.util.Locale.US)
+            .format(java.util.Date())
+        val message = alert.message
+            .replace("{{ticker}}", pair.name)
+            .replace("{{time}}", time)
+
+        Intent("ICI_ALERT_FIRED").apply {
+            putExtra("pair",        pair.name)
+            putExtra("alert_name",  alert.name)
+            putExtra("message",     message)
+            putExtra("alert_id",    alert.id)
+            context.sendBroadcast(this)
+        }
+    }
+
+    private fun getLastKnownData(): List<PairData> {
+        val prefs = context.getSharedPreferences("ici_market_data", Context.MODE_PRIVATE)
+        val json = prefs.getString("latest_pairs", null) ?: return emptyList()
+        return try {
+            val type = object : TypeToken<List<PairData>>() {}.type
+            Gson().fromJson(json, type) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+}
+
+// AlertScheduler (koi change nahi)
+object AlertScheduler {
+
+    private const val WORK_NAME = "ICI_BG_ALERT_CHECK"
+
+    fun start(context: Context) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val periodicWork = PeriodicWorkRequestBuilder<AlertWorker>(
+            15, TimeUnit.MINUTES,
+            5, TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.LINEAR, 5, TimeUnit.MINUTES)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            WORK_NAME,
+            ExistingPeriodicWorkPolicy.UPDATE,
+            periodicWork
+        )
+    }
+
+    fun checkNow(context: Context) {
+        val oneTime = OneTimeWorkRequestBuilder<AlertWorker>()
+            .setConstraints(
+                Constraints.Builder()
+                    .setRequiredNetworkType(NetworkType.CONNECTED)
+                    .build()
+            )
+            .build()
+        WorkManager.getInstance(context).enqueue(oneTime)
+    }
+
+    fun stop(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+    }
+}

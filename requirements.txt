@@ -1,0 +1,6 @@
+tls-client
+beautifulsoup4
+schedule
+python-dotenv
+firebase-admin
+psycopg2-binary
