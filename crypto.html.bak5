@@ -163,7 +163,8 @@
         <span id="scanStatusText" class="scan-status-line"></span>
         <span id="lastScanTime" class="last-scan-line">🕒 Last scan: never</span>
     </div>
-    <div class="sync-info">
+    <div class="sync-info" onclick="openTargetModal()">
+        <span style="color:var(--acc);margin-left:6px;">Target list: <span id="targetCount">0</span> ></span>
         <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
     </div>
     <div class="dir-slevel-bar" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
@@ -177,6 +178,7 @@
         <button class="slevel-btn" onclick="setFilter('bull')">Bull <span id="bc" style="color:var(--green)">0</span></button>
         <button class="slevel-btn" onclick="setFilter('bear')">Bear <span id="rc" style="color:var(--red)">0</span></button>
         <button class="slevel-btn" onclick="setFilter('all')">All <span id="allCount">0</span></button>
+        <button class="slevel-btn" onclick="setFilter('target')">Target <span id="targetCount2" style="color:var(--gold)">0</span></button>
     </div>
     <div class="search-container"><input type="text" class="search-bar" placeholder="Search crypto..." oninput="filterPairs(this.value)"></div>
     <div class="screener-wrap">
@@ -624,6 +626,8 @@ function updateCounts() {
     document.getElementById('rc').textContent = r;
     document.getElementById('allCount').textContent = PAIRS.length;
     const u = getUniqueAutoSetups().size;
+    document.getElementById('targetCount2').textContent = u;
+    document.getElementById('targetCount').textContent = u;
 }
 
 function openTargetModal() {
