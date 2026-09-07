@@ -38,7 +38,7 @@
         .pill.scan-btn { background:var(--acc); color:#fff; display:flex; align-items:center; gap:4px; }
         .cloud-status { background:var(--pill-bg); color:var(--green); font-size:12px; padding:6px 12px; border-radius:20px; margin-left:auto; font-weight:500; }
         .sync-info { font-size:12px; color:var(--green); display:flex; align-items:center; gap:4px; margin-bottom:16px; font-weight:500; cursor:pointer; }
-        .counters-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-bottom:16px; }
+        .counters-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-bottom:16px; }
         .count-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:8px 4px; text-align:center; cursor:pointer; }
         .count-card .num { font-size:18px; font-weight:700; margin-bottom:2px; color:var(--txt); }
         .count-card .label { font-size:10px; color:var(--muted); font-weight:500; }
@@ -231,7 +231,6 @@
         <div class="count-card" onclick="setFilter('bear')"><div class="num" style="color:var(--red)" id="rc">0</div><div class="label">Bearish</div></div>
         <div class="count-card" onclick="setFilter('all')"><div class="num" style="color:var(--txt)" id="allCount">0</div><div class="label">All</div></div>
         <div class="count-card" onclick="setFilter('target')"><div class="num" style="color:var(--gold)" id="targetCount2">0</div><div class="label">Target</div></div>
-        <div class="count-card" onclick="setFilter('trades')"><div class="num" style="color:var(--gold)" id="tradesCount">0</div><div class="label">Trades</div></div>
     </div>
     <div class="dir-slevel-bar" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
         <span id="dirToggleBtn" class="dir-toggle-btn long" onclick="toggleDirection()">LONG</span>
@@ -301,7 +300,6 @@
         <span id="chartPairName" style="flex:1;text-align:center;font-weight:700;font-size:16px;color:var(--txt)"></span>
         <button onclick="movePair(1)" style="background:none;border:none;font-size:20px;padding:8px;color:var(--txt)"><i class="fas fa-chevron-right"></i></button>
         <button onclick="openAlertDialog(document.getElementById('chartPairName').textContent)" style="background:none;border:none;font-size:20px;padding:8px;color:var(--gold);cursor:pointer;" title="Set Alert"><i class="fas fa-bell"></i></button>
-        <button id="chartStarBtn" onclick="toggleStarFromChart()" style="background:none;border:none;font-size:20px;padding:8px;color:var(--gold);cursor:pointer;" title="Star/Unstar"><i class="far fa-star"></i></button>
         <button id="chartCloseBtn" onclick="closeChart()" style="background:none;border:none;font-size:20px;padding:8px;color:var(--red)"><i class="fas fa-times"></i></button>
     </div>
     <div class="tf-preset-selector" style="padding:6px 8px 0;display:flex;justify-content:center;gap:6px;">
@@ -484,29 +482,7 @@ function refreshSLevels() {
 
 window.alertSettings = alertSettings;
 
-let starredPairs = JSON.parse(localStorage.getItem('ici_starred') || '[]');
 let activeChartPair = null;
-
-function toggleStar(pair) {
-    const idx = starredPairs.indexOf(pair);
-    if (idx > -1) starredPairs.splice(idx, 1);
-    else starredPairs.push(pair);
-    localStorage.setItem('ici_starred', JSON.stringify(starredPairs));
-    render();
-    if (pair === activeChartPair) updateChartStarButton();
-}
-
-function toggleStarFromChart() {
-    if (activeChartPair) toggleStar(activeChartPair);
-}
-
-function updateChartStarButton() {
-    const btn = document.getElementById('chartStarBtn');
-    if (btn) {
-        const isStarred = starredPairs.includes(activeChartPair);
-        btn.innerHTML = `<i class="${isStarred ? 'fas' : 'far'} fa-star"></i>`;
-    }
-}
 
 let renderTimer = null;
 function renderDebounced() {
@@ -727,7 +703,6 @@ function updateCounts() {
     const u = getUniqueAutoSetups().size;
     document.getElementById('targetCount2').textContent = u;
     document.getElementById('targetCount').textContent = u;
-    document.getElementById('tradesCount').textContent = starredPairs.length;
 }
 
 function openTargetModal() {
@@ -973,7 +948,6 @@ function render() {
             return ['4h','1day','1week'].every(tf => d[tf] === curF);
         });
     else if (curF === 'target') filtered = currentPairs.filter(p => validTargets.has(p.n));
-    else if (curF === 'trades') filtered = currentPairs.filter(p => starredPairs.includes(p.n));
     else filtered = currentPairs;
 
     filtered = applyColumnSortAndFilter(filtered);
@@ -983,16 +957,13 @@ function render() {
     renderHeader();
 
     document.getElementById('pairsContainer').innerHTML = filtered.map(p => {
-        const isStarred = starredPairs.includes(p.n);
-        const starIcon = `<i class="${isStarred ? 'fas' : 'far'} fa-star" style="color:var(--gold); cursor:pointer; margin-right:4px; font-size:14px;" onclick="event.stopPropagation(); toggleStar('${p.n}')"></i>`;
-
-        let cells = `<div class="col-pair-fixed">${starIcon}<span style="font-weight:700;font-size:14px;">${p.n}</span></div>`;
+        let cells = `<div class="col-pair-fixed"><span style="font-weight:700;font-size:14px;">${p.n}</span></div>`;
         cells += columnDefs.map(col => renderColumnCell(p.n, col)).join('');
         cells += '<div class="col-add-btn" style="visibility:hidden;"></div>';
         cells += `<div class="col-bell-fixed"><i class="fas fa-bell" style="color:var(--gold); cursor:pointer;" onclick="event.stopPropagation(); openAlertDialog('${p.n}')"></i></div>`;
 
         let row = `<div class="item-row ${p.n === activeChartPair ? 'highlighted-row' : ''}"><div class="item-main" onclick="openChartForPair('${p.n}')">${cells}</div>`;
-        if (curF === 'target' || curF === 'trades') {
+        if (curF === 'target') {
             const info = getUniqueAutoSetups().get(p.n);
             if (info) {
                 const badgeBg = info.dir === 'bull' ? '#22c55e' : '#ef4444';
@@ -1028,7 +999,6 @@ function openChartForPair(pairName) {
     drawChart(activeChartSlot);
     document.getElementById('chartOverlay').style.display = 'flex';
     activeChartPair = pairName;
-    updateChartStarButton();
     render();
     startCountdownTimer();
 }
@@ -1037,7 +1007,6 @@ function movePair(step) {
     chartIndices[activeChartSlot-1] = (chartIndices[activeChartSlot-1] + step + total) % total;
     updateChartPairName();
     activeChartPair = chartPairs[chartIndices[activeChartSlot-1]];
-    updateChartStarButton();
     drawChart(activeChartSlot);
     render();
 }
