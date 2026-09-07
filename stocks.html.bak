@@ -24,14 +24,6 @@
         .alert-toggle { padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); }
         .alert-toggle.active { background:var(--green); color:#fff; border-color:var(--green); }
         .alert-toggle.inactive { background:var(--red); color:#fff; border-color:var(--red); }
-        .alert-dropdown-wrap { position:relative; }
-        .alert-dropdown-panel { display:none; position:absolute; top:36px; right:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:90px; }
-        .alert-dropdown-panel.open { display:flex; }
-        .market-dropdown-wrap { position:relative; }
-        .market-dropdown-panel { display:none; position:absolute; top:36px; left:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:150px; }
-        .market-dropdown-panel.open { display:flex; }
-        .market-option { padding:6px 10px; border-radius:8px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); text-decoration:none; text-align:left; cursor:pointer; }
-        .market-option.active-market, .market-option.active-market-opt { background:var(--acc); color:#fff; border-color:var(--acc); }
         .pills-row { display:flex; gap:8px; margin-bottom:12px; align-items:center; flex-wrap:wrap; }
         .pill { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); cursor:pointer; color:var(--txt); text-decoration:none; display:inline-block; }
         .pill.active-blue { background:var(--acc); color:#fff; border-color:var(--acc); }
@@ -165,28 +157,18 @@
         <div class="header-actions">
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
             <button class="icon-btn" onclick="toggleDesktopMode()" id="desktopBtn"><i class="fas fa-desktop"></i></button>
-            <div class="alert-dropdown-wrap" id="alertDropdownWrap">
-                <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fab fa-whatsapp"></i></button>
-                <div class="alert-dropdown-panel" id="alertDropdownPanel">
-                    <button class="alert-toggle" id="tgToggle" onclick="toggleAlert('telegram')">TG</button>
-                    <button class="alert-toggle" id="waToggle" onclick="toggleAlert('whatsapp')">WA</button>
-                    <button class="alert-toggle" id="ltfAlertBtn" onclick="toggleLtfAlert()">LTF OFF</button>
-                </div>
-            </div>
+            <button class="alert-toggle" id="tgToggle" onclick="toggleAlert('telegram')">TG</button>
+            <button class="alert-toggle" id="waToggle" onclick="toggleAlert('whatsapp')">WA</button>
+            <!-- ✅ LTF Alert Button -->
+            <button class="alert-toggle" id="ltfAlertBtn" onclick="toggleLtfAlert()">LTF OFF</button>
         </div>
     </div>
     <div class="pills-row">
-        <div class="market-dropdown-wrap" id="marketDropdownWrap">
-            <button class="pill active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Stocks (Exness) <i class="fas fa-caret-down"></i></button>
-            <div class="market-dropdown-panel" id="marketDropdownPanel">
-                <a href="/" class="market-option">Forex</a>
-                <a href="/crypto" class="market-option">Crypto</a>
-                <button class="market-option active-market" id="exnessBtn" onclick="setMarket('exness')">Stocks (Exness)</button>
-                <button class="market-option" id="psxBtn" onclick="setMarket('psx')">Stocks (PSX)</button>
-            </div>
-        </div>
+        <button class="pill market-btn active-market" id="exnessBtn" onclick="setMarket('exness')">Exness</button>
+        <button class="pill market-btn" id="psxBtn" onclick="setMarket('psx')">PSX</button>
         <button class="pill scan-btn" onclick="actualScan()">Scan</button>
-
+        <a href="/" class="pill" style="text-decoration:none">Forex</a>
+        <a href="/crypto" class="pill" style="text-decoration:none">Crypto</a>
         <a href="/journal" class="pill" style="text-decoration:none">📒 Journal</a>
         <button class="pill" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
         <div class="cloud-status" id="statusDot">Cloud active</div>
@@ -455,8 +437,6 @@ function setMarket(market) {
     currentMarket = market;
     document.getElementById('exnessBtn').classList.toggle('active-market', market === 'exness');
     document.getElementById('psxBtn').classList.toggle('active-market', market === 'psx');
-    const mdBtn = document.getElementById('marketDropdownBtn');
-    if (mdBtn) mdBtn.innerHTML = (market === 'psx' ? 'Stocks (PSX)' : 'Stocks (Exness)') + ' <i class="fas fa-caret-down"></i>';
     curF = 'all';
     filteredSymbols = [];
     attachListeners();
@@ -485,28 +465,6 @@ function toggleAlert(type) {
     window.alertSettings = alertSettings;
     updateToggleButtons();
 }
-
-function toggleAlertDropdown(e) {
-    e.stopPropagation();
-    document.getElementById('alertDropdownPanel').classList.toggle('open');
-}
-document.addEventListener('click', (e) => {
-    const wrap = document.getElementById('alertDropdownWrap');
-    if (wrap && !wrap.contains(e.target)) {
-        document.getElementById('alertDropdownPanel').classList.remove('open');
-    }
-});
-
-function toggleMarketDropdown(e) {
-    e.stopPropagation();
-    document.getElementById('marketDropdownPanel').classList.toggle('open');
-}
-document.addEventListener('click', (e) => {
-    const wrap = document.getElementById('marketDropdownWrap');
-    if (wrap && !wrap.contains(e.target)) {
-        document.getElementById('marketDropdownPanel').classList.remove('open');
-    }
-});
 
 // ✅ LTF Alert listener
 db.ref('alertSettings/stocks/ltf_alert').on('value', snap => {
@@ -1144,8 +1102,7 @@ function toggleDesktopMode() {
         document.getElementById('chartOverlay').style.display = 'flex';
         document.querySelector('#desktopBtn i').className = 'fas fa-mobile-alt';
     }
-    const urlParams = new URLSearchParams(window.location.search);
-    setMarket(urlParams.get('market') === 'psx' ? 'psx' : 'exness');
+    attachListeners();
     updateToggleButtons();
     setTimeout(() => render(), 200);
 })();
