@@ -1,6 +1,6 @@
 const https = require('https');
 const cheerio = require('cheerio');
-const admin = require('firebase-admin');
+const admin = require('./firebase');
 
 // ── 1. Automatic Firebase Initialization ──
 if (!admin.apps.length) {
@@ -10,10 +10,7 @@ if (!admin.apps.length) {
                 ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
                 : process.env.FIREBASE_SERVICE_ACCOUNT;
 
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-                databaseURL: process.env.DATABASE_URL || process.env.FIREBASE_URL
-            });
+            
             console.log('[MarketScanner] Firebase initialized successfully.');
         } else {
             console.warn('[MarketScanner] FIREBASE_SERVICE_ACCOUNT environment variable is missing!');

@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const admin = require('../core/firebase');
 const { sendWhatsAppAlert } = require('./whatsappBot');
 
 // ── 1. Automatic Firebase Initialization (For Standalone / GitHub Actions) ──
@@ -9,10 +9,7 @@ if (!admin.apps.length) {
                 ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
                 : process.env.FIREBASE_SERVICE_ACCOUNT;
 
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount),
-                databaseURL: process.env.DATABASE_URL || process.env.FIREBASE_URL
-            });
+            
             console.log('[CryptoNewsAlert] Firebase initialized successfully.');
         } else {
             console.warn('[CryptoNewsAlert] FIREBASE_SERVICE_ACCOUNT environment variable is missing!');

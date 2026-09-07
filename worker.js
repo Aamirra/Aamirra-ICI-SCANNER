@@ -1,4 +1,4 @@
-const admin = require('firebase-admin');
+const admin = require('./core/firebase');
 const config = require('./config');
 
 // 1. Initialize Firebase
@@ -10,10 +10,7 @@ if (!admin.apps.length) {
     }
     
     try {
-        admin.initializeApp({
-            credential: admin.credential.cert(JSON.parse(serviceAccountJson)),
-            databaseURL: config.FIREBASE_URL
-        });
+        
     } catch (err) {
         console.error('❌ Failed to initialize Firebase Admin:', err);
         process.exit(1);

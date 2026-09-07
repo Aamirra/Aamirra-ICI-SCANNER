@@ -1,7 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const admin = require('firebase-admin');
+const admin = require('./core/firebase');
 const config = require('./config');
 const { sendWhatsAppAlert } = require('./services/whatsappBot');
 const crypto = require('crypto');
@@ -16,10 +16,7 @@ if (!admin.apps.length) {
         console.error('❌ FIREBASE_SERVICE_ACCOUNT env variable missing!');
         process.exit(1);
     }
-    admin.initializeApp({
-        credential: admin.credential.cert(JSON.parse(serviceAccountJson)),
-        databaseURL: config.FIREBASE_URL
-    });
+    
 }
 
 const PORT = process.env.PORT || 3000;
