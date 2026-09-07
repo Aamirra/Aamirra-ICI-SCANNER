@@ -225,12 +225,6 @@
         <span style="color:var(--acc);margin-left:6px;">Target list: <span id="targetCount">0</span> ></span>
         <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
     </div>
-    <div class="counters-grid">
-        <div class="count-card" onclick="setFilter('bull')"><div class="num" style="color:var(--green)" id="bc">0</div><div class="label">Bullish</div></div>
-        <div class="count-card" onclick="setFilter('bear')"><div class="num" style="color:var(--red)" id="rc">0</div><div class="label">Bearish</div></div>
-        <div class="count-card" onclick="setFilter('all')"><div class="num" style="color:var(--txt)" id="allCount">0</div><div class="label">All</div></div>
-        <div class="count-card" onclick="setFilter('target')"><div class="num" style="color:var(--gold)" id="targetCount2">0</div><div class="label">Target</div></div>
-    </div>
     <div class="dir-slevel-bar" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
         <span id="dirToggleBtn" class="dir-toggle-btn long" onclick="toggleDirection()">LONG</span>
         <span id="dirDot" class="dir-dot" onclick="toggleDirection()"></span>
@@ -239,6 +233,10 @@
         <button class="slevel-btn" id="sLevelBtn3" onclick="setSLevelFilter(3)">S03</button>
         <button class="slevel-btn" id="sLevelBtn4" onclick="setSLevelFilter(4)">S04</button>
         <button class="slevel-btn" id="sLevelBtn5" onclick="setSLevelFilter(5)">S05</button>
+        <button class="slevel-btn" onclick="setFilter('bull')">Bull <span id="bc" style="color:var(--green)">0</span></button>
+        <button class="slevel-btn" onclick="setFilter('bear')">Bear <span id="rc" style="color:var(--red)">0</span></button>
+        <button class="slevel-btn" onclick="setFilter('all')">All <span id="allCount">0</span></button>
+        <button class="slevel-btn" onclick="setFilter('target')">Target <span id="targetCount2" style="color:var(--gold)">0</span></button>
     </div>
     <div class="search-container"><input type="text" class="search-bar" placeholder="Search pairs..." oninput="filterPairs(this.value)"></div>
     <div class="screener-wrap">
