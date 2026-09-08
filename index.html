@@ -49,11 +49,11 @@
         .search-bar { width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:12px; font-size:14px; outline:none; background:var(--pill-bg); color:var(--txt); }
         .tf-preset-btn { padding:4px 14px; border:1px solid var(--border); border-radius:8px; font-size:12px; font-weight:700; background:var(--pill-bg); color:var(--muted); cursor:pointer; }
         .tf-preset-btn.active { background:var(--acc); color:#fff; border-color:var(--acc); }
-        .dir-toggle-btn { padding:5px 12px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; color:#fff; }
+        .dir-toggle-btn { padding:3px 7px; border-radius:6px; font-size:9px; font-weight:700; cursor:pointer; color:#fff; white-space:nowrap; }
         .dir-toggle-btn.long { background:var(--green); }
         .dir-toggle-btn.short { background:var(--red); }
-        .dir-dot { width:16px; height:16px; border-radius:50%; background:var(--green); cursor:pointer; display:inline-block; }
-        .slevel-btn { padding:4px 10px; border:1px solid var(--border); border-radius:8px; font-size:11px; font-weight:700; background:var(--pill-bg); color:var(--muted); cursor:pointer; }
+        .dir-dot { width:11px; height:11px; border-radius:50%; background:var(--green); cursor:pointer; display:inline-block; flex-shrink:0; }
+        .slevel-btn { padding:3px 6px; border:1px solid var(--border); border-radius:6px; font-size:9px; font-weight:700; background:var(--pill-bg); color:var(--muted); cursor:pointer; white-space:nowrap; }
         .slevel-btn.active { background:var(--gold); color:#000; border-color:var(--gold); }
 
         /* Auto‑adjust columns, no scroll */
@@ -219,7 +219,7 @@
             </div>
         </div>
     </div>
-    <div class="dir-slevel-bar" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+    <div class="dir-slevel-bar" style="display:flex;align-items:center;gap:3px;margin-bottom:8px;flex-wrap:nowrap;justify-content:space-between;">
         <span id="dirToggleBtn" class="dir-toggle-btn long" onclick="toggleDirection()">LONG</span>
         <span id="dirDot" class="dir-dot" onclick="toggleDirection()"></span>
         <button class="slevel-btn active" id="sLevelBtn1" onclick="setSLevelFilter(1)">S01</button>
@@ -229,7 +229,6 @@
         <button class="slevel-btn" id="sLevelBtn5" onclick="setSLevelFilter(5)">S05</button>
         <button class="slevel-btn" onclick="setFilter('bull')">Bull <span id="bc" style="color:var(--green)">0</span></button>
         <button class="slevel-btn" onclick="setFilter('bear')">Bear <span id="rc" style="color:var(--red)">0</span></button>
-        <button class="slevel-btn" onclick="setFilter('all')">All <span id="allCount">0</span></button>
     </div>
     <div class="screener-wrap">
         <div class="header-row-table" id="tableHeaderRow"></div>
@@ -722,7 +721,6 @@ function updateCounts() {
     });
     document.getElementById('bc').textContent = b;
     document.getElementById('rc').textContent = r;
-    document.getElementById('allCount').textContent = PAIRS.length;
     const u = getUniqueAutoSetups().size;
 }
 
