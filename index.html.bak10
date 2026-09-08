@@ -25,7 +25,7 @@
         .alert-toggle.active { background:var(--green); color:#fff; border-color:var(--green); }
         .alert-toggle.inactive { background:var(--red); color:#fff; border-color:var(--red); }
         .alert-dropdown-wrap { position:relative; }
-        .alert-dropdown-panel { display:none; position:absolute; top:36px; right:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:170px; }
+        .alert-dropdown-panel { display:none; position:absolute; top:36px; right:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:90px; }
         .alert-dropdown-panel.open { display:flex; }
         .market-dropdown-wrap { position:relative; }
         .market-dropdown-panel { display:none; position:absolute; top:36px; left:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:150px; }
@@ -58,7 +58,6 @@
 
         /* Auto‑adjust columns, no scroll */
         .screener-wrap { overflow-x:visible; }
-        .type-search-indicator { position:sticky; top:0; z-index:20; background:var(--acc); color:#fff; font-size:13px; font-weight:600; padding:8px 14px; border-radius:10px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
         .header-row-table { display:flex; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--border); width:100%; }
         .col-header-cell {
             flex: 1 1 0%;
@@ -191,7 +190,7 @@
         .filter-row { display:flex; gap:8px; }
     </style>
 </head>
-<body class="desktop-mode">
+<body>
 <div class="phone-container" id="app">
     <div class="header-row">
         <div class="brand"><span id="scanStatusText" class="scan-status-line" style="margin-left:0;"></span><span id="lastScanTime" class="last-scan-line" style="margin-left:8px;">🕒 Last scan: never</span></div>
@@ -204,14 +203,15 @@
                     <a href="/stocks?market=psx" class="market-option">Stocks (PSX)</a>
                 </div>
             </div>
+            <a href="/journal" class="pill-mini" style="text-decoration:none">📒 Journal</a>
+            <button class="pill-mini scan-btn" onclick="actualScan()">Scan</button>
+            <button class="pill-mini" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
+            <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
+            <button class="icon-btn" onclick="toggleDesktopMode()" id="desktopBtn"><i class="fas fa-desktop"></i></button>
             <div class="alert-dropdown-wrap" id="alertDropdownWrap">
-                <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fas fa-bars"></i></button>
+                <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fab fa-whatsapp"></i></button>
                 <div class="alert-dropdown-panel" id="alertDropdownPanel">
-                    <a href="/journal" class="alert-toggle" style="text-decoration:none;">📒 Journal</a>
-                    <button class="alert-toggle" onclick="actualScan()" style="background:var(--acc);color:#fff;">Scan</button>
-                    <button class="alert-toggle" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
-                    <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
                     <button class="alert-toggle" id="tgToggle" onclick="toggleAlert('telegram')">TG</button>
                     <button class="alert-toggle" id="waToggle" onclick="toggleAlert('whatsapp')">WA</button>
                     <button class="alert-toggle" id="ltfAlertBtn" onclick="toggleLtfAlert()">LTF OFF</button>
@@ -231,6 +231,7 @@
         <button class="slevel-btn" onclick="setFilter('bear')">Bear <span id="rc" style="color:var(--red)">0</span></button>
         <button class="slevel-btn" onclick="setFilter('all')">All <span id="allCount">0</span></button>
     </div>
+    <div class="search-container"><input type="text" class="search-bar" placeholder="Search pairs..." oninput="filterPairs(this.value)"></div>
     <div class="screener-wrap">
         <div class="header-row-table" id="tableHeaderRow"></div>
         <div id="pairsContainer"></div>
@@ -602,53 +603,19 @@ function toggleTheme() {
     document.querySelector('#themeBtn i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
     localStorage.setItem('ici-theme', h.getAttribute('data-theme'));
 }
-
+function toggleDesktopMode() {
+    const isDesktop = document.body.classList.toggle('desktop-mode');
+    document.getElementById('chartOverlay').style.display = isDesktop ? 'flex' : 'none';
+    document.querySelector('#desktopBtn i').className = isDesktop ? 'fas fa-mobile-alt' : 'fas fa-desktop';
+    localStorage.setItem('desktop-mode', isDesktop ? 'desktop' : 'mobile');
+    render();
+}
 
 function setFilter(f) { curF = f; render(); }
 function filterPairs(txt) {
     filteredPairs = txt ? PAIRS.filter(p => p.n.toLowerCase().includes(txt.toLowerCase())) : [...PAIRS];
     render();
 }
-
-// ── Type-anywhere-to-search (no visible search bar) ──
-let typeSearchBuffer = '';
-function updateTypeSearchIndicator() {
-    let el = document.getElementById('typeSearchIndicator');
-    const wrap = document.querySelector('.screener-wrap');
-    if (!typeSearchBuffer) { if (el) el.remove(); return; }
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'typeSearchIndicator';
-        el.className = 'type-search-indicator';
-        wrap.prepend(el);
-    }
-    el.textContent = '🔍 ' + typeSearchBuffer + ' (Esc to clear)';
-}
-document.addEventListener('keydown', function(e) {
-    const active = document.activeElement;
-    const tag = active ? active.tagName : '';
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable)) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === 'Escape') {
-        typeSearchBuffer = '';
-        filterPairs('');
-        updateTypeSearchIndicator();
-        return;
-    }
-    if (e.key === 'Backspace') {
-        typeSearchBuffer = typeSearchBuffer.slice(0, -1);
-        filterPairs(typeSearchBuffer);
-        updateTypeSearchIndicator();
-        e.preventDefault();
-        return;
-    }
-    if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
-        typeSearchBuffer += e.key;
-        filterPairs(typeSearchBuffer);
-        updateTypeSearchIndicator();
-    }
-});
-
 
 function actualScan() {
     const btn = document.querySelector('.scan-btn');
@@ -1119,6 +1086,11 @@ db.ref('marketData').on('value', snap => {
     if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
         document.querySelector('#themeBtn i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    if (localStorage.getItem('desktop-mode') === 'desktop') {
+        document.body.classList.add('desktop-mode');
+        document.getElementById('chartOverlay').style.display = 'flex';
+        document.querySelector('#desktopBtn i').className = 'fas fa-mobile-alt';
     }
     setTimeout(() => render(), 200);
 })();

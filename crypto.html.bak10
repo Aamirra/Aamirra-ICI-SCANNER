@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ICI Scanner</title>
+    <title>ICI Crypto</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -25,7 +25,7 @@
         .alert-toggle.active { background:var(--green); color:#fff; border-color:var(--green); }
         .alert-toggle.inactive { background:var(--red); color:#fff; border-color:var(--red); }
         .alert-dropdown-wrap { position:relative; }
-        .alert-dropdown-panel { display:none; position:absolute; top:36px; right:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:170px; }
+        .alert-dropdown-panel { display:none; position:absolute; top:36px; right:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:90px; }
         .alert-dropdown-panel.open { display:flex; }
         .market-dropdown-wrap { position:relative; }
         .market-dropdown-panel { display:none; position:absolute; top:36px; left:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:150px; }
@@ -56,65 +56,28 @@
         .slevel-btn { padding:4px 10px; border:1px solid var(--border); border-radius:8px; font-size:11px; font-weight:700; background:var(--pill-bg); color:var(--muted); cursor:pointer; }
         .slevel-btn.active { background:var(--gold); color:#000; border-color:var(--gold); }
 
-        /* Auto‑adjust columns, no scroll */
         .screener-wrap { overflow-x:visible; }
-        .type-search-indicator { position:sticky; top:0; z-index:20; background:var(--acc); color:#fff; font-size:13px; font-weight:600; padding:8px 14px; border-radius:10px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
         .header-row-table { display:flex; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--border); width:100%; }
         .col-header-cell {
             flex: 1 1 0%;
-            min-width: 50px;
-            padding: 0 2px;
-            font-size:10px;
-            font-weight:700;
-            color:var(--muted);
-            text-transform:uppercase;
-            letter-spacing:0.3px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            gap:2px;
-            cursor:pointer;
-            -webkit-user-select:none;
-            user-select:none;
-            overflow:hidden;
-            text-overflow:ellipsis;
-            white-space:nowrap;
+            min-width: 50px; padding: 0 2px; font-size:10px; font-weight:700; color:var(--muted);
+            text-transform:uppercase; letter-spacing:0.3px; display:flex; align-items:center; justify-content:center;
+            gap:2px; cursor:pointer; -webkit-user-select:none; user-select:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
         }
         .col-pair-fixed.col-header-cell { flex: 1 1 0%; min-width:70px; justify-content:flex-start; cursor:default; padding-left:4px; }
         .col-bell-fixed.col-header-cell { flex: none; min-width:30px; cursor:default; }
         .col-add-btn { min-width:24px; flex:none; text-align:center; cursor:pointer; color:var(--acc); font-size:16px; }
-        .item-main {
-            display:flex;
-            align-items:center;
-            padding:12px 0 6px 0;
-            cursor:pointer;
-            -webkit-user-select:none;
-            user-select:none;
-            touch-action:pan-y;
-            width:100%;
-        }
-        .col-cell {
-            flex: 1 1 0%;
-            min-width: 50px;
-            padding: 0 2px;
-            text-align:center;
-            font-size:12px;
-            overflow:hidden;
-            text-overflow:ellipsis;
-            white-space:nowrap;
-        }
+        .item-main { display:flex; align-items:center; padding:12px 0 6px 0; cursor:pointer; -webkit-user-select:none; user-select:none; touch-action:pan-y; width:100%; }
+        .col-cell { flex: 1 1 0%; min-width: 50px; padding: 0 2px; text-align:center; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .col-pair-fixed { flex: 1 1 0%; min-width:70px; display:flex; align-items:center; padding-right:4px; }
         .col-bell-fixed { flex: none; min-width:30px; display:flex; align-items:center; justify-content:center; }
-
         .highlighted-row { background: rgba(0,98,255,0.08); }
-
         .dots-container { display:flex; gap:4px; justify-content:center; }
         .trend-dot { width:8px; height:8px; border-radius:50%; }
         .sentiment-progress { height:14px; border-radius:4px; display:flex; overflow:hidden; font-size:9px; font-weight:700; color:#fff; line-height:14px; text-align:center; }
         .sent-red { background:var(--red); } .sent-green { background:var(--green); }
         .change-val { font-size:13px; font-weight:600; }
         .change-val.up { color:var(--green); } .change-val.down { color:var(--red); }
-
         .item-row { border-bottom:1px solid var(--border); }
         .phase-row { padding:4px 8px 8px 8px; display:flex; align-items:center; gap:6px; font-size:11px; }
 
@@ -150,31 +113,9 @@
         .scan-status-line { font-size:11px; color:var(--muted); margin-left:8px; }
         .last-scan-line { font-size:11px; color:var(--gold); margin-left:auto; }
 
-        /* ✅ FIXED MODAL CSS */
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
-            z-index: 2000;
-            display: none;
-            align-items: flex-end;
-            justify-content: center;
-            padding: 16px;
-        }
-        .modal.open {
-            display: flex;
-        }
-        .modal-content {
-            background: var(--surface);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 400px;
-            max-height: 80vh;
-            overflow-y: auto;
-            color: var(--txt);
-        }
-
+        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:500; display:none; align-items:flex-end; justify-content:center; padding:16px; }
+        .modal.open { display:flex; }
+        .modal-content { background:var(--surface); border-radius:20px; padding:20px; width:100%; max-width:400px; max-height:80vh; overflow-y:auto; color:var(--txt); }
         .sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1500; display:none; align-items:flex-end; justify-content:center; }
         .sheet-overlay.open { display:flex; }
         .sheet-box { background:var(--surface); border-radius:16px 16px 0 0; width:100%; max-width:450px; padding:8px 0; color:var(--txt); }
@@ -191,27 +132,28 @@
         .filter-row { display:flex; gap:8px; }
     </style>
 </head>
-<body class="desktop-mode">
+<body>
 <div class="phone-container" id="app">
     <div class="header-row">
         <div class="brand"><span id="scanStatusText" class="scan-status-line" style="margin-left:0;"></span><span id="lastScanTime" class="last-scan-line" style="margin-left:8px;">🕒 Last scan: never</span></div>
         <div class="header-actions">
             <div class="market-dropdown-wrap" id="marketDropdownWrap">
-                <button class="pill-mini active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Forex <i class="fas fa-caret-down"></i></button>
+                <button class="pill-mini active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Crypto <i class="fas fa-caret-down"></i></button>
                 <div class="market-dropdown-panel" id="marketDropdownPanel">
-                    <a href="/crypto" class="market-option">Crypto</a>
+                    <a href="/" class="market-option">Forex</a>
                     <a href="/stocks" class="market-option">Stocks (Exness)</a>
                     <a href="/stocks?market=psx" class="market-option">Stocks (PSX)</a>
                 </div>
             </div>
+            <a href="/journal" class="pill-mini" style="text-decoration:none">📒 Journal</a>
+            <button class="pill-mini scan-btn" onclick="actualScan()">Scan</button>
+            <button class="pill-mini" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
+            <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
+            <button class="icon-btn" onclick="toggleDesktopMode()" id="desktopBtn"><i class="fas fa-desktop"></i></button>
             <div class="alert-dropdown-wrap" id="alertDropdownWrap">
-                <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fas fa-bars"></i></button>
+                <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fab fa-whatsapp"></i></button>
                 <div class="alert-dropdown-panel" id="alertDropdownPanel">
-                    <a href="/journal" class="alert-toggle" style="text-decoration:none;">📒 Journal</a>
-                    <button class="alert-toggle" onclick="actualScan()" style="background:var(--acc);color:#fff;">Scan</button>
-                    <button class="alert-toggle" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
-                    <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
                     <button class="alert-toggle" id="tgToggle" onclick="toggleAlert('telegram')">TG</button>
                     <button class="alert-toggle" id="waToggle" onclick="toggleAlert('whatsapp')">WA</button>
                     <button class="alert-toggle" id="ltfAlertBtn" onclick="toggleLtfAlert()">LTF OFF</button>
@@ -231,18 +173,18 @@
         <button class="slevel-btn" onclick="setFilter('bear')">Bear <span id="rc" style="color:var(--red)">0</span></button>
         <button class="slevel-btn" onclick="setFilter('all')">All <span id="allCount">0</span></button>
     </div>
+    <div class="search-container"><input type="text" class="search-bar" placeholder="Search crypto..." oninput="filterPairs(this.value)"></div>
     <div class="screener-wrap">
         <div class="header-row-table" id="tableHeaderRow"></div>
         <div id="pairsContainer"></div>
     </div>
 </div>
 
-<!-- Column context menu (bottom sheet) -->
+<!-- Modals etc same as before -->
 <div class="sheet-overlay" id="colMenuSheet" onclick="if(event.target===this) closeColMenu()">
     <div class="sheet-box" id="colMenuBox"></div>
 </div>
 
-<!-- Add / Edit column modal -->
 <div class="modal" id="colEditModal" onclick="if(event.target===this) closeColEditModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
         <h3 style="margin-bottom:16px;" id="colEditTitle">Add Column</h3>
@@ -268,7 +210,6 @@
     </div>
 </div>
 
-<!-- Column filter modal -->
 <div class="modal" id="colFilterModal" onclick="if(event.target===this) closeColFilterModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
         <h3 style="margin-bottom:16px;">Filter Column</h3>
@@ -329,7 +270,7 @@
 
 <div class="modal" id="targetModal" onclick="this.classList.remove('open')">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <h3 style="margin-bottom:16px;color:var(--gold)">Auto Forex Setups</h3>
+        <h3 style="margin-bottom:16px;color:var(--gold)">Crypto Auto Setups</h3>
         <div id="targetContent"></div>
     </div>
 </div>
@@ -339,33 +280,11 @@ if (typeof getBellHtml !== 'function') window.getBellHtml = p=>'';
 if (typeof openAlertDialog !== 'function') window.openAlertDialog = p=>alert('Alert: '+p);
 if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Alerts list');
 </script>
-
 <script src="https://s3.tradingview.com/tv.js"></script>
 <script src="Alerts.js"></script>
-
 <script>
 (function() {
-    const orig = window.openAlertDialog;
-    if (orig) {
-        window.openAlertDialog = function(pair) {
-            orig(pair);
-            setTimeout(() => {
-                const modals = document.querySelectorAll('.iziModal, .alert-modal, [class*="alert"]');
-                modals.forEach(m => { m.style.zIndex = '2500'; });
-                const fixedDivs = document.querySelectorAll('body > div[style*="position: fixed"], body > div[style*="position:fixed"]');
-                fixedDivs.forEach(el => {
-                    if (el.style.display !== 'none' && el.style.visibility !== 'hidden') {
-                        el.style.zIndex = '2500';
-                    }
-                });
-            }, 100);
-        };
-    }
-})();
-</script>
-
-<script>
-(function() {
+    if (typeof _alFireAlert !== 'function') return;
     const orig = _alFireAlert;
     _alFireAlert = function(alert, pair) {
         if (alert.value != null && alert.type) {
@@ -394,18 +313,29 @@ if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Ale
     };
 })();
 </script>
-
 <script>
 firebase.initializeApp({ databaseURL: "https://fatima-16b38-default-rtdb.firebaseio.com" });
 const db = firebase.database();
 
 const PAIRS = [
-    {n:'USOIL'},{n:'US500'},{n:'US100'},{n:'US30'},{n:'GER40'},{n:'UK100'},{n:'JPN225'},
-    {n:'EURUSD'},{n:'GBPUSD'},{n:'USDJPY'},{n:'USDCHF'},{n:'USDCAD'},{n:'AUDUSD'},{n:'NZDUSD'},
-    {n:'EURJPY'},{n:'GBPJPY'},{n:'AUDJPY'},{n:'NZDJPY'},{n:'CADJPY'},{n:'CHFJPY'},
-    {n:'EURGBP'},{n:'EURAUD'},{n:'EURCAD'},{n:'EURCHF'},{n:'GBPAUD'},{n:'GBPCAD'},{n:'GBPCHF'},
-    {n:'AUDCAD'},{n:'AUDCHF'},{n:'AUDNZD'},{n:'NZDCAD'},{n:'NZDCHF'},{n:'CADCHF'},
-    {n:'XAUUSD'},{n:'BTCUSD'},{n:'ETHUSD'}
+    {n:'BTCUSD'},{n:'ETHUSD'},{n:'LTCUSD'},{n:'BCHUSD'},{n:'XRPUSD'},{n:'ADAUSD'},
+    {n:'DOTUSD'},{n:'LINKUSD'},{n:'UNIUSD'},{n:'SOLUSD'},{n:'MATICUSD'},{n:'AVAXUSD'},
+    {n:'ATOMUSD'},{n:'FILUSD'},{n:'VETUSD'},{n:'ETCUSD'},{n:'TRXUSD'},{n:'XLMUSD'},
+    {n:'ICPUSD'},{n:'THETAUSD'},{n:'XTZUSD'},{n:'EOSUSD'},{n:'SANDUSD'},{n:'MANAUSD'},
+    {n:'DOGEUSD'},{n:'SHIBUSD'},{n:'PEPEUSD'},{n:'BONKUSD'},{n:'FLOKIUSD'},{n:'WIFUSD'},
+    {n:'GRTUSD'},{n:'ENJUSD'},{n:'CHZUSD'},{n:'BATUSD'},{n:'ZRXUSD'},{n:'OMGUSD'},
+    {n:'DASHUSD'},{n:'ZECUSD'},{n:'BTGUSD'},{n:'DCRUSD'},{n:'XVGUSD'},{n:'SCUSD'},
+    {n:'SNXUSD'},{n:'COMPUSD'},{n:'MKRUSD'},{n:'AAVEUSD'},{n:'YFIUSD'},{n:'SUSHIUSD'},
+    {n:'CRVUSD'},{n:'RENUSD'},{n:'KNCUSD'},{n:'BANDUSD'},{n:'NMRUSD'},{n:'OCEANUSD'},
+    {n:'FETUSD'},{n:'AGIXUSD'},{n:'BNBUSD'},{n:'CAKEUSD'},{n:'RUNEUSD'},{n:'ALGOUSD'},
+    {n:'NEARUSD'},{n:'FLOWUSD'},{n:'APTUSD'},{n:'OPUSD'},{n:'ARBUSD'},{n:'SUIUSD'},
+    {n:'INJUSD'},{n:'TIAUSD'},{n:'SEIUSD'},{n:'BLURUSD'},{n:'PYTHUSD'},{n:'JTOUSD'},
+    {n:'ORDIUSD'},{n:'1000SATSUSD'},{n:'BEAMUSD'},{n:'RNDRUSD'},{n:'IMXUSD'},{n:'MINAUSD'},
+    {n:'GALAUSD'},{n:'AXSUSD'},{n:'APEUSD'},{n:'ENSUSD'},{n:'LDOUSD'},{n:'STXUSD'},
+    {n:'CFXUSD'},{n:'KLAYUSD'},{n:'FTMUSD'},{n:'HBARUSD'},{n:'EGLDUSD'},{n:'QNTUSD'},
+    {n:'ARUSD'},{n:'ZILUSD'},{n:'KSMUSD'},{n:'ANTUSD'},{n:'IOTXUSD'},{n:'CELOUSD'},
+    {n:'ANKRUSD'},{n:'SKLUSD'},{n:'SPELLUSD'},{n:'JOEUSD'},{n:'GMXUSD'},{n:'PENDLEUSD'},
+    {n:'SSVUSD'},{n:'FXSUSD'},{n:'LQTYUSD'},{n:'MASKUSD'}
 ];
 
 let MARKET_DATA = {}, techMetrics = {}, sentimentData = {}, PB_STATE = {};
@@ -516,7 +446,7 @@ db.ref('lastScanTime/time').on('value', snap => {
     el.textContent = ts ? '🕒 Last scan: ' + new Date(ts).toLocaleTimeString() : '🕒 Last scan: never';
 });
 
-db.ref('alertSettings/forex').on('value', snap => {
+db.ref('alertSettings/crypto').on('value', snap => {
     alertSettings = snap.val() || { telegram: true, whatsapp: true };
     window.alertSettings = alertSettings;
     updateToggleButtons();
@@ -534,7 +464,7 @@ function updateToggleButtons() {
 }
 function toggleAlert(type) {
     const val = !(alertSettings[type] ?? true);
-    db.ref('alertSettings/forex/' + type).set(val);
+    db.ref('alertSettings/crypto/' + type).set(val);
     alertSettings[type] = val;
     window.alertSettings = alertSettings;
     updateToggleButtons();
@@ -563,7 +493,7 @@ document.addEventListener('click', (e) => {
 });
 
 // ✅ LTF Alert listener
-db.ref('alertSettings/forex/ltf_alert').on('value', snap => {
+db.ref('alertSettings/crypto/ltf_alert').on('value', snap => {
     const enabled = snap.val() === true;
     const btn = document.getElementById('ltfAlertBtn');
     if (btn) {
@@ -573,19 +503,18 @@ db.ref('alertSettings/forex/ltf_alert').on('value', snap => {
 });
 
 function toggleLtfAlert() {
-    db.ref('alertSettings/forex/ltf_alert').once('value').then(snap => {
+    db.ref('alertSettings/crypto/ltf_alert').once('value').then(snap => {
         const current = snap.val() === true;
-        db.ref('alertSettings/forex/ltf_alert').set(!current);
+        db.ref('alertSettings/crypto/ltf_alert').set(!current);
     });
 }
 
 db.ref('liveMarketData').on('value', snap => {
     liveMarketData = snap.val() || {};
     if (typeof checkAllAlerts === 'function') {
-        const arr = Object.entries(liveMarketData).map(([n,d]) => ({
+        checkAllAlerts(Object.entries(liveMarketData).map(([n,d])=>({
             name:n, currentPrice:d.price, ema20:null, sentiment:d.sentiment, sma20:d.sma20, sma50:d.sma50
-        }));
-        checkAllAlerts(arr);
+        })));
     }
     renderDebounced();
 });
@@ -600,55 +529,21 @@ function toggleTheme() {
     const h = document.documentElement, isDark = h.getAttribute('data-theme') === 'dark';
     h.setAttribute('data-theme', isDark ? 'light' : 'dark');
     document.querySelector('#themeBtn i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-    localStorage.setItem('ici-theme', h.getAttribute('data-theme'));
+    localStorage.setItem('ici-crypto-theme', h.getAttribute('data-theme'));
 }
-
+function toggleDesktopMode() {
+    const isDesktop = document.body.classList.toggle('desktop-mode');
+    document.getElementById('chartOverlay').style.display = isDesktop ? 'flex' : 'none';
+    document.querySelector('#desktopBtn i').className = isDesktop ? 'fas fa-mobile-alt' : 'fas fa-desktop';
+    localStorage.setItem('crypto-desktop-mode', isDesktop ? 'desktop' : 'mobile');
+    render();
+}
 
 function setFilter(f) { curF = f; render(); }
 function filterPairs(txt) {
     filteredPairs = txt ? PAIRS.filter(p => p.n.toLowerCase().includes(txt.toLowerCase())) : [...PAIRS];
     render();
 }
-
-// ── Type-anywhere-to-search (no visible search bar) ──
-let typeSearchBuffer = '';
-function updateTypeSearchIndicator() {
-    let el = document.getElementById('typeSearchIndicator');
-    const wrap = document.querySelector('.screener-wrap');
-    if (!typeSearchBuffer) { if (el) el.remove(); return; }
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'typeSearchIndicator';
-        el.className = 'type-search-indicator';
-        wrap.prepend(el);
-    }
-    el.textContent = '🔍 ' + typeSearchBuffer + ' (Esc to clear)';
-}
-document.addEventListener('keydown', function(e) {
-    const active = document.activeElement;
-    const tag = active ? active.tagName : '';
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable)) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === 'Escape') {
-        typeSearchBuffer = '';
-        filterPairs('');
-        updateTypeSearchIndicator();
-        return;
-    }
-    if (e.key === 'Backspace') {
-        typeSearchBuffer = typeSearchBuffer.slice(0, -1);
-        filterPairs(typeSearchBuffer);
-        updateTypeSearchIndicator();
-        e.preventDefault();
-        return;
-    }
-    if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
-        typeSearchBuffer += e.key;
-        filterPairs(typeSearchBuffer);
-        updateTypeSearchIndicator();
-    }
-});
-
 
 function actualScan() {
     const btn = document.querySelector('.scan-btn');
@@ -729,7 +624,7 @@ function updateCounts() {
 function openTargetModal() {
     const setups = getUniqueAutoSetups();
     if (setups.size === 0) {
-        document.getElementById('targetContent').innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">No active setups</div>';
+        document.getElementById('targetContent').innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">No active crypto setups</div>';
     } else {
         let html = '';
         for (const [pair, info] of setups) {
@@ -750,6 +645,7 @@ function openTargetModal() {
 const COLUMN_TYPES = {
     tf_alignment: { label:'TF Alignment', kind:'dots', filterable:false },
     sentiment:    { label:'Sentiment',    kind:'bar',  filterable:false },
+    daily_sentiment: { label:'Daily Sentiment', kind:'bar', filterable:false },
     change_200:   { label:'200 Candle Change', kind:'pct', field:'longTermTrend', filterable:true },
     change_10:    { label:'10 Candle Change',  kind:'pct', field:'shortTermMomentum', filterable:true },
     change_1h:    { label:'1H Momentum',       kind:'pct', field:'microMomentum', filterable:true },
@@ -766,17 +662,18 @@ function defaultColumns() {
     return [
         { id:'c_tf', type:'tf_alignment', label:'1H/4H/1D/1W' },
         { id:'c_sent', type:'sentiment', label:'Sentiment' },
+        { id:'c_dsent', type:'daily_sentiment', label:'Daily Sent' },
         { id:'c_200', type:'change_200', label:'200C', style:'colored', filterMin:null, filterMax:null }
     ];
 }
 function loadColumns() {
     try {
-        const raw = localStorage.getItem('ici_columns');
+        const raw = localStorage.getItem('ici_crypto_columns');
         if (raw) { const parsed = JSON.parse(raw); if (Array.isArray(parsed) && parsed.length) return parsed; }
     } catch(e) {}
     return defaultColumns();
 }
-function saveColumns() { localStorage.setItem('ici_columns', JSON.stringify(columnDefs)); }
+function saveColumns() { localStorage.setItem('ici_crypto_columns', JSON.stringify(columnDefs)); }
 columnDefs = loadColumns();
 
 function getColumnValue(pairName, col) {
@@ -785,6 +682,7 @@ function getColumnValue(pairName, col) {
     const s = sentimentData[pairName] || {};
     const m = MARKET_DATA[pairName] || {};
     const lm = liveMarketData[pairName] || {};
+
     if (col.type === 'tf_alignment') {
         const livePrice = lm.price || lm.currentPrice;
         const ema20_1h = m.ema20 || m['1h_ema20'];
@@ -798,8 +696,16 @@ function getColumnValue(pairName, col) {
         return [sig1h, sig4h, sig1d, sig1w];
     }
     if (col.type === 'sentiment') {
-        const bullPct = s.bullish_pct || 0, bearPct = s.bearish_pct || 0, total = bullPct + bearPct || 1;
-        return { bullPct: Math.round((bullPct/total)*100), bearPct: Math.round((bearPct/total)*100) };
+        const bullPct = s.bullish_pct != null ? s.bullish_pct : (s.intra_green != null ? s.intra_green : null);
+        const bearPct = s.bearish_pct != null ? s.bearish_pct : (s.intra_red != null ? s.intra_red : null);
+        if (bullPct == null || bearPct == null) return null;
+        return { bullPct: Math.round(bullPct), bearPct: Math.round(bearPct) };
+    }
+    if (col.type === 'daily_sentiment') {
+        const bullPct = s.daily_bullish_pct;
+        const bearPct = s.daily_bearish_pct;
+        if (bullPct == null || bearPct == null) return null;
+        return { bullPct: Math.round(bullPct), bearPct: Math.round(bearPct) };
     }
     if (col.type === 'price') return (lm.price || lm.currentPrice || m.price || m.currentPrice || null);
     return t[type.field] != null ? t[type.field] : null;
@@ -855,7 +761,8 @@ function renderColumnCell(pairName, col) {
         const dots = val.map(sig => `<span class="trend-dot" style="background:${sig==='bull'?'var(--green)':(sig==='bear'?'var(--red)':'#cbd5e1')}"></span>`).join('');
         return `<div class="col-cell dots-container">${dots}</div>`;
     }
-    if (col.type === 'sentiment') {
+    if (col.type === 'sentiment' || col.type === 'daily_sentiment') {
+        if (!val) return '<div class="col-cell" style="color:var(--muted)">--</div>';
         return `<div class="col-cell"><div class="sentiment-progress"><div class="sent-red" style="width:${val.bearPct}%">${val.bearPct}%</div><div class="sent-green" style="width:${val.bullPct}%">${val.bullPct}%</div></div></div>`;
     }
     if (val == null) return '<div class="col-cell" style="color:var(--muted)">--</div>';
@@ -995,7 +902,7 @@ function render() {
     updateCounts();
 }
 
-// ── Chart functions (with highlight and star button update) ──
+// ── Chart functions ──
 function activateChartSlot(s) {
     activeChartSlot = s;
     for (let i=1;i<=4;i++) document.getElementById('slotBtn'+i).classList.toggle('active-slot', i===s);
@@ -1057,9 +964,10 @@ function drawChart(slot) {
     const idx = chartIndices[slot-1];
     if (!chartPairs[idx]) return;
     const symbol = chartPairs[idx];
+    const futuresSymbol = `BINANCE:${symbol.replace('USD', 'USDT')}.P`;
     new TradingView.widget({
         autosize:true,
-        symbol: (typeof psxStockList!=='undefined' && psxStockList.includes(symbol)) ? 'KSE:'+symbol : symbol,
+        symbol: futuresSymbol,
         interval: chartIntervals[slot-1],
         theme: document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light',
         container_id: 'tv_chart_'+slot,
@@ -1084,20 +992,19 @@ function closeChart() {
 }
 function toggle4H() {
     show4H = !show4H;
-    localStorage.setItem('show4H', show4H);
+    localStorage.setItem('crypto_show4H', show4H);
     document.getElementById('toggle4hBtn').textContent = show4H ? '4H ON' : '4H OFF';
     document.getElementById('toggle4hBtn').classList.toggle('active', show4H);
     render();
 }
 (function(){
-    show4H = localStorage.getItem('show4H') !== 'false';
+    show4H = localStorage.getItem('crypto_show4H') !== 'false';
     document.getElementById('toggle4hBtn').textContent = show4H ? '4H ON' : '4H OFF';
     document.getElementById('toggle4hBtn').classList.toggle('active', show4H);
 })();
 
 db.ref('technicalMetrics').on('value', snap => { techMetrics = snap.val()||{}; renderDebounced(); });
 db.ref('sentiment').on('value', snap => { sentimentData = snap.val()||{}; renderDebounced(); });
-db.ref('pb_state').on('value', snap => { PB_STATE = snap.val()||{}; updateCounts(); renderDebounced(); });
 db.ref('marketData').on('value', snap => {
     MARKET_DATA = snap.val()||{};
     if (typeof checkAllAlerts === 'function') {
@@ -1106,19 +1013,16 @@ db.ref('marketData').on('value', snap => {
     renderDebounced();
 });
 
-// ✅ Safety – ensure all modals & chart are hidden on page load
 (function(){
-    document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
-    if (!document.body.classList.contains('desktop-mode')) {
-        document.getElementById('chartOverlay').style.display = 'none';
-    }
-})();
-
-(function(){
-    const savedTheme = localStorage.getItem('ici-theme');
+    const savedTheme = localStorage.getItem('ici-crypto-theme');
     if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
         document.querySelector('#themeBtn i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    if (localStorage.getItem('crypto-desktop-mode') === 'desktop') {
+        document.body.classList.add('desktop-mode');
+        document.getElementById('chartOverlay').style.display = 'flex';
+        document.querySelector('#desktopBtn i').className = 'fas fa-mobile-alt';
     }
     setTimeout(() => render(), 200);
 })();
