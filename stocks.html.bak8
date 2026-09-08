@@ -119,7 +119,7 @@
         .phase-row { padding:4px 8px 8px 8px; display:flex; align-items:center; gap:6px; font-size:11px; }
 
         body.desktop-mode { padding:0; height:100vh; overflow:hidden; }
-        body.desktop-mode .phone-container { max-width:none; width:30%; height:100vh; overflow-y:auto; border-radius:0; box-shadow:none; margin:0; flex-shrink:0; border-right:1px solid var(--border); }
+        body.desktop-mode .phone-container { max-width:none; width:640px; height:100vh; overflow-y:auto; border-radius:0; box-shadow:none; margin:0; flex-shrink:0; border-right:1px solid var(--border); }
         body.desktop-mode #chartOverlay { position:relative !important; display:flex !important; flex:1; height:100vh; z-index:1 !important; background:var(--bg); }
         body.desktop-mode .chart-box { min-height:0; }
         body.desktop-mode #chartCloseBtn { display:none !important; }

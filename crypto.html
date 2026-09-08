@@ -82,7 +82,7 @@
         .phase-row { padding:4px 8px 8px 8px; display:flex; align-items:center; gap:6px; font-size:11px; }
 
         body.desktop-mode { padding:0; height:100vh; overflow:hidden; }
-        body.desktop-mode .phone-container { max-width:none; width:640px; height:100vh; overflow-y:auto; border-radius:0; box-shadow:none; margin:0; flex-shrink:0; border-right:1px solid var(--border); }
+        body.desktop-mode .phone-container { max-width:none; width:30%; height:100vh; overflow-y:auto; border-radius:0; box-shadow:none; margin:0; flex-shrink:0; border-right:1px solid var(--border); }
         body.desktop-mode #chartOverlay { position:relative !important; display:flex !important; flex:1; height:100vh; z-index:1 !important; background:var(--bg); }
         body.desktop-mode .chart-box { min-height:0; }
         body.desktop-mode #chartCloseBtn { display:none !important; }
@@ -135,7 +135,7 @@
 <body>
 <div class="phone-container" id="app">
     <div class="header-row">
-        <div class="brand"><div class="brand-icon"><i class="fas fa-bitcoin"></i></div><div class="brand-text"><h1>ICI Crypto</h1></div></div>
+        <div class="brand"><span id="scanStatusText" class="scan-status-line" style="margin-left:0;"></span><span id="lastScanTime" class="last-scan-line" style="margin-left:8px;">🕒 Last scan: never</span></div>
         <div class="header-actions">
             <div class="market-dropdown-wrap" id="marketDropdownWrap">
                 <button class="pill-mini active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Crypto <i class="fas fa-caret-down"></i></button>
@@ -160,10 +160,6 @@
                 </div>
             </div>
         </div>
-    </div>
-    <div style="display:flex; align-items:center; margin-bottom:8px;">
-        <span id="scanStatusText" class="scan-status-line"></span>
-        <span id="lastScanTime" class="last-scan-line">🕒 Last scan: never</span>
     </div>
     <div class="dir-slevel-bar" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
         <span id="dirToggleBtn" class="dir-toggle-btn long" onclick="toggleDirection()">LONG</span>
