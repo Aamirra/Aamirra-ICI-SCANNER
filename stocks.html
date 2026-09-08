@@ -131,6 +131,9 @@
         .layout-3 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
         .layout-3 .chart-box:nth-child(3) { grid-column:span 2; }
         .layout-4 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
+        .chart-grid.layout-1 #tv_chart_2:empty, .chart-grid.layout-1 #tv_chart_3:empty, .chart-grid.layout-1 #tv_chart_4:empty { display:none !important; }
+        .chart-grid.layout-2 #tv_chart_3:empty, .chart-grid.layout-2 #tv_chart_4:empty { display:none !important; }
+        .chart-grid.layout-3 #tv_chart_4:empty { display:none !important; }
         .chart-box { min-height:0; min-width:0; display:none; background:var(--bg); }
         .chart-box.active { display:block; }
         .layout-controls { display:flex; gap:6px; padding:6px 16px 6px 10px; align-items:center; justify-content:flex-end; background:var(--surface); border-bottom:1px solid var(--border); }
