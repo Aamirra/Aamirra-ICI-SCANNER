@@ -30,7 +30,7 @@
         .alert-dropdown-panel { display:none; position:absolute; top:36px; right:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:170px; }
         .alert-dropdown-panel.open { display:flex; }
         .market-dropdown-wrap { position:relative; }
-        .market-dropdown-panel { display:none; position:absolute; top:36px; right:0; left:auto; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:150px; white-space:nowrap; }
+        .market-dropdown-panel { display:none; position:absolute; top:36px; left:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:150px; }
         .market-dropdown-panel.open { display:flex; }
         .market-option { padding:6px 10px; border-radius:8px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); text-decoration:none; text-align:left; cursor:pointer; }
         .market-option.active-market, .market-option.active-market-opt { background:var(--acc); color:#fff; border-color:var(--acc); }
@@ -181,8 +181,15 @@
     <div class="header-row">
         <div class="brand"><span id="scanStatusText" class="scan-status-line" style="margin-left:0;"></span><span id="lastScanTime" class="last-scan-line" style="margin-left:6px;" title="Last scan time">🕒 never</span></div>
         <div class="header-actions">
-                        <button class="slevel-btn" onclick="setFilter('bull')">Bull <span id="bc" style="color:var(--green)">0</span></button>
-            <button class="slevel-btn" onclick="setFilter('bear')">Bear <span id="rc" style="color:var(--red)">0</span></button>
+            <div class="market-dropdown-wrap" id="marketDropdownWrap">
+                <button class="pill-mini active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Stocks (Exness) <i class="fas fa-caret-down"></i></button>
+                <div class="market-dropdown-panel" id="marketDropdownPanel">
+                    <a href="/" class="market-option">Forex</a>
+                    <a href="/crypto" class="market-option">Crypto</a>
+                    <button class="market-option active-market" id="exnessBtn" onclick="setMarket('exness')">Stocks (Exness)</button>
+                    <button class="market-option" id="psxBtn" onclick="setMarket('psx')">Stocks (PSX)</button>
+                </div>
+            </div>
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
             <div class="alert-dropdown-wrap" id="alertDropdownWrap">
                 <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fas fa-bars"></i></button>
@@ -242,15 +249,8 @@
         <button class="slevel-btn" id="sLevelBtn3" onclick="setSLevelFilter(3)">S03</button>
         <button class="slevel-btn" id="sLevelBtn4" onclick="setSLevelFilter(4)">S04</button>
         <button class="slevel-btn" id="sLevelBtn5" onclick="setSLevelFilter(5)">S05</button>
-<div class="market-dropdown-wrap" id="marketDropdownWrap">
-                <button class="pill-mini active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Stocks (Exness) <i class="fas fa-caret-down"></i></button>
-                <div class="market-dropdown-panel" id="marketDropdownPanel">
-                    <a href="/" class="market-option">Forex</a>
-                    <a href="/crypto" class="market-option">Crypto</a>
-                    <button class="market-option active-market" id="exnessBtn" onclick="setMarket('exness')">Stocks (Exness)</button>
-                    <button class="market-option" id="psxBtn" onclick="setMarket('psx')">Stocks (PSX)</button>
-                </div>
-            </div>
+        <button class="slevel-btn" onclick="setFilter('bull')">Bull <span id="bc" style="color:var(--green)">0</span></button>
+        <button class="slevel-btn" onclick="setFilter('bear')">Bear <span id="rc" style="color:var(--red)">0</span></button>
     </div>
     <div class="screener-wrap">
         <div class="header-row-table" id="tableHeaderRow"></div>
