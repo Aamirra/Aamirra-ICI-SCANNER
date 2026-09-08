@@ -20,7 +20,7 @@
         .brand-text h1 { font-size:16px; font-weight:700; line-height:1.2; }
         .brand-text span { font-size:12px; color:var(--muted); }
         .header-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-        .icon-btn { width:27px; height:27px; border-radius:50%; border:1px solid var(--border); background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--txt); }
+        .icon-btn { width:32px; height:32px; border-radius:50%; border:1px solid var(--border); background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--txt); }
         .alert-toggle { padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); }
         .alert-toggle.active { background:var(--green); color:#fff; border-color:var(--green); }
         .alert-toggle.inactive { background:var(--red); color:#fff; border-color:var(--red); }
@@ -36,9 +36,6 @@
         .pill { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); cursor:pointer; color:var(--txt); text-decoration:none; display:inline-block; }
         .pill.active-blue { background:var(--acc); color:#fff; border-color:var(--acc); }
         .pill.scan-btn { background:var(--acc); color:#fff; display:flex; align-items:center; gap:4px; }
-        .pill-mini { padding:4px 9px; border-radius:14px; font-size:10px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); cursor:pointer; color:var(--txt); text-decoration:none; display:inline-flex; align-items:center; gap:2px; white-space:nowrap; }
-        .pill-mini.active-blue { background:var(--acc); color:#fff; border-color:var(--acc); }
-        .pill-mini.scan-btn { background:var(--acc); color:#fff; }
         .pill.market-btn { background:var(--pill-bg); color:var(--txt); }
         .pill.market-btn.active-market { background:var(--acc); color:#fff; border-color:var(--acc); }
         .cloud-status { background:var(--pill-bg); color:var(--green); font-size:12px; padding:6px 12px; border-radius:20px; margin-left:auto; font-weight:500; }
@@ -174,19 +171,6 @@
     <div class="header-row">
         <div class="brand"><div class="brand-icon"><i class="fas fa-chart-line"></i></div><div class="brand-text"><h1>ICI Stocks</h1></div></div>
         <div class="header-actions">
-            <div class="market-dropdown-wrap" id="marketDropdownWrap">
-                <button class="pill-mini active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Stocks (Exness) <i class="fas fa-caret-down"></i></button>
-                <div class="market-dropdown-panel" id="marketDropdownPanel">
-                    <a href="/" class="market-option">Forex</a>
-                    <a href="/crypto" class="market-option">Crypto</a>
-                    <button class="market-option active-market" id="exnessBtn" onclick="setMarket('exness')">Stocks (Exness)</button>
-                    <button class="market-option" id="psxBtn" onclick="setMarket('psx')">Stocks (PSX)</button>
-                </div>
-            </div>
-            <button class="pill-mini scan-btn" onclick="actualScan()">Scan</button>
-            <a href="/journal" class="pill-mini" style="text-decoration:none">📒 Journal</a>
-            <button class="pill-mini" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
-            <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
             <button class="icon-btn" onclick="toggleDesktopMode()" id="desktopBtn"><i class="fas fa-desktop"></i></button>
             <div class="alert-dropdown-wrap" id="alertDropdownWrap">
@@ -199,9 +183,27 @@
             </div>
         </div>
     </div>
+    <div class="pills-row">
+        <div class="market-dropdown-wrap" id="marketDropdownWrap">
+            <button class="pill active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Stocks (Exness) <i class="fas fa-caret-down"></i></button>
+            <div class="market-dropdown-panel" id="marketDropdownPanel">
+                <a href="/" class="market-option">Forex</a>
+                <a href="/crypto" class="market-option">Crypto</a>
+                <button class="market-option active-market" id="exnessBtn" onclick="setMarket('exness')">Stocks (Exness)</button>
+                <button class="market-option" id="psxBtn" onclick="setMarket('psx')">Stocks (PSX)</button>
+            </div>
+        </div>
+        <button class="pill scan-btn" onclick="actualScan()">Scan</button>
+
+        <a href="/journal" class="pill" style="text-decoration:none">📒 Journal</a>
+        <button class="pill" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
+    </div>
     <div style="display:flex; align-items:center; margin-bottom:8px;">
         <span id="scanStatusText" class="scan-status-line"></span>
         <span id="lastScanTime" class="last-scan-line">🕒 Last scan: never</span>
+    </div>
+    <div class="sync-info">
+        <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
     </div>
     <div class="dir-slevel-bar" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
         <span id="dirToggleBtn" class="dir-toggle-btn long" onclick="toggleDirection()">LONG</span>
