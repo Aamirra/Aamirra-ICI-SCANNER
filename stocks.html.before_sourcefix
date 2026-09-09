@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ICI Scanner</title>
+    <title>ICI Stocks</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
@@ -41,6 +41,8 @@
         .pill-mini { padding:4px 9px; border-radius:14px; font-size:10px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); cursor:pointer; color:var(--txt); text-decoration:none; display:inline-flex; align-items:center; gap:2px; white-space:nowrap; }
         .pill-mini.active-blue { background:var(--acc); color:#fff; border-color:var(--acc); }
         .pill-mini.scan-btn { background:var(--acc); color:#fff; }
+        .pill.market-btn { background:var(--pill-bg); color:var(--txt); }
+        .pill.market-btn.active-market { background:var(--acc); color:#fff; border-color:var(--acc); }
         .cloud-status { background:var(--pill-bg); color:var(--green); font-size:12px; padding:6px 12px; border-radius:20px; margin-left:auto; font-weight:500; }
         .sync-info { font-size:12px; color:var(--green); display:flex; align-items:center; gap:4px; margin-bottom:16px; font-weight:500; cursor:pointer; }
         .counters-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-bottom:16px; }
@@ -58,7 +60,6 @@
         .slevel-btn { padding:3px 6px; border:1px solid var(--border); border-radius:6px; font-size:9px; font-weight:700; background:var(--pill-bg); color:var(--muted); cursor:pointer; white-space:nowrap; }
         .slevel-btn.active { background:var(--gold); color:#000; border-color:var(--gold); }
 
-        /* Auto‑adjust columns, no scroll */
         .screener-wrap { overflow-x:visible; }
         .type-search-indicator { position:sticky; top:0; z-index:20; background:var(--acc); color:#fff; font-size:13px; font-weight:600; padding:8px 14px; border-radius:10px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
         .header-row-table { display:flex; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--border); width:100%; }
@@ -190,31 +191,9 @@
         .scan-status-line { font-size:11px; color:var(--muted); margin-left:8px; }
         .last-scan-line { font-size:11px; color:var(--gold); margin-left:auto; }
 
-        /* ✅ FIXED MODAL CSS */
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
-            z-index: 2000;
-            display: none;
-            align-items: flex-end;
-            justify-content: center;
-            padding: 16px;
-        }
-        .modal.open {
-            display: flex;
-        }
-        .modal-content {
-            background: var(--surface);
-            border-radius: 20px;
-            padding: 20px;
-            width: 100%;
-            max-width: 400px;
-            max-height: 80vh;
-            overflow-y: auto;
-            color: var(--txt);
-        }
-
+        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:2000 !important; display:none; align-items:flex-end; justify-content:center; padding:16px; }
+        .modal.open { display:flex; }
+        .modal-content { background:var(--surface); border-radius:20px; padding:20px; width:100%; max-width:400px; max-height:80vh; overflow-y:auto; color:var(--txt); }
         .sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1500; display:none; align-items:flex-end; justify-content:center; }
         .sheet-overlay.open { display:flex; }
         .sheet-box { background:var(--surface); border-radius:16px 16px 0 0; width:100%; max-width:450px; padding:8px 0; color:var(--txt); }
@@ -242,8 +221,8 @@
             <div class="alert-dropdown-wrap" id="alertDropdownWrap">
                 <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fas fa-bars"></i></button>
                 <div class="alert-dropdown-panel" id="alertDropdownPanel">
-                    <a href="/journal" class="alert-toggle" style="text-decoration:none;">📒 Journal</a>
                     <button class="alert-toggle" onclick="actualScan()" style="background:var(--acc);color:#fff;">Scan</button>
+                    <a href="/journal" class="alert-toggle" style="text-decoration:none;">📒 Journal</a>
                     <button class="alert-toggle" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
                     <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
                     <button class="alert-toggle" id="tgToggle" onclick="toggleAlert('telegram')">TG</button>
@@ -298,11 +277,12 @@
         <button class="slevel-btn" id="sLevelBtn4" onclick="setSLevelFilter(4)">S04</button>
         <button class="slevel-btn" id="sLevelBtn5" onclick="setSLevelFilter(5)">S05</button>
 <div class="market-dropdown-wrap" id="marketDropdownWrap">
-                <button class="pill-mini active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Forex <i class="fas fa-caret-down"></i></button>
+                <button class="pill-mini active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Stocks (Exness) <i class="fas fa-caret-down"></i></button>
                 <div class="market-dropdown-panel" id="marketDropdownPanel">
+                    <a href="/" class="market-option">Forex</a>
                     <a href="/crypto" class="market-option">Crypto</a>
-                    <a href="/stocks" class="market-option">Stocks (Exness)</a>
-                    <a href="/stocks?market=psx" class="market-option">Stocks (PSX)</a>
+                    <button class="market-option active-market" id="exnessBtn" onclick="setMarket('exness')">Stocks (Exness)</button>
+                    <button class="market-option" id="psxBtn" onclick="setMarket('psx')">Stocks (PSX)</button>
                 </div>
             </div>
     </div>
@@ -312,12 +292,10 @@
     </div>
 </div>
 
-<!-- Column context menu (bottom sheet) -->
 <div class="sheet-overlay" id="colMenuSheet" onclick="if(event.target===this) closeColMenu()">
     <div class="sheet-box" id="colMenuBox"></div>
 </div>
 
-<!-- Add / Edit column modal -->
 <div class="modal" id="colEditModal" onclick="if(event.target===this) closeColEditModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
         <h3 style="margin-bottom:16px;" id="colEditTitle">Add Column</h3>
@@ -343,7 +321,6 @@
     </div>
 </div>
 
-<!-- Column filter modal -->
 <div class="modal" id="colFilterModal" onclick="if(event.target===this) closeColFilterModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
         <h3 style="margin-bottom:16px;">Filter Column</h3>
@@ -361,7 +338,7 @@
 <button class="dash-toggle-btn" id="dashToggleBtn"><i class="fas fa-chevron-left"></i></button>
 <div id="chartOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:1000;display:none;flex-direction:column;">
     <div style="display:flex;align-items:center;padding:5px 10px;background:var(--surface);border-bottom:1px solid var(--border);gap:6px;flex-wrap:wrap;">
-        <button onclick="movePair(-1)" style="background:none;border:none;font-size:15px;padding:5px;margin-right:10px;color:var(--txt)"><i class="fas fa-chevron-left"></i></button>
+        <button onclick="movePair(-1)" style="background:none;border:none;font-size:15px;padding:5px;margin-right:8px;color:var(--txt)"><i class="fas fa-chevron-left"></i></button>
         <div class="chart-interval-selector" style="display:flex;gap:6px;align-items:center;">
             <button class="chart-interval-btn active" id="chartIntBtn1" data-interval="60" onclick="changeChartInterval('60', this)">1H</button>
             <button class="chart-interval-btn" id="chartIntBtn2" data-interval="240" onclick="changeChartInterval('240', this)">4H</button>
@@ -376,24 +353,22 @@
             <button class="tf-preset-btn" id="tfPresetL" onclick="setTFPreset('L')">L</button>
         </div>
         <div style="display:flex;gap:6px;align-items:center;margin-left:6px;">
-        <span style="font-size:11px;font-weight:600;color:var(--muted);">Layout:</span>
-        <select class="layout-select" id="layoutSelect" onchange="setChartLayout(this.value)">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-        </select>
-        <span style="font-size:11px;font-weight:600;color:var(--muted);margin-left:10px;">Slot:</span>
-        <select class="layout-select" id="slotSelect" onchange="activateChartSlot(this.value)">
-            <option value="1">1</option>
-        </select>
-    </div>
-        <button onclick="movePair(1)" style="background:none;border:none;font-size:15px;padding:5px;margin-left:10px;color:var(--txt)"><i class="fas fa-chevron-right"></i></button>
+            <span style="font-size:11px;font-weight:600;color:var(--muted);">Layout:</span>
+            <select class="layout-select" id="layoutSelect" onchange="setChartLayout(this.value)">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+            </select>
+            <span style="font-size:11px;font-weight:600;color:var(--muted);margin-left:6px;">Slot:</span>
+            <select class="layout-select" id="slotSelect" onchange="activateChartSlot(this.value)">
+                <option value="1">1</option>
+            </select>
+        </div>
+        <button onclick="movePair(1)" style="background:none;border:none;font-size:15px;padding:5px;margin-left:8px;color:var(--txt)"><i class="fas fa-chevron-right"></i></button>
         <button onclick="openAlertDialog(document.getElementById('chartPairName').textContent)" style="background:none;border:none;font-size:15px;padding:5px;margin-left:4px;color:var(--gold);cursor:pointer;" title="Set Alert"><i class="fas fa-bell"></i></button>
         <button id="chartCloseBtn" onclick="closeChart()" style="background:none;border:none;font-size:15px;padding:5px;margin-left:4px;color:var(--red)"><i class="fas fa-times"></i></button>
     </div>
-    
-    
     <div id="chart-grid" class="chart-grid layout-1">
         <div id="tv_chart_1" class="chart-box active"></div>
         <div id="tv_chart_2" class="chart-box"></div>
@@ -419,7 +394,7 @@
 </div>
 <div class="modal" id="targetModal" onclick="this.classList.remove('open')">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <h3 style="margin-bottom:16px;color:var(--gold)">Auto Forex Setups</h3>
+        <h3 style="margin-bottom:16px;color:var(--gold)">Stock Auto Setups</h3>
         <div id="targetContent"></div>
     </div>
 </div>
@@ -434,10 +409,8 @@ if (typeof getBellHtml !== 'function') window.getBellHtml = p=>'';
 if (typeof openAlertDialog !== 'function') window.openAlertDialog = p=>alert('Alert: '+p);
 if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Alerts list');
 </script>
-
 <script src="https://s3.tradingview.com/tv.js"></script>
 <script src="Alerts.js"></script>
-
 <script>
 (function() {
     const orig = window.openAlertDialog;
@@ -458,9 +431,9 @@ if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Ale
     }
 })();
 </script>
-
 <script>
 (function() {
+    if (typeof _alFireAlert !== 'function') return;
     const orig = _alFireAlert;
     _alFireAlert = function(alert, pair) {
         if (alert.value != null && alert.type) {
@@ -489,24 +462,26 @@ if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Ale
     };
 })();
 </script>
-
 <script>
 firebase.initializeApp({ databaseURL: "https://fatima-16b38-default-rtdb.firebaseio.com" });
 const db = firebase.database();
 
-const PAIRS = [
-    {n:'USOIL'},{n:'US500'},{n:'US100'},{n:'US30'},{n:'GER40'},{n:'UK100'},{n:'JPN225'},
-    {n:'EURUSD'},{n:'GBPUSD'},{n:'USDJPY'},{n:'USDCHF'},{n:'USDCAD'},{n:'AUDUSD'},{n:'NZDUSD'},
-    {n:'EURJPY'},{n:'GBPJPY'},{n:'AUDJPY'},{n:'NZDJPY'},{n:'CADJPY'},{n:'CHFJPY'},
-    {n:'EURGBP'},{n:'EURAUD'},{n:'EURCAD'},{n:'EURCHF'},{n:'GBPAUD'},{n:'GBPCAD'},{n:'GBPCHF'},
-    {n:'AUDCAD'},{n:'AUDCHF'},{n:'AUDNZD'},{n:'NZDCAD'},{n:'NZDCHF'},{n:'CADCHF'},
-    {n:'XAUUSD'},{n:'BTCUSD'},{n:'ETHUSD'}
-];
-
-let MARKET_DATA = {}, techMetrics = {}, sentimentData = {}, PB_STATE = {};
-let curF = 'all', filteredPairs = [...PAIRS], chartPairs = [], currentDisplayPairs = [], show4H = true;
+// ── Market state ──
+let currentMarket = 'exness';
+let rawStockData = {};
+let stockPbState = {};
+let MARKET_DATA = {};
+let techMetrics = {};
+let sentimentData = {};
 let liveMarketData = {};
 let alertSettings = { telegram: true, whatsapp: true };
+let curF = 'all';
+let filteredSymbols = [];
+let chartPairs = [];
+let currentDisplayPairs = [];
+let show4H = true;
+let activeChartPair = null;
+
 let currentChartInterval = "60";
 let currentChartLayout = 1;
 let activeChartSlot = 1;
@@ -566,7 +541,137 @@ function refreshSLevels() {
 
 window.alertSettings = alertSettings;
 
-let activeChartPair = null;
+
+
+function normalizeStockData(raw) {
+    const normalized = {};
+    for (const [sym, data] of Object.entries(raw)) {
+        const m = { ...data };
+        m['1h'] = data.signal1h || '';
+        m['4h'] = data.signal4h || '';
+        m['1day'] = data.signal1d || '';
+        m['1week'] = data.signal1w || '';
+        normalized[sym] = m;
+    }
+    return normalized;
+}
+
+function attachListeners() {
+    db.ref('stockMarketData').off();
+    db.ref('psxStockMarketData').off();
+    db.ref('stockMarketDataPbState').off();
+    db.ref('psxStockMarketDataPbState').off();
+
+    if (currentMarket === 'exness') {
+        db.ref('stockMarketData').on('value', snap => {
+            rawStockData = snap.val() || {};
+            MARKET_DATA = normalizeStockData(rawStockData);
+            updateCounts(); renderDebounced();
+        });
+        db.ref('stockMarketDataPbState').on('value', snap => {
+            stockPbState = snap.val() || {};
+            updateCounts(); renderDebounced();
+        });
+    } else {
+        db.ref('psxStockMarketData').on('value', snap => {
+            rawStockData = snap.val() || {};
+            MARKET_DATA = normalizeStockData(rawStockData);
+            updateCounts(); renderDebounced();
+        });
+        db.ref('psxStockMarketDataPbState').on('value', snap => {
+            stockPbState = snap.val() || {};
+            updateCounts(); renderDebounced();
+        });
+    }
+}
+
+function setMarket(market) {
+    currentMarket = market;
+    document.getElementById('exnessBtn').classList.toggle('active-market', market === 'exness');
+    document.getElementById('psxBtn').classList.toggle('active-market', market === 'psx');
+    const mdBtn = document.getElementById('marketDropdownBtn');
+    if (mdBtn) mdBtn.innerHTML = (market === 'psx' ? 'Stocks (PSX)' : 'Stocks (Exness)') + ' <i class="fas fa-caret-down"></i>';
+    curF = 'all';
+    filteredSymbols = [];
+    attachListeners();
+}
+
+db.ref('alertSettings/stocks').on('value', snap => {
+    alertSettings = snap.val() || { telegram: true, whatsapp: true };
+    window.alertSettings = alertSettings;
+    updateToggleButtons();
+});
+function updateToggleButtons() {
+    const tg = document.getElementById('tgToggle'), wa = document.getElementById('waToggle');
+    if (tg) {
+        tg.textContent = alertSettings.telegram ? 'TG ON' : 'TG OFF';
+        tg.className = 'alert-toggle ' + (alertSettings.telegram ? 'active' : 'inactive');
+    }
+    if (wa) {
+        wa.textContent = alertSettings.whatsapp ? 'WA ON' : 'WA OFF';
+        wa.className = 'alert-toggle ' + (alertSettings.whatsapp ? 'active' : 'inactive');
+    }
+}
+function toggleAlert(type) {
+    const val = !(alertSettings[type] ?? true);
+    db.ref('alertSettings/stocks/' + type).set(val);
+    alertSettings[type] = val;
+    window.alertSettings = alertSettings;
+    updateToggleButtons();
+}
+
+function toggleAlertDropdown(e) {
+    e.stopPropagation();
+    document.getElementById('alertDropdownPanel').classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('alertDropdownWrap');
+    if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('alertDropdownPanel').classList.remove('open');
+    }
+});
+
+function toggleMarketDropdown(e) {
+    e.stopPropagation();
+    document.getElementById('marketDropdownPanel').classList.toggle('open');
+}
+document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('marketDropdownWrap');
+    if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('marketDropdownPanel').classList.remove('open');
+    }
+});
+
+// ✅ LTF Alert listener
+db.ref('alertSettings/stocks/ltf_alert').on('value', snap => {
+    const enabled = snap.val() === true;
+    const btn = document.getElementById('ltfAlertBtn');
+    if (btn) {
+        btn.textContent = enabled ? 'LTF ON' : 'LTF OFF';
+        btn.className = 'alert-toggle ' + (enabled ? 'active' : 'inactive');
+    }
+});
+
+function toggleLtfAlert() {
+    db.ref('alertSettings/stocks/ltf_alert').once('value').then(snap => {
+        const current = snap.val() === true;
+        db.ref('alertSettings/stocks/ltf_alert').set(!current);
+    });
+}
+
+db.ref('liveMarketData').on('value', snap => {
+    liveMarketData = snap.val() || {};
+    if (typeof checkAllAlerts === 'function') {
+        const arr = Object.entries(liveMarketData).map(([n,d]) => ({
+            name:n, currentPrice:d.price, ema20:null, sentiment:d.sentiment, sma20:d.sma20, sma50:d.sma50
+        }));
+        checkAllAlerts(arr);
+    }
+    renderDebounced();
+});
+
+db.ref('technicalMetrics').on('value', snap => { techMetrics = snap.val()||{}; renderDebounced(); });
+db.ref('sentiment').on('value', snap => { sentimentData = snap.val()||{}; renderDebounced(); });
 
 let renderTimer = null;
 function renderDebounced() {
@@ -611,148 +716,6 @@ db.ref('lastScanTime/time').on('value', snap => {
     el.textContent = ts ? '🕒 ' + new Date(ts).toLocaleTimeString() : '🕒 never';
 });
 
-db.ref('alertSettings/forex').on('value', snap => {
-    alertSettings = snap.val() || { telegram: true, whatsapp: true };
-    window.alertSettings = alertSettings;
-    updateToggleButtons();
-});
-function updateToggleButtons() {
-    const tg = document.getElementById('tgToggle'), wa = document.getElementById('waToggle');
-    if (tg) {
-        tg.textContent = alertSettings.telegram ? 'TG ON' : 'TG OFF';
-        tg.className = 'alert-toggle ' + (alertSettings.telegram ? 'active' : 'inactive');
-    }
-    if (wa) {
-        wa.textContent = alertSettings.whatsapp ? 'WA ON' : 'WA OFF';
-        wa.className = 'alert-toggle ' + (alertSettings.whatsapp ? 'active' : 'inactive');
-    }
-}
-function toggleAlert(type) {
-    const val = !(alertSettings[type] ?? true);
-    db.ref('alertSettings/forex/' + type).set(val);
-    alertSettings[type] = val;
-    window.alertSettings = alertSettings;
-    updateToggleButtons();
-}
-
-function toggleAlertDropdown(e) {
-    e.stopPropagation();
-    document.getElementById('alertDropdownPanel').classList.toggle('open');
-}
-document.addEventListener('click', (e) => {
-    const wrap = document.getElementById('alertDropdownWrap');
-    if (wrap && !wrap.contains(e.target)) {
-        document.getElementById('alertDropdownPanel').classList.remove('open');
-    }
-});
-
-function toggleMarketDropdown(e) {
-    e.stopPropagation();
-    document.getElementById('marketDropdownPanel').classList.toggle('open');
-}
-document.addEventListener('click', (e) => {
-    const wrap = document.getElementById('marketDropdownWrap');
-    if (wrap && !wrap.contains(e.target)) {
-        document.getElementById('marketDropdownPanel').classList.remove('open');
-    }
-});
-
-// ✅ LTF Alert listener
-db.ref('alertSettings/forex/ltf_alert').on('value', snap => {
-    const enabled = snap.val() === true;
-    const btn = document.getElementById('ltfAlertBtn');
-    if (btn) {
-        btn.textContent = enabled ? 'LTF ON' : 'LTF OFF';
-        btn.className = 'alert-toggle ' + (enabled ? 'active' : 'inactive');
-    }
-});
-
-function toggleLtfAlert() {
-    db.ref('alertSettings/forex/ltf_alert').once('value').then(snap => {
-        const current = snap.val() === true;
-        db.ref('alertSettings/forex/ltf_alert').set(!current);
-    });
-}
-
-db.ref('liveMarketData').on('value', snap => {
-    liveMarketData = snap.val() || {};
-    if (typeof checkAllAlerts === 'function') {
-        const arr = Object.entries(liveMarketData).map(([n,d]) => ({
-            name:n, currentPrice:d.price, ema20:null, sentiment:d.sentiment, sma20:d.sma20, sma50:d.sma50
-        }));
-        checkAllAlerts(arr);
-    }
-    renderDebounced();
-});
-
-db.ref('pb_state').on('value', snap => {
-    PB_STATE = snap.val() || {};
-    updateCounts();
-    renderDebounced();
-});
-
-function toggleTheme() {
-    const h = document.documentElement, isDark = h.getAttribute('data-theme') === 'dark';
-    h.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    document.querySelector('#themeBtn i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-    localStorage.setItem('ici-theme', h.getAttribute('data-theme'));
-}
-
-
-function setFilter(f) { curF = f; render(); }
-function filterPairs(txt) {
-    filteredPairs = txt ? PAIRS.filter(p => p.n.toLowerCase().includes(txt.toLowerCase())) : [...PAIRS];
-    render();
-}
-
-// ── Type-anywhere-to-search (no visible search bar) ──
-let typeSearchBuffer = '';
-function updateTypeSearchIndicator() {
-    let el = document.getElementById('typeSearchIndicator');
-    const wrap = document.querySelector('.screener-wrap');
-    if (!typeSearchBuffer) { if (el) el.remove(); return; }
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'typeSearchIndicator';
-        el.className = 'type-search-indicator';
-        wrap.prepend(el);
-    }
-    el.textContent = '🔍 ' + typeSearchBuffer + ' (Esc to clear)';
-}
-document.addEventListener('keydown', function(e) {
-    const active = document.activeElement;
-    const tag = active ? active.tagName : '';
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable)) return;
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === ' ' || e.code === 'Space') {
-        const overlay = document.getElementById('chartOverlay');
-        if (overlay && overlay.style.display === 'flex' && typeof movePair === 'function') {
-            e.preventDefault();
-            movePair(1);
-        }
-        return;
-    }
-    if (e.key === 'Escape') {
-        typeSearchBuffer = '';
-        filterPairs('');
-        updateTypeSearchIndicator();
-        return;
-    }
-    if (e.key === 'Backspace') {
-        typeSearchBuffer = typeSearchBuffer.slice(0, -1);
-        filterPairs(typeSearchBuffer);
-        updateTypeSearchIndicator();
-        e.preventDefault();
-        return;
-    }
-    if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
-        typeSearchBuffer += e.key;
-        filterPairs(typeSearchBuffer);
-        updateTypeSearchIndicator();
-    }
-});
-
-
 function actualScan() {
     const btn = document.querySelector('.scan-btn');
     const statusEl = document.getElementById('scanStatusText');
@@ -787,20 +750,35 @@ function actualScan() {
     }, 600000);
 }
 
+function isStrongTrend(sym, data, dir) {
+    return data && data['4h'] === dir && data['1day'] === dir && data['1week'] === dir;
+}
+
+function updateCounts() {
+    let b=0, r=0;
+    for (const [sym, data] of Object.entries(MARKET_DATA)) {
+        if (isStrongTrend(sym, data, 'bull')) b++;
+        if (isStrongTrend(sym, data, 'bear')) r++;
+    }
+    document.getElementById('bc').textContent = b;
+    document.getElementById('rc').textContent = r;
+    const u = getUniqueAutoSetups().size;
+}
+
 function getUniqueAutoSetups() {
     const pairMap = new Map();
-    if (!PB_STATE) return pairMap;
-    const validPairs = new Set(PAIRS.map(p => p.n));
+    if (!stockPbState) return pairMap;
+    const validSymbols = new Set(Object.keys(MARKET_DATA));
     const activePhases = ['wait_push', 'wait_dip', 'wait_reclaim', 'alert_triggered'];
-    for (const key in PB_STATE) {
-        const state = PB_STATE[key];
+    for (const key in stockPbState) {
+        const state = stockPbState[key];
         if (!state || !state.dir || !state.phase) continue;
         const parts = key.split('_');
         if (parts.length < 3) continue;
         const dir = parts[parts.length - 1];
         if (dir !== 'bull' && dir !== 'bear') continue;
         const pair = parts.slice(0, parts.length - 2).join('');
-        if (!validPairs.has(pair)) continue;
+        if (!validSymbols.has(pair)) continue;
         if (!activePhases.includes(state.phase)) continue;
         const prio = { 'alert_triggered':4, 'wait_reclaim':3, 'wait_dip':2, 'wait_push':1 };
         const newPrio = prio[state.phase] || 0;
@@ -816,22 +794,10 @@ function getUniqueAutoSetups() {
     return pairMap;
 }
 
-function updateCounts() {
-    let b=0,r=0;
-    PAIRS.forEach(p => {
-        const d = MARKET_DATA[p.n] || {};
-        if (['4h','1day','1week'].every(tf => d[tf]==='bull')) b++;
-        if (['4h','1day','1week'].every(tf => d[tf]==='bear')) r++;
-    });
-    document.getElementById('bc').textContent = b;
-    document.getElementById('rc').textContent = r;
-    const u = getUniqueAutoSetups().size;
-}
-
 function openTargetModal() {
     const setups = getUniqueAutoSetups();
     if (setups.size === 0) {
-        document.getElementById('targetContent').innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">No active setups</div>';
+        document.getElementById('targetContent').innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">No active stock setups</div>';
     } else {
         let html = '';
         for (const [pair, info] of setups) {
@@ -848,10 +814,11 @@ function openTargetModal() {
     document.getElementById('targetModal').classList.add('open');
 }
 
-// ── Columns ──
+// ── Column system ──
 const COLUMN_TYPES = {
     tf_alignment: { label:'TF Alignment', kind:'dots', filterable:false },
     sentiment:    { label:'Sentiment',    kind:'bar',  filterable:false },
+    daily_sentiment: { label:'Daily Sentiment', kind:'bar', filterable:false },   // ✅ new column type
     change_200:   { label:'200 Candle Change', kind:'pct', field:'longTermTrend', filterable:true },
     change_10:    { label:'10 Candle Change',  kind:'pct', field:'shortTermMomentum', filterable:true },
     change_1h:    { label:'1H Momentum',       kind:'pct', field:'microMomentum', filterable:true },
@@ -868,18 +835,68 @@ function defaultColumns() {
     return [
         { id:'c_tf', type:'tf_alignment', label:'1H/4H/1D/1W' },
         { id:'c_sent', type:'sentiment', label:'Sentiment' },
+        { id:'c_dsent', type:'daily_sentiment', label:'Daily Sent' },   // ✅ new default column
         { id:'c_200', type:'change_200', label:'200C', style:'colored', filterMin:null, filterMax:null }
     ];
 }
 function loadColumns() {
     try {
-        const raw = localStorage.getItem('ici_columns');
+        const raw = localStorage.getItem('ici_stocks_columns');
         if (raw) { const parsed = JSON.parse(raw); if (Array.isArray(parsed) && parsed.length) return parsed; }
     } catch(e) {}
     return defaultColumns();
 }
-function saveColumns() { localStorage.setItem('ici_columns', JSON.stringify(columnDefs)); }
+function saveColumns() { localStorage.setItem('ici_stocks_columns', JSON.stringify(columnDefs)); }
 columnDefs = loadColumns();
+
+// ✅ Add robust sentiment extractor
+function extractSentiment(s) {
+    if (!s || typeof s !== 'object') return null;
+    if (s.sentiment && typeof s.sentiment === 'object') s = s.sentiment;
+    if (s.sentiment && typeof s.sentiment === 'number') return { bullPct: s.sentiment, bearPct: 100 - s.sentiment };
+
+    const bullPatterns = ['bull', 'green', 'positive', 'up', 'long', 'buy'];
+    const bearPatterns = ['bear', 'red', 'negative', 'down', 'short', 'sell'];
+    let bullVal = null, bearVal = null;
+
+    for (const key of Object.keys(s)) {
+        const lowerKey = key.toLowerCase();
+        if (bullVal === null && bullPatterns.some(p => lowerKey.includes(p))) {
+            bullVal = Number(s[key]);
+            if (isNaN(bullVal)) bullVal = null;
+        }
+        if (bearVal === null && bearPatterns.some(p => lowerKey.includes(p))) {
+            bearVal = Number(s[key]);
+            if (isNaN(bearVal)) bearVal = null;
+        }
+        if (bullVal !== null && bearVal !== null) break;
+    }
+
+    if (bullVal === null && bearVal === null) {
+        const values = Object.values(s).filter(v => typeof v === 'number' && !isNaN(v));
+        if (values.length === 1) {
+            const v = values[0];
+            if (v >= 0 && v <= 100) { bullVal = v; bearVal = 100 - v; }
+        } else if (values.length === 2) {
+            const [v1, v2] = values;
+            if (v1 >= 0 && v2 >= 0 && Math.abs(v1 + v2 - 100) < 5) {
+                bullVal = v1; bearVal = v2;
+            }
+        }
+    }
+
+    if (bullVal !== null && bullVal >= 0 && bullVal <= 1) bullVal *= 100;
+    if (bearVal !== null && bearVal >= 0 && bearVal <= 1) bearVal *= 100;
+
+    if (bullVal !== null && bearVal === null) bearVal = Math.max(0, 100 - bullVal);
+    else if (bearVal !== null && bullVal === null) bullVal = Math.max(0, 100 - bearVal);
+
+    if (bullVal === null || bearVal === null) return null;
+    bullVal = Math.max(0, Math.min(100, Math.round(bullVal)));
+    bearVal = Math.max(0, Math.min(100, Math.round(bearVal)));
+    if (bullVal === 0 && bearVal === 0) return null;
+    return { bullPct: bullVal, bearPct: bearVal };
+}
 
 function getColumnValue(pairName, col) {
     const type = COLUMN_TYPES[col.type];
@@ -887,6 +904,7 @@ function getColumnValue(pairName, col) {
     const s = sentimentData[pairName] || {};
     const m = MARKET_DATA[pairName] || {};
     const lm = liveMarketData[pairName] || {};
+
     if (col.type === 'tf_alignment') {
         const livePrice = lm.price || lm.currentPrice;
         const ema20_1h = m.ema20 || m['1h_ema20'];
@@ -900,11 +918,21 @@ function getColumnValue(pairName, col) {
         return [sig1h, sig4h, sig1d, sig1w];
     }
     if (col.type === 'sentiment') {
-        const bullPct = s.bullish_pct || 0, bearPct = s.bearish_pct || 0, total = bullPct + bearPct || 1;
-        return { bullPct: Math.round((bullPct/total)*100), bearPct: Math.round((bearPct/total)*100) };
+        return extractSentiment(s);
+    }
+    if (col.type === 'daily_sentiment') {   // ✅ daily sentiment case
+        const bullPct = s.daily_bullish_pct;
+        const bearPct = s.daily_bearish_pct;
+        if (bullPct == null || bearPct == null) return null;
+        const b = Math.round(Number(bullPct));
+        const br = Math.round(Number(bearPct));
+        if (isNaN(b) || isNaN(br)) return null;
+        return { bullPct: b, bearPct: br };
     }
     if (col.type === 'price') return (lm.price || lm.currentPrice || m.price || m.currentPrice || null);
-    return t[type.field] != null ? t[type.field] : null;
+    if (t[type.field] != null) return t[type.field];
+    if (m[type.field] != null) return m[type.field];
+    return null;
 }
 
 function sortValueFor(pairName, col) {
@@ -919,7 +947,7 @@ function applyColumnSortAndFilter(list) {
     columnDefs.forEach(col => {
         if (col.filterMin == null && col.filterMax == null) return;
         out = out.filter(p => {
-            const v = sortValueFor(p.n, col);
+            const v = sortValueFor(p, col);
             if (v == null) return false;
             if (col.filterMin != null && v < col.filterMin) return false;
             if (col.filterMax != null && v > col.filterMax) return false;
@@ -930,7 +958,7 @@ function applyColumnSortAndFilter(list) {
         const col = columnDefs.find(c => c.id === sortColumn);
         if (col) {
             out = [...out].sort((a,b) => {
-                const va = sortValueFor(a.n, col), vb = sortValueFor(b.n, col);
+                const va = sortValueFor(a, col), vb = sortValueFor(b, col);
                 return sortDir === 'desc' ? (vb == null ? -Infinity : vb) - (va == null ? -Infinity : va) : (va == null ? -Infinity : va) - (vb == null ? -Infinity : vb);
             });
         }
@@ -957,7 +985,8 @@ function renderColumnCell(pairName, col) {
         const dots = val.map(sig => `<span class="trend-dot" style="background:${sig==='bull'?'var(--green)':(sig==='bear'?'var(--red)':'#cbd5e1')}"></span>`).join('');
         return `<div class="col-cell dots-container">${dots}</div>`;
     }
-    if (col.type === 'sentiment') {
+    if (col.type === 'sentiment' || col.type === 'daily_sentiment') {   // ✅ both bar types
+        if (!val) return '<div class="col-cell" style="color:var(--muted)">--</div>';
         return `<div class="col-cell"><div class="sentiment-progress"><div class="sent-red" style="width:${val.bearPct}%">${val.bearPct}%</div><div class="sent-green" style="width:${val.bullPct}%">${val.bullPct}%</div></div></div>`;
     }
     if (val == null) return '<div class="col-cell" style="color:var(--muted)">--</div>';
@@ -1060,32 +1089,30 @@ function clearColFilter() {
 function render() {
     if (!document.body.classList.contains('desktop-mode') && document.getElementById('chartOverlay').style.display === 'flex') return;
 
-    const currentPairs = filteredPairs.length ? filteredPairs : PAIRS;
-    let filtered;
+    const allSymbols = filteredSymbols.length ? filteredSymbols : Object.keys(MARKET_DATA).sort();
+    let filtered = allSymbols;
     const validTargets = new Set(getUniqueAutoSetups().keys());
-    if (curF === 'all') filtered = currentPairs;
-    else if (curF === 'bull' || curF === 'bear')
-        filtered = currentPairs.filter(p => {
-            const d = MARKET_DATA[p.n] || {};
-            return ['4h','1day','1week'].every(tf => d[tf] === curF);
-        });
-    else if (curF === 'target') filtered = currentPairs.filter(p => validTargets.has(p.n));
-    else filtered = currentPairs;
+
+    if (curF === 'bull' || curF === 'bear') {
+        filtered = allSymbols.filter(sym => isStrongTrend(sym, MARKET_DATA[sym], curF));
+    } else if (curF === 'target') {
+        filtered = allSymbols.filter(sym => validTargets.has(sym));
+    }
 
     filtered = applyColumnSortAndFilter(filtered);
-    currentDisplayPairs = filtered.map(p => p.n);
-    if (window.activeChartSource !== 'watchlist') { chartPairs = filtered.map(p => p.n); }
+    currentDisplayPairs = filtered.slice();
+    chartPairs = filtered.slice();
 
     renderHeader();
 
-    document.getElementById('pairsContainer').innerHTML = filtered.map(p => {
-        let cells = `<div class="col-pair-fixed"><span style="font-weight:700;font-size:14px;">${p.n}</span></div>`;
-        cells += columnDefs.map(col => renderColumnCell(p.n, col)).join('');
+    document.getElementById('pairsContainer').innerHTML = filtered.map(sym => {
+        let cells = `<div class="col-pair-fixed"><span style="font-weight:700;font-size:14px;">${sym}</span></div>`;
+        cells += columnDefs.map(col => renderColumnCell(sym, col)).join('');
         cells += '<div class="col-add-btn" style="visibility:hidden;"></div>';
 
-        let row = `<div class="item-row ${p.n === activeChartPair ? 'highlighted-row' : ''}"><div class="item-main" onclick="openChartForPair('${p.n}')">${cells}</div>`;
+        let row = `<div class="item-row ${sym === activeChartPair ? 'highlighted-row' : ''}"><div class="item-main" onclick="openChartForPair('${sym}')">${cells}</div>`;
         if (curF === 'target') {
-            const info = getUniqueAutoSetups().get(p.n);
+            const info = getUniqueAutoSetups().get(sym);
             if (info) {
                 const badgeBg = info.dir === 'bull' ? '#22c55e' : '#ef4444';
                 row += `<div class="phase-row"><span style="color:var(--muted);">Phase:</span><span style="background:${badgeBg};color:#fff;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:700;">${info.dir.toUpperCase()} ${info.phase}</span></div>`;
@@ -1097,7 +1124,61 @@ function render() {
     updateCounts();
 }
 
-// ── Chart functions (with highlight and star button update) ──
+function setFilter(f) { curF = f; render(); }
+function filterPairs(txt) {
+    filteredSymbols = txt ? Object.keys(MARKET_DATA).filter(s => s.toLowerCase().includes(txt.toLowerCase())).sort() : [];
+    render();
+}
+
+// ── Type-anywhere-to-search (no visible search bar) ──
+let typeSearchBuffer = '';
+function updateTypeSearchIndicator() {
+    let el = document.getElementById('typeSearchIndicator');
+    const wrap = document.querySelector('.screener-wrap');
+    if (!typeSearchBuffer) { if (el) el.remove(); return; }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'typeSearchIndicator';
+        el.className = 'type-search-indicator';
+        wrap.prepend(el);
+    }
+    el.textContent = '🔍 ' + typeSearchBuffer + ' (Esc to clear)';
+}
+document.addEventListener('keydown', function(e) {
+    const active = document.activeElement;
+    const tag = active ? active.tagName : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === ' ' || e.code === 'Space') {
+        const overlay = document.getElementById('chartOverlay');
+        if (overlay && overlay.style.display === 'flex' && typeof movePair === 'function') {
+            e.preventDefault();
+            movePair(1);
+        }
+        return;
+    }
+    if (e.key === 'Escape') {
+        typeSearchBuffer = '';
+        filterPairs('');
+        updateTypeSearchIndicator();
+        return;
+    }
+    if (e.key === 'Backspace') {
+        typeSearchBuffer = typeSearchBuffer.slice(0, -1);
+        filterPairs(typeSearchBuffer);
+        updateTypeSearchIndicator();
+        e.preventDefault();
+        return;
+    }
+    if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
+        typeSearchBuffer += e.key;
+        filterPairs(typeSearchBuffer);
+        updateTypeSearchIndicator();
+    }
+});
+
+
+// ── Chart functions ──
 function activateChartSlot(s) {
     s = parseInt(s);
     activeChartSlot = s;
@@ -1107,14 +1188,13 @@ function activateChartSlot(s) {
     startCountdownTimer();
 }
 function updateChartPairName() {
-    document.getElementById('chartPairName').textContent = (currentChartLayout>1?`[Slot ${activeChartSlot}] `:'') + (chartPairs[chartIndices[activeChartSlot-1]]||'Select a pair');
+    document.getElementById('chartPairName').textContent = (currentChartLayout>1?`[Slot ${activeChartSlot}] `:'') + (chartPairs[chartIndices[activeChartSlot-1]]||'Select a stock');
 }
 function highlightIntervalButton(interval) {
     document.querySelectorAll('.chart-interval-btn').forEach(b => b.classList.toggle('active', b.dataset.interval===interval));
 }
 function openChartForPair(pairName) {
-    window.activeChartSource = 'screener';
-    chartPairs = currentDisplayPairs.length ? currentDisplayPairs : PAIRS.map(p=>p.n);
+    chartPairs = currentDisplayPairs.length ? currentDisplayPairs : Object.keys(MARKET_DATA).sort();
     let idx = chartPairs.indexOf(pairName);
     if (idx===-1) idx = 0;
     chartIndices[activeChartSlot-1] = idx;
@@ -1164,10 +1244,11 @@ function drawChart(slot) {
     container.innerHTML = '';
     const idx = chartIndices[slot-1];
     if (!chartPairs[idx]) return;
-    const symbol = chartPairs[idx];
+    const sym = chartPairs[idx];
+    const isPSX = currentMarket === 'psx';
     new TradingView.widget({
         autosize:true,
-        symbol: (typeof psxStockList!=='undefined' && psxStockList.includes(symbol)) ? 'KSE:'+symbol : symbol,
+        symbol: isPSX ? 'PSX:'+sym : sym,
         interval: chartIntervals[slot-1],
         theme: document.documentElement.getAttribute('data-theme')==='dark'?'dark':'light',
         container_id: 'tv_chart_'+slot,
@@ -1190,31 +1271,29 @@ function closeChart() {
     }
     if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
 }
+
 function toggle4H() {
     show4H = !show4H;
-    localStorage.setItem('show4H', show4H);
+    localStorage.setItem('stocks_show4H', show4H);
     document.getElementById('toggle4hBtn').textContent = show4H ? '4H ON' : '4H OFF';
     document.getElementById('toggle4hBtn').classList.toggle('active', show4H);
     render();
 }
 (function(){
-    show4H = localStorage.getItem('show4H') !== 'false';
+    show4H = localStorage.getItem('stocks_show4H') !== 'false';
     document.getElementById('toggle4hBtn').textContent = show4H ? '4H ON' : '4H OFF';
     document.getElementById('toggle4hBtn').classList.toggle('active', show4H);
 })();
 
-db.ref('technicalMetrics').on('value', snap => { techMetrics = snap.val()||{}; renderDebounced(); });
-db.ref('sentiment').on('value', snap => { sentimentData = snap.val()||{}; renderDebounced(); });
-db.ref('pb_state').on('value', snap => { PB_STATE = snap.val()||{}; updateCounts(); renderDebounced(); });
-db.ref('marketData').on('value', snap => {
-    MARKET_DATA = snap.val()||{};
-    if (typeof checkAllAlerts === 'function') {
-        checkAllAlerts(Object.entries(MARKET_DATA).map(([n,d])=>({name:n,currentPrice:d.currentPrice,ema20:d.ema20,sentiment:d.sentiment,sma20:d.sma20,sma50:d.sma50})));
-    }
-    renderDebounced();
-});
+function toggleTheme() {
+    const h = document.documentElement, isDark = h.getAttribute('data-theme') === 'dark';
+    h.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.querySelector('#themeBtn i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    localStorage.setItem('ici-stocks-theme', h.getAttribute('data-theme'));
+}
 
-// ✅ Safety – ensure all modals & chart are hidden on page load
+
+// Safety
 (function(){
     document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
     if (!document.body.classList.contains('desktop-mode')) {
@@ -1223,18 +1302,20 @@ db.ref('marketData').on('value', snap => {
 })();
 
 (function(){
-    const savedTheme = localStorage.getItem('ici-theme');
+    const savedTheme = localStorage.getItem('ici-stocks-theme');
     if (savedTheme) {
         document.documentElement.setAttribute('data-theme', savedTheme);
         document.querySelector('#themeBtn i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     }
+    const urlParams = new URLSearchParams(window.location.search);
+    setMarket(urlParams.get('market') === 'psx' ? 'psx' : 'exness');
+    updateToggleButtons();
     setTimeout(() => render(), 200);
 })();
-updateToggleButtons();
 </script>
 <script>
 (function(){
-    var WL_KEY = 'ici_wl_tabs';
+    var WL_KEY = 'ici_stocks_wl_tabs';
     var wlData = null;
     var suppressNextClick = false;
 
@@ -1283,7 +1364,6 @@ updateToggleButtons();
         wlSave(); wlRenderTabs(); wlRenderRows();
     };
     window.openChartFromWatchlist = function(sym) {
-        window.activeChartSource = 'watchlist';
         var tab = wlGetActiveTab();
         var list = (tab && tab.symbols && tab.symbols.length) ? tab.symbols.slice() : [sym];
         chartPairs = list;

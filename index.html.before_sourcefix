@@ -1074,7 +1074,7 @@ function render() {
 
     filtered = applyColumnSortAndFilter(filtered);
     currentDisplayPairs = filtered.map(p => p.n);
-    if (window.activeChartSource !== 'watchlist') { chartPairs = filtered.map(p => p.n); }
+    chartPairs = filtered.map(p => p.n);
 
     renderHeader();
 
@@ -1113,7 +1113,6 @@ function highlightIntervalButton(interval) {
     document.querySelectorAll('.chart-interval-btn').forEach(b => b.classList.toggle('active', b.dataset.interval===interval));
 }
 function openChartForPair(pairName) {
-    window.activeChartSource = 'screener';
     chartPairs = currentDisplayPairs.length ? currentDisplayPairs : PAIRS.map(p=>p.n);
     let idx = chartPairs.indexOf(pairName);
     if (idx===-1) idx = 0;
@@ -1283,7 +1282,6 @@ updateToggleButtons();
         wlSave(); wlRenderTabs(); wlRenderRows();
     };
     window.openChartFromWatchlist = function(sym) {
-        window.activeChartSource = 'watchlist';
         var tab = wlGetActiveTab();
         var list = (tab && tab.symbols && tab.symbols.length) ? tab.symbols.slice() : [sym];
         chartPairs = list;

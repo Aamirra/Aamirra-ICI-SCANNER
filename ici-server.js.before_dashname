@@ -532,18 +532,17 @@ Always put the action block FIRST, then your reply.`;
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', async () => {
             try {
-                const { text, senderName } = JSON.parse(body);
+                const { text } = JSON.parse(body);
                 if (!text) { res.writeHead(400, {'Content-Type':'application/json'}); res.end(JSON.stringify({error:'text required'})); return; }
                 const token = process.env.BOT_TOKEN;
                 const chatId = process.env.CHAT_ID;
                 let tgOk = false;
                 if (token && chatId) {
                     try {
-                        const tgText = senderName ? (senderName + ': ' + text) : text;
                         const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ chat_id: chatId, text: tgText })
+                            body: JSON.stringify({ chat_id: chatId, text })
                         });
                         const tgData = await tgRes.json();
                         tgOk = !!tgData.ok;
@@ -551,7 +550,7 @@ Always put the action block FIRST, then your reply.`;
                 }
                 const ref = admin.database().ref('chatMessages').push();
                 const timestamp = Date.now();
-                await ref.set({ text, from: 'dashboard', senderName: senderName || 'You', timestamp });
+                await ref.set({ text, from: 'dashboard', timestamp });
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true, telegramSent: tgOk, id: ref.key, timestamp }));
             } catch (error) {

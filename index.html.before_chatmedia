@@ -136,7 +136,7 @@
         .chat-messages { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; scrollbar-width:none; -ms-overflow-style:none; }
         .chat-messages::-webkit-scrollbar { display:none; width:0; height:0; }
         .chat-msg { max-width:85%; padding:8px 10px; border-radius:10px; font-size:12px; line-height:1.4; word-wrap:break-word; position:relative; }
-        .chat-msg.from-dashboard { align-self:flex-end; background:var(--pill-bg); color:var(--txt); border-bottom-right-radius:2px; }
+        .chat-msg.from-dashboard { align-self:flex-end; background:var(--acc); color:#fff; border-bottom-right-radius:2px; }
         .chat-msg.from-telegram { align-self:flex-start; background:var(--pill-bg); color:var(--txt); border-bottom-left-radius:2px; }
         .chat-msg-time { font-size:9px; opacity:0.65; margin-top:3px; display:block; }
         .chat-msg-sender { font-size:9px; font-weight:700; opacity:0.75; margin-bottom:3px; display:block; }
@@ -147,19 +147,7 @@
         .chat-avatar-fallback { width:24px; height:24px; border-radius:50%; flex-shrink:0; background:var(--acc); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
         .chat-input-row { display:flex; gap:6px; padding:8px; border-top:1px solid var(--border); }
         .chat-input { flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); font-size:12px; outline:none; }
-        .chat-send-btn { width:34px; height:34px; flex-shrink:0; border-radius:50%; background:var(--acc); color:#fff; border:none; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; padding:0; }
-        .chat-panel { min-width:0; box-sizing:border-box; }
-        .chat-messages { min-width:0; overflow-x:hidden; box-sizing:border-box; }
-        .chat-msg-row { box-sizing:border-box; min-width:0; }
-        .chat-msg { min-width:0; box-sizing:border-box; overflow-wrap:break-word; word-break:break-word; }
-        .chat-input-row { flex-wrap:nowrap; box-sizing:border-box; min-width:0; }
-        .chat-input { min-width:0; flex:1 1 auto; box-sizing:border-box; }
-        .chat-media-btn { flex-shrink:0; }
-        .chat-media-btn { padding:8px 10px; border-radius:8px; background:var(--pill-bg); color:var(--txt); border:1px solid var(--border); cursor:pointer; font-size:13px; }
-        .chat-media-btn.recording { background:var(--red); color:#fff; border-color:var(--red); }
-        .chat-img-bubble { max-width:180px; border-radius:8px; display:block; cursor:pointer; }
-        .chat-voice-bubble { display:flex; align-items:center; gap:6px; }
-        .chat-voice-bubble audio { max-width:180px; height:32px; }
+        .chat-send-btn { padding:8px 12px; border-radius:8px; background:var(--acc); color:#fff; border:none; cursor:pointer; font-size:13px; }
         .chat-toggle-btn { display:none; }
         body.desktop-mode .chat-toggle-btn { display:flex; position:fixed; top:50%; right:300px; transform:translateY(-50%); z-index:1001; width:20px; height:50px; border-radius:8px 0 0 8px; background:var(--surface); border:1px solid var(--border); border-right:none; color:var(--txt); align-items:center; justify-content:center; cursor:pointer; font-size:12px; box-shadow:-2px 0 6px rgba(0,0,0,0.1); }
         body.desktop-mode.chat-hidden .chat-toggle-btn { right:0; border-radius:8px 0 0 8px; }
@@ -404,17 +392,11 @@
 
 <button class="chat-toggle-btn" id="chatToggleBtn"><i class="fas fa-chevron-right"></i></button>
 <div class="chat-panel" id="chatPanel">
-    <div class="chat-header" style="display:flex;align-items:center;justify-content:space-between;">
-        <span><i class="fas fa-comments" style="margin-right:6px;color:var(--acc);"></i>Trade Talk</span>
-        <i class="fas fa-trash-alt" style="cursor:pointer;color:var(--muted);font-size:12px;" onclick="clearChat()" title="Clear chat"></i>
-    </div>
+    <div class="chat-header"><i class="fas fa-paper-plane" style="margin-right:6px;color:var(--acc);"></i>Telegram Chat</div>
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-input-row">
-        <input type="file" id="chatImageInput" accept="image/*" style="display:none;">
-        <button class="chat-media-btn" onclick="document.getElementById('chatImageInput').click()"><i class="fas fa-image"></i></button>
-        <button class="chat-media-btn" id="chatVoiceBtn"><i class="fas fa-microphone"></i></button>
         <input type="text" class="chat-input" id="chatInput" placeholder="Type a message...">
-        <button class="chat-send-btn" onclick="sendChatMessage()"><i class="fas fa-arrow-up"></i></button>
+        <button class="chat-send-btn" onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
     </div>
 </div>
 <div class="modal" id="targetModal" onclick="this.classList.remove('open')">
@@ -724,14 +706,6 @@ document.addEventListener('keydown', function(e) {
     const tag = active ? active.tagName : '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable)) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === ' ' || e.code === 'Space') {
-        const overlay = document.getElementById('chartOverlay');
-        if (overlay && overlay.style.display === 'flex' && typeof movePair === 'function') {
-            e.preventDefault();
-            movePair(1);
-        }
-        return;
-    }
     if (e.key === 'Escape') {
         typeSearchBuffer = '';
         filterPairs('');
@@ -1074,7 +1048,7 @@ function render() {
 
     filtered = applyColumnSortAndFilter(filtered);
     currentDisplayPairs = filtered.map(p => p.n);
-    if (window.activeChartSource !== 'watchlist') { chartPairs = filtered.map(p => p.n); }
+    chartPairs = filtered.map(p => p.n);
 
     renderHeader();
 
@@ -1113,7 +1087,6 @@ function highlightIntervalButton(interval) {
     document.querySelectorAll('.chart-interval-btn').forEach(b => b.classList.toggle('active', b.dataset.interval===interval));
 }
 function openChartForPair(pairName) {
-    window.activeChartSource = 'screener';
     chartPairs = currentDisplayPairs.length ? currentDisplayPairs : PAIRS.map(p=>p.n);
     let idx = chartPairs.indexOf(pairName);
     if (idx===-1) idx = 0;
@@ -1282,21 +1255,6 @@ updateToggleButtons();
         wlData.active = newTab.id;
         wlSave(); wlRenderTabs(); wlRenderRows();
     };
-    window.openChartFromWatchlist = function(sym) {
-        window.activeChartSource = 'watchlist';
-        var tab = wlGetActiveTab();
-        var list = (tab && tab.symbols && tab.symbols.length) ? tab.symbols.slice() : [sym];
-        chartPairs = list;
-        var idx = chartPairs.indexOf(sym);
-        if (idx === -1) idx = 0;
-        chartIndices[activeChartSlot-1] = idx;
-        updateChartPairName();
-        drawChart(activeChartSlot);
-        document.getElementById('chartOverlay').style.display = 'flex';
-        activeChartPair = sym;
-        if (typeof render === 'function') render();
-        if (typeof startCountdownTimer === 'function') startCountdownTimer();
-    };
     window.wlRemoveSymbol = function(sym) {
         var tab = wlGetActiveTab();
         var idx = tab.symbols.indexOf(sym);
@@ -1331,7 +1289,7 @@ updateToggleButtons();
             var priceStr = pc.price != null ? Number(pc.price).toFixed(2) : '--';
             var chgStr = pc.chg != null ? (pc.chg > 0 ? '+' : '') + Number(pc.chg).toFixed(2) + '%' : '--';
             var chgCls = pc.chg != null ? (pc.chg >= 0 ? 'up' : 'down') : '';
-            html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
+            html += '<div class="wl-row" data-sym="' + sym + '"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
         });
         rowsEl.innerHTML = html;
     }
@@ -1558,8 +1516,7 @@ updateToggleButtons();
         var html = '';
         list.forEach(function(m) {
             var cls = m.from === 'dashboard' ? 'from-dashboard' : 'from-telegram';
-            var myName = localStorage.getItem(DASH_NAME_KEY);
-            var senderName = m.from === 'dashboard' ? (m.senderName && m.senderName !== myName ? m.senderName : 'You') : (m.senderName || 'Telegram');
+            var senderName = m.from === 'dashboard' ? 'You' : (m.senderName || 'Telegram');
             var avatarHtml;
             if (m.from === 'telegram' && m.senderId) {
                 avatarHtml = '<img class="chat-avatar" src="/api/chat-msg/avatar/' + m.senderId + '" onerror="this.outerHTML=\'<div class=&quot;chat-avatar-fallback&quot;>' + escapeHtml(senderName.charAt(0).toUpperCase()) + '</div>\'">';
@@ -1568,32 +1525,13 @@ updateToggleButtons();
             } else {
                 avatarHtml = '<div class="chat-avatar-fallback"><i class="fas fa-user"></i></div>';
             }
-            var bodyHtml;
-            if (m.type === 'image' && m.mediaUrl) {
-                bodyHtml = '<img class="chat-img-bubble" src="' + m.mediaUrl + '" onclick="window.open(this.src,\'_blank\')">' + (m.text ? '<div style="margin-top:4px;">' + escapeHtml(m.text) + '</div>' : '');
-            } else if (m.type === 'voice' && m.mediaUrl) {
-                bodyHtml = '<div class="chat-voice-bubble"><audio controls src="' + m.mediaUrl + '"></audio></div>';
-            } else {
-                bodyHtml = escapeHtml(m.text || '');
-            }
-            html += '<div class="chat-msg-row ' + cls + '">' + avatarHtml + '<div class="chat-msg ' + cls + '"><span class="chat-msg-sender">' + senderName + '</span>' + bodyHtml + '<span class="chat-msg-time">' + fmtTime(m.timestamp) + '</span></div></div>';
+            html += '<div class="chat-msg-row ' + cls + '">' + avatarHtml + '<div class="chat-msg ' + cls + '"><span class="chat-msg-sender">' + senderName + '</span>' + escapeHtml(m.text) + '<span class="chat-msg-time">' + fmtTime(m.timestamp) + '</span></div></div>';
         });
         wrap.innerHTML = html;
         wrap.scrollTop = wrap.scrollHeight;
     }
     function fetchMessages() {
         fetch(CHAT_LIST_URL).then(function(r){ return r.json(); }).then(renderMessages).catch(function(e){ console.error('chat fetch error', e); });
-    }
-    var DASH_NAME_KEY = 'ici_dash_username';
-    function getDashUserName() {
-        var name = localStorage.getItem(DASH_NAME_KEY);
-        if (!name) {
-            name = prompt('Enter your name for chat:');
-            if (!name || !name.trim()) name = 'Guest';
-            name = name.trim();
-            localStorage.setItem(DASH_NAME_KEY, name);
-        }
-        return name;
     }
     window.sendChatMessage = function() {
         var input = document.getElementById('chatInput');
@@ -1605,7 +1543,7 @@ updateToggleButtons();
         fetch(CHAT_SEND_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text, senderName: getDashUserName() })
+            body: JSON.stringify({ text: text })
         }).then(function(r){ return r.json(); }).then(function(){
             input.disabled = false;
             input.focus();
@@ -1614,74 +1552,6 @@ updateToggleButtons();
             console.error('chat send error', e);
             input.disabled = false;
         });
-    };
-    var chatImageInput = null;
-    function initChatMedia() {
-        chatImageInput = document.getElementById('chatImageInput');
-        if (chatImageInput) {
-            chatImageInput.addEventListener('change', function(e) {
-                var file = e.target.files[0];
-                if (!file) return;
-                var reader = new FileReader();
-                reader.onload = function() {
-                    var base64 = reader.result.split(',')[1];
-                    fetch('/api/chat-msg/send-image', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ imageBase64: base64, mimeType: file.type })
-                    }).then(function(r){ return r.json(); }).then(function(){ fetchMessages(); }).catch(function(e){ console.error('image send error', e); });
-                };
-                reader.readAsDataURL(file);
-                chatImageInput.value = '';
-            });
-        }
-        var voiceBtn = document.getElementById('chatVoiceBtn');
-        if (!voiceBtn) return;
-        var mediaRecorder = null, audioChunks = [], recording = false;
-        voiceBtn.addEventListener('click', function() {
-            if (!recording) {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    alert('Voice recording needs a secure (HTTPS) connection. Not available on plain HTTP.');
-                    return;
-                }
-                navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
-                    audioChunks = [];
-                    mediaRecorder = new MediaRecorder(stream);
-                    mediaRecorder.ondataavailable = function(e) { audioChunks.push(e.data); };
-                    mediaRecorder.onstop = function() {
-                        stream.getTracks().forEach(function(t){ t.stop(); });
-                        var blob = new Blob(audioChunks, { type: 'audio/webm' });
-                        var reader = new FileReader();
-                        reader.onload = function() {
-                            var base64 = reader.result.split(',')[1];
-                            fetch('/api/chat-msg/send-voice', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ audioBase64: base64, mimeType: 'audio/webm' })
-                            }).then(function(r){ return r.json(); }).then(function(){ fetchMessages(); }).catch(function(e){ console.error('voice send error', e); });
-                        };
-                        reader.readAsDataURL(blob);
-                    };
-                    mediaRecorder.start();
-                    recording = true;
-                    voiceBtn.classList.add('recording');
-                }).catch(function(e) {
-                    alert('Microphone access denied or unavailable: ' + e.message);
-                });
-            } else {
-                if (mediaRecorder) mediaRecorder.stop();
-                recording = false;
-                voiceBtn.classList.remove('recording');
-            }
-        });
-    }
-    window.clearChat = function() {
-        if (!confirm('Clear all chat messages? This cannot be undone.')) return;
-        fetch('/api/chat-msg/clear', { method: 'POST' }).then(function(r){ return r.json(); }).then(function(){
-            renderedIds = {};
-            var wrap = document.getElementById('chatMessages');
-            if (wrap) wrap.innerHTML = '';
-        }).catch(function(e){ console.error('clear chat error', e); });
     };
     window.toggleChatPanel = function() {
         document.body.classList.toggle('chat-hidden');
@@ -1752,7 +1622,6 @@ updateToggleButtons();
         fetchMessages();
         setInterval(fetchMessages, 3000);
         initChatResize();
-        initChatMedia();
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initChat);
     else initChat();

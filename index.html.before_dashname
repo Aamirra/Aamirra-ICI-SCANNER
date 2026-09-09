@@ -724,14 +724,6 @@ document.addEventListener('keydown', function(e) {
     const tag = active ? active.tagName : '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable)) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === ' ' || e.code === 'Space') {
-        const overlay = document.getElementById('chartOverlay');
-        if (overlay && overlay.style.display === 'flex' && typeof movePair === 'function') {
-            e.preventDefault();
-            movePair(1);
-        }
-        return;
-    }
     if (e.key === 'Escape') {
         typeSearchBuffer = '';
         filterPairs('');
@@ -1074,7 +1066,7 @@ function render() {
 
     filtered = applyColumnSortAndFilter(filtered);
     currentDisplayPairs = filtered.map(p => p.n);
-    if (window.activeChartSource !== 'watchlist') { chartPairs = filtered.map(p => p.n); }
+    chartPairs = filtered.map(p => p.n);
 
     renderHeader();
 
@@ -1113,7 +1105,6 @@ function highlightIntervalButton(interval) {
     document.querySelectorAll('.chart-interval-btn').forEach(b => b.classList.toggle('active', b.dataset.interval===interval));
 }
 function openChartForPair(pairName) {
-    window.activeChartSource = 'screener';
     chartPairs = currentDisplayPairs.length ? currentDisplayPairs : PAIRS.map(p=>p.n);
     let idx = chartPairs.indexOf(pairName);
     if (idx===-1) idx = 0;
@@ -1282,21 +1273,6 @@ updateToggleButtons();
         wlData.active = newTab.id;
         wlSave(); wlRenderTabs(); wlRenderRows();
     };
-    window.openChartFromWatchlist = function(sym) {
-        window.activeChartSource = 'watchlist';
-        var tab = wlGetActiveTab();
-        var list = (tab && tab.symbols && tab.symbols.length) ? tab.symbols.slice() : [sym];
-        chartPairs = list;
-        var idx = chartPairs.indexOf(sym);
-        if (idx === -1) idx = 0;
-        chartIndices[activeChartSlot-1] = idx;
-        updateChartPairName();
-        drawChart(activeChartSlot);
-        document.getElementById('chartOverlay').style.display = 'flex';
-        activeChartPair = sym;
-        if (typeof render === 'function') render();
-        if (typeof startCountdownTimer === 'function') startCountdownTimer();
-    };
     window.wlRemoveSymbol = function(sym) {
         var tab = wlGetActiveTab();
         var idx = tab.symbols.indexOf(sym);
@@ -1331,7 +1307,7 @@ updateToggleButtons();
             var priceStr = pc.price != null ? Number(pc.price).toFixed(2) : '--';
             var chgStr = pc.chg != null ? (pc.chg > 0 ? '+' : '') + Number(pc.chg).toFixed(2) + '%' : '--';
             var chgCls = pc.chg != null ? (pc.chg >= 0 ? 'up' : 'down') : '';
-            html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
+            html += '<div class="wl-row" data-sym="' + sym + '"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
         });
         rowsEl.innerHTML = html;
     }
@@ -1558,8 +1534,7 @@ updateToggleButtons();
         var html = '';
         list.forEach(function(m) {
             var cls = m.from === 'dashboard' ? 'from-dashboard' : 'from-telegram';
-            var myName = localStorage.getItem(DASH_NAME_KEY);
-            var senderName = m.from === 'dashboard' ? (m.senderName && m.senderName !== myName ? m.senderName : 'You') : (m.senderName || 'Telegram');
+            var senderName = m.from === 'dashboard' ? 'You' : (m.senderName || 'Telegram');
             var avatarHtml;
             if (m.from === 'telegram' && m.senderId) {
                 avatarHtml = '<img class="chat-avatar" src="/api/chat-msg/avatar/' + m.senderId + '" onerror="this.outerHTML=\'<div class=&quot;chat-avatar-fallback&quot;>' + escapeHtml(senderName.charAt(0).toUpperCase()) + '</div>\'">';
@@ -1584,17 +1559,6 @@ updateToggleButtons();
     function fetchMessages() {
         fetch(CHAT_LIST_URL).then(function(r){ return r.json(); }).then(renderMessages).catch(function(e){ console.error('chat fetch error', e); });
     }
-    var DASH_NAME_KEY = 'ici_dash_username';
-    function getDashUserName() {
-        var name = localStorage.getItem(DASH_NAME_KEY);
-        if (!name) {
-            name = prompt('Enter your name for chat:');
-            if (!name || !name.trim()) name = 'Guest';
-            name = name.trim();
-            localStorage.setItem(DASH_NAME_KEY, name);
-        }
-        return name;
-    }
     window.sendChatMessage = function() {
         var input = document.getElementById('chatInput');
         if (!input) return;
@@ -1605,7 +1569,7 @@ updateToggleButtons();
         fetch(CHAT_SEND_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: text, senderName: getDashUserName() })
+            body: JSON.stringify({ text: text })
         }).then(function(r){ return r.json(); }).then(function(){
             input.disabled = false;
             input.focus();
