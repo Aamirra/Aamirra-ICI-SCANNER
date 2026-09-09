@@ -527,15 +527,9 @@ async function pollTelegram() {
             if (!msg) continue;
             if (String(msg.chat.id) !== String(chatId)) continue;
             if (!msg.text) continue;
-            var senderName = 'Telegram';
-            if (msg.from) {
-                senderName = msg.from.first_name || msg.from.username || 'Telegram';
-                if (msg.from.last_name) senderName += ' ' + msg.from.last_name;
-            }
             await admin.database().ref('chatMessages').push({
                 text: msg.text,
                 from: 'telegram',
-                senderName: senderName,
                 timestamp: (msg.date || Math.floor(Date.now()/1000)) * 1000
             });
         }

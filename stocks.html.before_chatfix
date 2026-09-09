@@ -131,7 +131,6 @@
         body.desktop-mode.dash-hidden .phone-container { display:none !important; }
         body.desktop-mode.dash-hidden .dash-toggle-btn { left:0; border-radius:0 8px 8px 0; }
         .chat-panel { width:300px; flex:0 0 300px; height:100vh; background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column; }
-        .chat-toggle-btn { cursor:ew-resize; }
         body.chat-hidden .chat-panel { display:none; }
         .chat-header { padding:10px 12px; border-bottom:1px solid var(--border); font-weight:700; font-size:13px; color:var(--txt); }
         .chat-messages { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; scrollbar-width:none; -ms-overflow-style:none; }
@@ -140,7 +139,6 @@
         .chat-msg.from-dashboard { align-self:flex-end; background:var(--acc); color:#fff; border-bottom-right-radius:2px; }
         .chat-msg.from-telegram { align-self:flex-start; background:var(--pill-bg); color:var(--txt); border-bottom-left-radius:2px; }
         .chat-msg-time { font-size:9px; opacity:0.65; margin-top:3px; display:block; }
-        .chat-msg-sender { font-size:9px; font-weight:700; opacity:0.75; margin-bottom:3px; display:block; }
         .chat-input-row { display:flex; gap:6px; padding:8px; border-top:1px solid var(--border); }
         .chat-input { flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); font-size:12px; outline:none; }
         .chat-send-btn { padding:8px 12px; border-radius:8px; background:var(--acc); color:#fff; border:none; cursor:pointer; font-size:13px; }
@@ -360,7 +358,7 @@
     </div>
 </div>
 
-<button class="chat-toggle-btn" id="chatToggleBtn"><i class="fas fa-chevron-right"></i></button>
+<button class="chat-toggle-btn" id="chatToggleBtn" onclick="toggleChatPanel()"><i class="fas fa-chevron-right"></i></button>
 <div class="chat-panel" id="chatPanel">
     <div class="chat-header"><i class="fas fa-paper-plane" style="margin-right:6px;color:var(--acc);"></i>Telegram Chat</div>
     <div class="chat-messages" id="chatMessages"></div>
@@ -1593,8 +1591,7 @@ function toggleTheme() {
         var html = '';
         list.forEach(function(m) {
             var cls = m.from === 'dashboard' ? 'from-dashboard' : 'from-telegram';
-            var senderName = m.from === 'dashboard' ? 'You' : (m.senderName || 'Telegram');
-            html += '<div class="chat-msg ' + cls + '"><span class="chat-msg-sender">' + senderName + '</span>' + escapeHtml(m.text) + '<span class="chat-msg-time">' + fmtTime(m.timestamp) + '</span></div>';
+            html += '<div class="chat-msg ' + cls + '">' + escapeHtml(m.text) + '<span class="chat-msg-time">' + fmtTime(m.timestamp) + '</span></div>';
         });
         wrap.innerHTML = html;
         wrap.scrollTop = wrap.scrollHeight;
@@ -1627,60 +1624,6 @@ function toggleTheme() {
         var icon = document.querySelector('#chatToggleBtn i');
         if (icon) icon.className = document.body.classList.contains('chat-hidden') ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
     };
-    var CHAT_WIDTH_KEY = 'ici_chat_width';
-    function loadChatWidth() {
-        var panel = document.getElementById('chatPanel');
-        if (!panel) return;
-        var saved = localStorage.getItem(CHAT_WIDTH_KEY);
-        if (saved) { panel.style.width = saved + 'px'; panel.style.flexBasis = saved + 'px'; }
-    }
-    function saveChatWidth(px) { localStorage.setItem(CHAT_WIDTH_KEY, String(px)); }
-    function updateChatHandlePosition() {
-        var btn = document.getElementById('chatToggleBtn');
-        var panel = document.getElementById('chatPanel');
-        if (!btn || !panel) return;
-        if (document.body.classList.contains('chat-hidden')) { btn.style.right = '0px'; return; }
-        var r = panel.getBoundingClientRect();
-        btn.style.right = (window.innerWidth - r.left) + 'px';
-    }
-    function initChatResize() {
-        var btn = document.getElementById('chatToggleBtn');
-        var panel = document.getElementById('chatPanel');
-        if (!btn || !panel) return;
-        loadChatWidth();
-        updateChatHandlePosition();
-        window.addEventListener('resize', updateChatHandlePosition);
-        var dragging = false, moved = false, startX = 0, startWidth = 0;
-        btn.addEventListener('pointerdown', function(e) {
-            dragging = true; moved = false;
-            startX = e.clientX;
-            startWidth = panel.getBoundingClientRect().width;
-            e.preventDefault();
-        });
-        document.addEventListener('pointermove', function(e) {
-            if (!dragging) return;
-            var dx = startX - e.clientX;
-            if (Math.abs(dx) > 6) moved = true;
-            if (moved) {
-                var newWidth = startWidth + dx;
-                var minW = 220, maxW = Math.round(window.innerWidth * 0.6);
-                newWidth = Math.max(minW, Math.min(maxW, newWidth));
-                panel.style.width = newWidth + 'px';
-                panel.style.flexBasis = newWidth + 'px';
-                updateChatHandlePosition();
-            }
-        });
-        document.addEventListener('pointerup', function() {
-            if (!dragging) return;
-            dragging = false;
-            if (moved) {
-                saveChatWidth(Math.round(panel.getBoundingClientRect().width));
-            } else if (typeof toggleChatPanel === 'function') {
-                toggleChatPanel();
-                setTimeout(updateChatHandlePosition, 0);
-            }
-        });
-    }
     function initChat() {
         var input = document.getElementById('chatInput');
         if (input) {
@@ -1690,7 +1633,6 @@ function toggleTheme() {
         }
         fetchMessages();
         setInterval(fetchMessages, 3000);
-        initChatResize();
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initChat);
     else initChat();
