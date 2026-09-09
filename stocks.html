@@ -141,6 +141,11 @@
         .chat-msg.from-telegram { align-self:flex-start; background:var(--pill-bg); color:var(--txt); border-bottom-left-radius:2px; }
         .chat-msg-time { font-size:9px; opacity:0.65; margin-top:3px; display:block; }
         .chat-msg-sender { font-size:9px; font-weight:700; opacity:0.75; margin-bottom:3px; display:block; }
+        .chat-msg-row { display:flex; gap:6px; align-items:flex-end; max-width:90%; }
+        .chat-msg-row.from-dashboard { align-self:flex-end; flex-direction:row-reverse; }
+        .chat-msg-row.from-telegram { align-self:flex-start; }
+        .chat-avatar { width:24px; height:24px; border-radius:50%; flex-shrink:0; object-fit:cover; background:var(--pill-bg); }
+        .chat-avatar-fallback { width:24px; height:24px; border-radius:50%; flex-shrink:0; background:var(--acc); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
         .chat-input-row { display:flex; gap:6px; padding:8px; border-top:1px solid var(--border); }
         .chat-input { flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); font-size:12px; outline:none; }
         .chat-send-btn { padding:8px 12px; border-radius:8px; background:var(--acc); color:#fff; border:none; cursor:pointer; font-size:13px; }
@@ -1594,7 +1599,15 @@ function toggleTheme() {
         list.forEach(function(m) {
             var cls = m.from === 'dashboard' ? 'from-dashboard' : 'from-telegram';
             var senderName = m.from === 'dashboard' ? 'You' : (m.senderName || 'Telegram');
-            html += '<div class="chat-msg ' + cls + '"><span class="chat-msg-sender">' + senderName + '</span>' + escapeHtml(m.text) + '<span class="chat-msg-time">' + fmtTime(m.timestamp) + '</span></div>';
+            var avatarHtml;
+            if (m.from === 'telegram' && m.senderId) {
+                avatarHtml = '<img class="chat-avatar" src="/api/chat-msg/avatar/' + m.senderId + '" onerror="this.outerHTML=\'<div class=&quot;chat-avatar-fallback&quot;>' + escapeHtml(senderName.charAt(0).toUpperCase()) + '</div>\'">';
+            } else if (m.from === 'telegram') {
+                avatarHtml = '<div class="chat-avatar-fallback">' + escapeHtml(senderName.charAt(0).toUpperCase()) + '</div>';
+            } else {
+                avatarHtml = '<div class="chat-avatar-fallback"><i class="fas fa-user"></i></div>';
+            }
+            html += '<div class="chat-msg-row ' + cls + '">' + avatarHtml + '<div class="chat-msg ' + cls + '"><span class="chat-msg-sender">' + senderName + '</span>' + escapeHtml(m.text) + '<span class="chat-msg-time">' + fmtTime(m.timestamp) + '</span></div></div>';
         });
         wrap.innerHTML = html;
         wrap.scrollTop = wrap.scrollHeight;
