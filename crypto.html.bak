@@ -14,21 +14,23 @@
         [data-theme="light"] { --bg:#f8fafc; --surface:#fff; --border:#e2e8f0; --txt:#0f172a; --acc:#0062ff; --green:#22c55e; --red:#ef4444; --gold:#f59e0b; --muted:#64748b; --pill-bg:#f1f5f9; }
         [data-theme="dark"] { --bg:#0f172a; --surface:#1e293b; --border:#334155; --txt:#f8fafc; --acc:#3b82f6; --green:#22c55e; --red:#ef4444; --gold:#f59e0b; --muted:#94a3b8; --pill-bg:#1e293b; }
         .phone-container { width:100%; max-width:450px; background:var(--surface); border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,0.05); padding:16px; border:1px solid var(--border); }
-        .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+        .phone-container { scrollbar-width:none; -ms-overflow-style:none; }
+        .phone-container::-webkit-scrollbar { display:none; width:0; height:0; }
+        .header-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
         .brand { display:flex; align-items:center; gap:10px; }
         .brand-icon { width:36px; height:36px; background:var(--acc); border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:bold; }
         .brand-text h1 { font-size:16px; font-weight:700; line-height:1.2; }
         .brand-text span { font-size:12px; color:var(--muted); }
         .header-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-        .icon-btn { width:32px; height:32px; border-radius:50%; border:1px solid var(--border); background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--txt); }
+        .icon-btn { width:27px; height:27px; border-radius:50%; border:1px solid var(--border); background:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--txt); }
         .alert-toggle { padding:4px 10px; border-radius:12px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); }
         .alert-toggle.active { background:var(--green); color:#fff; border-color:var(--green); }
         .alert-toggle.inactive { background:var(--red); color:#fff; border-color:var(--red); }
         .alert-dropdown-wrap { position:relative; }
-        .alert-dropdown-panel { display:none; position:absolute; top:36px; right:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:90px; }
+        .alert-dropdown-panel { display:none; position:absolute; top:36px; right:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:170px; }
         .alert-dropdown-panel.open { display:flex; }
         .market-dropdown-wrap { position:relative; }
-        .market-dropdown-panel { display:none; position:absolute; top:36px; left:0; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:150px; }
+        .market-dropdown-panel { display:none; position:absolute; top:36px; right:0; left:auto; flex-direction:column; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; z-index:50; box-shadow:0 4px 12px rgba(0,0,0,0.15); min-width:150px; white-space:nowrap; }
         .market-dropdown-panel.open { display:flex; }
         .market-option { padding:6px 10px; border-radius:8px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); text-decoration:none; text-align:left; cursor:pointer; }
         .market-option.active-market, .market-option.active-market-opt { background:var(--acc); color:#fff; border-color:var(--acc); }
@@ -36,16 +38,28 @@
         .pill { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); cursor:pointer; color:var(--txt); text-decoration:none; display:inline-block; }
         .pill.active-blue { background:var(--acc); color:#fff; border-color:var(--acc); }
         .pill.scan-btn { background:var(--acc); color:#fff; display:flex; align-items:center; gap:4px; }
+        .pill-mini { padding:4px 9px; border-radius:14px; font-size:10px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); cursor:pointer; color:var(--txt); text-decoration:none; display:inline-flex; align-items:center; gap:2px; white-space:nowrap; }
+        .pill-mini.active-blue { background:var(--acc); color:#fff; border-color:var(--acc); }
+        .pill-mini.scan-btn { background:var(--acc); color:#fff; }
         .cloud-status { background:var(--pill-bg); color:var(--green); font-size:12px; padding:6px 12px; border-radius:20px; margin-left:auto; font-weight:500; }
         .sync-info { font-size:12px; color:var(--green); display:flex; align-items:center; gap:4px; margin-bottom:16px; font-weight:500; cursor:pointer; }
-        .counters-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:4px; margin-bottom:16px; }
+        .counters-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-bottom:16px; }
         .count-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:8px 4px; text-align:center; cursor:pointer; }
         .count-card .num { font-size:18px; font-weight:700; margin-bottom:2px; color:var(--txt); }
         .count-card .label { font-size:10px; color:var(--muted); font-weight:500; }
         .search-container { margin-bottom:16px; }
         .search-bar { width:100%; padding:10px 14px; border:1px solid var(--border); border-radius:12px; font-size:14px; outline:none; background:var(--pill-bg); color:var(--txt); }
+        .tf-preset-btn { padding:2px 14px; border:1px solid var(--border); border-radius:8px; font-size:12px; font-weight:700; background:var(--pill-bg); color:var(--muted); cursor:pointer; }
+        .tf-preset-btn.active { background:var(--acc); color:#fff; border-color:var(--acc); }
+        .dir-toggle-btn { padding:3px 7px; border-radius:6px; font-size:9px; font-weight:700; cursor:pointer; color:#fff; white-space:nowrap; }
+        .dir-toggle-btn.long { background:var(--green); }
+        .dir-toggle-btn.short { background:var(--red); }
+        .dir-dot { width:11px; height:11px; border-radius:50%; background:var(--green); cursor:pointer; display:inline-block; flex-shrink:0; }
+        .slevel-btn { padding:3px 6px; border:1px solid var(--border); border-radius:6px; font-size:9px; font-weight:700; background:var(--pill-bg); color:var(--muted); cursor:pointer; white-space:nowrap; }
+        .slevel-btn.active { background:var(--gold); color:#000; border-color:var(--gold); }
 
         .screener-wrap { overflow-x:visible; }
+        .type-search-indicator { position:sticky; top:0; z-index:20; background:var(--acc); color:#fff; font-size:13px; font-weight:600; padding:8px 14px; border-radius:10px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
         .header-row-table { display:flex; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--border); width:100%; }
         .col-header-cell {
             flex: 1 1 0%;
@@ -71,10 +85,48 @@
         .phase-row { padding:4px 8px 8px 8px; display:flex; align-items:center; gap:6px; font-size:11px; }
 
         body.desktop-mode { padding:0; height:100vh; overflow:hidden; }
-        body.desktop-mode .phone-container { max-width:none; width:640px; height:100vh; overflow-y:auto; border-radius:0; box-shadow:none; margin:0; flex-shrink:0; border-right:1px solid var(--border); }
+        body.desktop-mode .phone-container { max-width:none; width:25%; height:100vh; overflow-y:auto; border-radius:0; box-shadow:none; margin:0; flex-shrink:0; border-right:1px solid var(--border); }
         body.desktop-mode #chartOverlay { position:relative !important; display:flex !important; flex:1; height:100vh; z-index:1 !important; background:var(--bg); }
         body.desktop-mode .chart-box { min-height:0; }
         body.desktop-mode #chartCloseBtn { display:none !important; }
+        .dash-toggle-btn { display:none; }
+        body.desktop-mode .dash-toggle-btn { display:flex; position:fixed; top:50%; left:25%; transform:translate(-50%,-50%); z-index:1001; width:20px; height:50px; border-radius:0 8px 8px 0; background:var(--surface); border:1px solid var(--border); border-left:none; color:var(--txt); align-items:center; justify-content:center; cursor:pointer; font-size:12px; box-shadow:2px 0 6px rgba(0,0,0,0.1); }
+        body.desktop-mode.dash-hidden .phone-container { display:none !important; }
+        body.desktop-mode.dash-hidden .dash-toggle-btn { left:0; border-radius:0 8px 8px 0; }
+        .chat-panel { width:300px; flex:0 0 300px; height:100vh; background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column; }
+        .chat-toggle-btn { cursor:ew-resize; }
+        body.chat-hidden .chat-panel { display:none; }
+        .chat-header { padding:10px 12px; border-bottom:1px solid var(--border); font-weight:700; font-size:13px; color:var(--txt); }
+        .chat-messages { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px; scrollbar-width:none; -ms-overflow-style:none; }
+        .chat-messages::-webkit-scrollbar { display:none; width:0; height:0; }
+        .chat-msg { max-width:85%; padding:8px 10px; border-radius:10px; font-size:12px; line-height:1.4; word-wrap:break-word; position:relative; }
+        .chat-msg.from-dashboard { align-self:flex-end; background:var(--pill-bg); color:var(--txt); border-bottom-right-radius:2px; }
+        .chat-msg.from-telegram { align-self:flex-start; background:var(--pill-bg); color:var(--txt); border-bottom-left-radius:2px; }
+        .chat-msg-time { font-size:9px; opacity:0.65; margin-top:3px; display:block; }
+        .chat-msg-sender { font-size:9px; font-weight:700; opacity:0.75; margin-bottom:3px; display:block; }
+        .chat-msg-row { display:flex; gap:6px; align-items:flex-end; max-width:90%; }
+        .chat-msg-row.from-dashboard { align-self:flex-end; flex-direction:row-reverse; }
+        .chat-msg-row.from-telegram { align-self:flex-start; }
+        .chat-avatar { width:24px; height:24px; border-radius:50%; flex-shrink:0; object-fit:cover; background:var(--pill-bg); }
+        .chat-avatar-fallback { width:24px; height:24px; border-radius:50%; flex-shrink:0; background:var(--acc); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+        .chat-input-row { display:flex; gap:6px; padding:8px; border-top:1px solid var(--border); }
+        .chat-input { flex:1; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); font-size:12px; outline:none; }
+        .chat-send-btn { width:34px; height:34px; flex-shrink:0; border-radius:50%; background:var(--acc); color:#fff; border:none; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; padding:0; }
+        .chat-panel { min-width:0; box-sizing:border-box; }
+        .chat-messages { min-width:0; overflow-x:hidden; box-sizing:border-box; }
+        .chat-msg-row { box-sizing:border-box; min-width:0; }
+        .chat-msg { min-width:0; box-sizing:border-box; overflow-wrap:break-word; word-break:break-word; }
+        .chat-input-row { flex-wrap:nowrap; box-sizing:border-box; min-width:0; }
+        .chat-input { min-width:0; flex:1 1 auto; box-sizing:border-box; }
+        .chat-media-btn { flex-shrink:0; }
+        .chat-media-btn { padding:8px 10px; border-radius:8px; background:var(--pill-bg); color:var(--txt); border:1px solid var(--border); cursor:pointer; font-size:13px; }
+        .chat-media-btn.recording { background:var(--red); color:#fff; border-color:var(--red); }
+        .chat-img-bubble { max-width:180px; border-radius:8px; display:block; cursor:pointer; }
+        .chat-voice-bubble { display:flex; align-items:center; gap:6px; }
+        .chat-voice-bubble audio { max-width:180px; height:32px; }
+        .chat-toggle-btn { display:none; }
+        body.desktop-mode .chat-toggle-btn { display:flex; position:fixed; top:50%; right:300px; transform:translateY(-50%); z-index:1001; width:20px; height:50px; border-radius:8px 0 0 8px; background:var(--surface); border:1px solid var(--border); border-right:none; color:var(--txt); align-items:center; justify-content:center; cursor:pointer; font-size:12px; box-shadow:-2px 0 6px rgba(0,0,0,0.1); }
+        body.desktop-mode.chat-hidden .chat-toggle-btn { right:0; border-radius:8px 0 0 8px; }
 
         .chart-grid { display:grid; gap:4px; width:100%; flex:1; min-height:0; background:var(--border); padding:4px; }
         .layout-1 { grid-template-columns:1fr; grid-template-rows:1fr; }
@@ -82,21 +134,21 @@
         .layout-3 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
         .layout-3 .chart-box:nth-child(3) { grid-column:span 2; }
         .layout-4 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
+        .chart-grid.layout-1 #tv_chart_2:empty, .chart-grid.layout-1 #tv_chart_3:empty, .chart-grid.layout-1 #tv_chart_4:empty { display:none !important; }
+        .chart-grid.layout-2 #tv_chart_3:empty, .chart-grid.layout-2 #tv_chart_4:empty { display:none !important; }
+        .chart-grid.layout-3 #tv_chart_4:empty { display:none !important; }
         .chart-box { min-height:0; min-width:0; display:none; background:var(--bg); }
         .chart-box.active { display:block; }
-        .layout-controls { display:flex; gap:6px; padding:6px 10px; align-items:center; justify-content:center; background:var(--surface); border-bottom:1px solid var(--border); }
-        .layout-btn { padding:4px 12px; font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); border-radius:6px; cursor:pointer; color:var(--txt); }
-        .layout-btn.active { background:var(--acc); color:#fff; border-color:var(--acc); }
-        .slot-selector { display:flex; gap:4px; align-items:center; margin:0 10px; }
-        .slot-btn { padding:4px 8px; font-size:11px; font-weight:600; border:2px solid transparent; border-radius:4px; background:var(--pill-bg); cursor:pointer; color:var(--txt); }
-        .slot-btn.active-slot { border-color:var(--green); color:var(--green); }
+        .layout-controls { display:flex; gap:6px; padding:6px 16px 6px 10px; align-items:center; justify-content:flex-end; background:var(--surface); border-bottom:1px solid var(--border); }
+        .layout-select { padding:2px 8px; font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); border-radius:6px; cursor:pointer; color:var(--txt); }
+        .layout-select:focus { outline:none; border-color:var(--acc); }
         body.desktop-mode .chart-box:empty { display:flex !important; align-items:center; justify-content:center; gap:12px; }
         body.desktop-mode .chart-box:empty::before { content:'\f080'; font-size:44px; opacity:0.2; font-family:"Font Awesome 6 Free"; font-weight:900; }
         body.desktop-mode .chart-box:empty::after { content:'Select a pair to view chart'; font-family:'Inter',sans-serif; font-size:12px; color:var(--muted); opacity:0.5; }
         .toggle-4h { cursor:pointer; padding:2px 8px; border-radius:12px; background:var(--pill-bg); font-weight:600; margin-left:8px; font-size:11px; color:var(--muted); user-select:none; }
         .toggle-4h.active { background:var(--acc); color:#fff; }
         .chart-interval-selector { display:flex; gap:6px; align-items:center; }
-        .chart-interval-btn { padding:4px 8px; border-radius:4px; font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); cursor:pointer; }
+        .chart-interval-btn { padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); cursor:pointer; }
         .chart-interval-btn.active { background:var(--acc); color:#fff; border-color:var(--acc); }
         .countdown-display { font-size:11px; font-weight:600; margin-left:8px; color:var(--gold); white-space:nowrap; }
         .scan-status-line { font-size:11px; color:var(--muted); margin-left:8px; }
@@ -121,16 +173,21 @@
         .filter-row { display:flex; gap:8px; }
     </style>
 </head>
-<body>
+<body class="desktop-mode">
 <div class="phone-container" id="app">
     <div class="header-row">
-        <div class="brand"><div class="brand-icon"><i class="fas fa-bitcoin"></i></div><div class="brand-text"><h1>ICI Crypto</h1><span>clean v2</span></div></div>
+        <div class="brand"><span id="scanStatusText" class="scan-status-line" style="margin-left:0;"></span><span id="lastScanTime" class="last-scan-line" style="margin-left:6px;" title="Last scan time">🕒 never</span></div>
         <div class="header-actions">
+                        <button class="slevel-btn" onclick="setFilter('bull')">Bull <span id="bc" style="color:var(--green)">0</span></button>
+            <button class="slevel-btn" onclick="setFilter('bear')">Bear <span id="rc" style="color:var(--red)">0</span></button>
             <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
-            <button class="icon-btn" onclick="toggleDesktopMode()" id="desktopBtn"><i class="fas fa-desktop"></i></button>
             <div class="alert-dropdown-wrap" id="alertDropdownWrap">
-                <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fab fa-whatsapp"></i></button>
+                <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fas fa-bars"></i></button>
                 <div class="alert-dropdown-panel" id="alertDropdownPanel">
+                    <a href="/journal" class="alert-toggle" style="text-decoration:none;">📒 Journal</a>
+                    <button class="alert-toggle" onclick="actualScan()" style="background:var(--acc);color:#fff;">Scan</button>
+                    <button class="alert-toggle" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
+                    <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
                     <button class="alert-toggle" id="tgToggle" onclick="toggleAlert('telegram')">TG</button>
                     <button class="alert-toggle" id="waToggle" onclick="toggleAlert('whatsapp')">WA</button>
                     <button class="alert-toggle" id="ltfAlertBtn" onclick="toggleLtfAlert()">LTF OFF</button>
@@ -138,36 +195,59 @@
             </div>
         </div>
     </div>
-    <div class="pills-row">
-        <div class="market-dropdown-wrap" id="marketDropdownWrap">
-            <button class="pill active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Crypto <i class="fas fa-caret-down"></i></button>
-            <div class="market-dropdown-panel" id="marketDropdownPanel">
-                <a href="/" class="market-option">Forex</a>
-                <a href="/stocks" class="market-option">Stocks (Exness)</a>
-                <a href="/stocks?market=psx" class="market-option">Stocks (PSX)</a>
-            </div>
+    <style>
+        .wl-widget { margin-bottom:8px; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--surface); }
+        .wl-tabs-row { display:flex; align-items:center; gap:4px; padding:4px 6px; border-bottom:1px solid var(--border); }
+        .wl-tab { padding:2px 10px; font-size:11px; font-weight:700; border-radius:5px; background:var(--pill-bg); color:var(--txt); cursor:pointer; border:1px solid var(--border); }
+        .wl-tab.active { background:var(--acc); color:#fff; border-color:var(--acc); }
+        .wl-add-tab-btn { width:20px; height:20px; border-radius:5px; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); font-size:13px; font-weight:700; cursor:pointer; line-height:1; }
+        .wl-table-wrap { overflow-y:auto; overflow-x:hidden; position:relative; height:140px; scrollbar-width:none; -ms-overflow-style:none; }
+        .wl-table-wrap::-webkit-scrollbar { display:none; width:0; height:0; }
+        .wl-drop-target { outline:2px dashed var(--acc) !important; outline-offset:-2px; background:rgba(0,98,255,0.08); }
+        .wl-header-row { display:flex; padding:4px 8px; font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); }
+        .wl-header-row span:nth-child(1){flex:1.4;} .wl-header-row span:nth-child(2){flex:1;text-align:right;} .wl-header-row span:nth-child(3){flex:1;text-align:right;padding-right:16px;}
+        .wl-row { display:flex; align-items:center; padding:5px 8px; font-size:12px; border-bottom:1px solid var(--border); position:relative; -webkit-user-select:none; user-select:none; }
+        .wl-row span:nth-child(1){flex:1.4;font-weight:600;} .wl-row span:nth-child(2){flex:1;text-align:right;}
+        .wl-chg{flex:1;text-align:right;padding-right:16px;font-weight:600;}
+        .wl-chg.up{color:var(--green);} .wl-chg.down{color:var(--red);}
+
+        .wl-empty-hint { padding:14px 8px; text-align:center; font-size:11px; color:var(--muted); }
+        .wl-resize-handle { height:8px; cursor:ns-resize; display:flex; align-items:center; justify-content:center; background:var(--pill-bg); }
+        .wl-resize-handle::after { content:''; width:30px; height:3px; border-radius:2px; background:var(--border); }
+        .wl-dragging { opacity:0.4; }
+        .wl-drag-ghost { position:fixed; pointer-events:none; z-index:3000; background:var(--acc); color:#fff; font-size:12px; font-weight:700; padding:6px 12px; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.3); transform:translate(-50%,-50%); }
+        .wl-context-menu { position:fixed; z-index:3001; background:var(--surface); border:1px solid var(--border); border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,0.25); overflow:hidden; min-width:120px; }
+        .wl-context-menu-item { padding:8px 14px; font-size:12px; font-weight:600; color:var(--red); cursor:pointer; }
+        .wl-context-menu-item:hover { background:var(--pill-bg); }
+    </style>
+    <div class="wl-widget" id="wlWidget">
+        <div class="wl-tabs-row">
+            <div class="wl-tabs" id="wlTabs"></div>
+            <button class="wl-add-tab-btn" onclick="wlAddTab()">+</button>
         </div>
-        <a href="/journal" class="pill" style="text-decoration:none">📒 Journal</a>
-        <button class="pill scan-btn" onclick="actualScan()">Scan</button>
-        <button class="pill" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
-        <div class="cloud-status" id="statusDot">Cloud active</div>
+        <div class="wl-table-wrap" id="wlTableWrap">
+            <div class="wl-header-row"><span>Symbol</span><span>Last</span><span>Chg%</span></div>
+            <div class="wl-rows" id="wlRows"></div>
+        </div>
+        <div class="wl-resize-handle" id="wlResizeHandle"></div>
     </div>
-    <div style="display:flex; align-items:center; margin-bottom:8px;">
-        <span id="scanStatusText" class="scan-status-line"></span>
-        <span id="lastScanTime" class="last-scan-line">🕒 Last scan: never</span>
+    <div class="dir-slevel-bar" style="display:flex;align-items:center;gap:3px;margin-bottom:8px;flex-wrap:nowrap;justify-content:space-between;">
+        <span id="dirToggleBtn" class="dir-toggle-btn long" onclick="toggleDirection()">LONG</span>
+        <span id="dirDot" class="dir-dot" onclick="toggleDirection()"></span>
+        <button class="slevel-btn active" id="sLevelBtn1" onclick="setSLevelFilter(1)">S01</button>
+        <button class="slevel-btn" id="sLevelBtn2" onclick="setSLevelFilter(2)">S02</button>
+        <button class="slevel-btn" id="sLevelBtn3" onclick="setSLevelFilter(3)">S03</button>
+        <button class="slevel-btn" id="sLevelBtn4" onclick="setSLevelFilter(4)">S04</button>
+        <button class="slevel-btn" id="sLevelBtn5" onclick="setSLevelFilter(5)">S05</button>
+<div class="market-dropdown-wrap" id="marketDropdownWrap">
+                <button class="pill-mini active-blue" onclick="toggleMarketDropdown(event)" id="marketDropdownBtn">Crypto <i class="fas fa-caret-down"></i></button>
+                <div class="market-dropdown-panel" id="marketDropdownPanel">
+                    <a href="/" class="market-option">Forex</a>
+                    <a href="/stocks" class="market-option">Stocks (Exness)</a>
+                    <a href="/stocks?market=psx" class="market-option">Stocks (PSX)</a>
+                </div>
+            </div>
     </div>
-    <div class="sync-info" onclick="openTargetModal()">
-        Cloud synced <span style="color:var(--acc);margin-left:6px;">Target list: <span id="targetCount">0</span> ></span>
-        <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
-    </div>
-    <div class="counters-grid">
-        <div class="count-card" onclick="setFilter('bull')"><div class="num" style="color:var(--green)" id="bc">0</div><div class="label">Bullish</div></div>
-        <div class="count-card" onclick="setFilter('bear')"><div class="num" style="color:var(--red)" id="rc">0</div><div class="label">Bearish</div></div>
-        <div class="count-card" onclick="setFilter('all')"><div class="num" style="color:var(--txt)" id="allCount">0</div><div class="label">All</div></div>
-        <div class="count-card" onclick="setFilter('target')"><div class="num" style="color:var(--gold)" id="targetCount2">0</div><div class="label">Target</div></div>
-        <div class="count-card" onclick="setFilter('trades')"><div class="num" style="color:var(--gold)" id="tradesCount">0</div><div class="label">Trades</div></div>
-    </div>
-    <div class="search-container"><input type="text" class="search-bar" placeholder="Search crypto..." oninput="filterPairs(this.value)"></div>
     <div class="screener-wrap">
         <div class="header-row-table" id="tableHeaderRow"></div>
         <div id="pairsContainer"></div>
@@ -218,37 +298,41 @@
     </div>
 </div>
 
+<button class="dash-toggle-btn" id="dashToggleBtn"><i class="fas fa-chevron-left"></i></button>
 <div id="chartOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:1000;display:none;flex-direction:column;">
-    <div style="display:flex;align-items:center;padding:10px;background:var(--surface);border-bottom:1px solid var(--border);">
-        <button onclick="movePair(-1)" style="background:none;border:none;font-size:20px;padding:8px;color:var(--txt)"><i class="fas fa-chevron-left"></i></button>
-        <span id="chartPairName" style="flex:1;text-align:center;font-weight:700;font-size:16px;color:var(--txt)"></span>
-        <button onclick="movePair(1)" style="background:none;border:none;font-size:20px;padding:8px;color:var(--txt)"><i class="fas fa-chevron-right"></i></button>
-        <button onclick="openAlertDialog(document.getElementById('chartPairName').textContent)" style="background:none;border:none;font-size:20px;padding:8px;color:var(--gold);cursor:pointer;" title="Set Alert"><i class="fas fa-bell"></i></button>
-        <button id="chartStarBtn" onclick="toggleStarFromChart()" style="background:none;border:none;font-size:20px;padding:8px;color:var(--gold);cursor:pointer;" title="Star/Unstar"><i class="far fa-star"></i></button>
-        <button id="chartCloseBtn" onclick="closeChart()" style="background:none;border:none;font-size:20px;padding:8px;color:var(--red)"><i class="fas fa-times"></i></button>
+    <div style="display:flex;align-items:center;padding:5px 10px;background:var(--surface);border-bottom:1px solid var(--border);gap:6px;flex-wrap:wrap;">
+        <button onclick="movePair(-1)" style="background:none;border:none;font-size:15px;padding:5px;margin-right:10px;color:var(--txt)"><i class="fas fa-chevron-left"></i></button>
+        <div class="chart-interval-selector" style="display:flex;gap:6px;align-items:center;">
+            <button class="chart-interval-btn active" id="chartIntBtn1" data-interval="60" onclick="changeChartInterval('60', this)">1H</button>
+            <button class="chart-interval-btn" id="chartIntBtn2" data-interval="240" onclick="changeChartInterval('240', this)">4H</button>
+            <button class="chart-interval-btn" id="chartIntBtn3" data-interval="D" onclick="changeChartInterval('D', this)">1D</button>
+            <button class="chart-interval-btn" id="chartIntBtn4" data-interval="W" onclick="changeChartInterval('W', this)">1W</button>
+            <span id="countdownDisplay" class="countdown-display"></span>
+        </div>
+        <span id="chartPairName" style="flex:1;text-align:center;font-weight:700;font-size:13px;color:var(--txt)"></span>
+        <div class="tf-preset-selector" style="display:flex;gap:6px;">
+            <button class="tf-preset-btn active" id="tfPresetH" onclick="setTFPreset('H')">H</button>
+            <button class="tf-preset-btn" id="tfPresetM" onclick="setTFPreset('M')">M</button>
+            <button class="tf-preset-btn" id="tfPresetL" onclick="setTFPreset('L')">L</button>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-left:6px;">
+        <span style="font-size:11px;font-weight:600;color:var(--muted);">Layout:</span>
+        <select class="layout-select" id="layoutSelect" onchange="setChartLayout(this.value)">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+        </select>
+        <span style="font-size:11px;font-weight:600;color:var(--muted);margin-left:10px;">Slot:</span>
+        <select class="layout-select" id="slotSelect" onchange="activateChartSlot(this.value)">
+            <option value="1">1</option>
+        </select>
     </div>
-    <div class="chart-interval-selector" style="padding:8px;justify-content:center;">
-        <button class="chart-interval-btn active" data-interval="60" onclick="changeChartInterval('60', this)">1H</button>
-        <button class="chart-interval-btn" data-interval="240" onclick="changeChartInterval('240', this)">4H</button>
-        <button class="chart-interval-btn" data-interval="D" onclick="changeChartInterval('D', this)">1D</button>
-        <button class="chart-interval-btn" data-interval="W" onclick="changeChartInterval('W', this)">1W</button>
-        <span id="countdownDisplay" class="countdown-display"></span>
+        <button onclick="movePair(1)" style="background:none;border:none;font-size:15px;padding:5px;margin-left:10px;color:var(--txt)"><i class="fas fa-chevron-right"></i></button>
+        <button onclick="openAlertDialog(document.getElementById('chartPairName').textContent)" style="background:none;border:none;font-size:15px;padding:5px;margin-left:4px;color:var(--gold);cursor:pointer;" title="Set Alert"><i class="fas fa-bell"></i></button>
+        <button id="chartCloseBtn" onclick="closeChart()" style="background:none;border:none;font-size:15px;padding:5px;margin-left:4px;color:var(--red)"><i class="fas fa-times"></i></button>
     </div>
     
-    <div class="layout-controls">
-        <span style="font-size:11px;font-weight:600;color:var(--muted);">Layout:</span>
-        <button class="layout-btn active" onclick="setChartLayout(1)">1</button>
-        <button class="layout-btn" onclick="setChartLayout(2)">2</button>
-        <button class="layout-btn" onclick="setChartLayout(3)">3</button>
-        <button class="layout-btn" onclick="setChartLayout(4)">4</button>
-        <span class="slot-selector">
-            <span style="font-size:11px;font-weight:600;color:var(--muted);margin-left:6px;">Slot:</span>
-            <button class="slot-btn active-slot" id="slotBtn1" onclick="activateChartSlot(1)">1</button>
-            <button class="slot-btn" id="slotBtn2" onclick="activateChartSlot(2)">2</button>
-            <button class="slot-btn" id="slotBtn3" onclick="activateChartSlot(3)">3</button>
-            <button class="slot-btn" id="slotBtn4" onclick="activateChartSlot(4)">4</button>
-        </span>
-    </div>
     
     <div id="chart-grid" class="chart-grid layout-1">
         <div id="tv_chart_1" class="chart-box active"></div>
@@ -258,6 +342,21 @@
     </div>
 </div>
 
+<button class="chat-toggle-btn" id="chatToggleBtn"><i class="fas fa-chevron-right"></i></button>
+<div class="chat-panel" id="chatPanel">
+    <div class="chat-header" style="display:flex;align-items:center;justify-content:space-between;">
+        <span><i class="fas fa-comments" style="margin-right:6px;color:var(--acc);"></i>Trade Talk</span>
+        <i class="fas fa-trash-alt" style="cursor:pointer;color:var(--muted);font-size:12px;" onclick="clearChat()" title="Clear chat"></i>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-row">
+        <input type="file" id="chatImageInput" accept="image/*" style="display:none;">
+        <button class="chat-media-btn" onclick="document.getElementById('chatImageInput').click()"><i class="fas fa-image"></i></button>
+        <button class="chat-media-btn" id="chatVoiceBtn"><i class="fas fa-microphone"></i></button>
+        <input type="text" class="chat-input" id="chatInput" placeholder="Type a message...">
+        <button class="chat-send-btn" onclick="sendChatMessage()"><i class="fas fa-arrow-up"></i></button>
+    </div>
+</div>
 <div class="modal" id="targetModal" onclick="this.classList.remove('open')">
     <div class="modal-content" onclick="event.stopPropagation()">
         <h3 style="margin-bottom:16px;color:var(--gold)">Crypto Auto Setups</h3>
@@ -266,6 +365,11 @@
 </div>
 
 <script>
+function toggleDashboard() {
+    document.body.classList.toggle('dash-hidden');
+    const icon = document.querySelector('#dashToggleBtn i');
+    icon.className = document.body.classList.contains('dash-hidden') ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+}
 if (typeof getBellHtml !== 'function') window.getBellHtml = p=>'';
 if (typeof openAlertDialog !== 'function') window.openAlertDialog = p=>alert('Alert: '+p);
 if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Alerts list');
@@ -337,30 +441,61 @@ let currentChartLayout = 1;
 let activeChartSlot = 1;
 let chartIndices = [0,0,0,0];
 let chartIntervals = ['60','60','60','60'];
+let currentTFPreset = 'H';
+let currentHTF = 'W'; // 1W / 4H / 1H — feeds S01-S05 structure calc
+let currentDirection = 'long';
+let currentSLevel = 1;
+const TF_PRESET_MAP = {
+    H: { intervals: ['W','D','240','60'], labels: ['1W','1D','4H','1H'], htf: 'W' },
+    M: { intervals: ['D','240','60','5'], labels: ['1D','4H','1H','M5'], htf: '240' },
+    L: { intervals: ['240','60','5','1'], labels: ['4H','1H','M5','M1'], htf: '60' }
+};
+
+function setTFPreset(preset) {
+    currentTFPreset = preset;
+    currentHTF = TF_PRESET_MAP[preset].htf;
+    document.querySelectorAll('.tf-preset-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tfPreset' + preset).classList.add('active');
+    const ivals = TF_PRESET_MAP[preset].intervals;
+    const labels = TF_PRESET_MAP[preset].labels;
+    for (let i = 0; i < 4; i++) {
+        const btn = document.getElementById('chartIntBtn' + (i + 1));
+        btn.dataset.interval = ivals[i];
+        btn.textContent = labels[i];
+    }
+    chartIntervals[activeChartSlot-1] = ivals[0];
+    document.querySelectorAll('.chart-interval-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('chartIntBtn1').classList.add('active');
+    localStorage.setItem('tfPreset', preset);
+    if (typeof drawChart === 'function') drawChart(activeChartSlot);
+    if (typeof refreshSLevels === 'function') refreshSLevels();
+}
+
+function toggleDirection() {
+    currentDirection = currentDirection === 'long' ? 'short' : 'long';
+    const btn = document.getElementById('dirToggleBtn');
+    btn.textContent = currentDirection.toUpperCase();
+    btn.classList.toggle('long', currentDirection === 'long');
+    btn.classList.toggle('short', currentDirection === 'short');
+    document.getElementById('dirDot').style.background = currentDirection === 'long' ? 'var(--green)' : 'var(--red)';
+    if (typeof refreshSLevels === 'function') refreshSLevels();
+}
+
+function setSLevelFilter(level) {
+    currentSLevel = level;
+    document.querySelectorAll('.slevel-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('sLevelBtn' + level).classList.add('active');
+    if (typeof refreshSLevels === 'function') refreshSLevels();
+}
+
+// Structure engine (Choch/BOS) pending fractal N — wired here once ready.
+function refreshSLevels() {
+    // placeholder
+}
 
 window.alertSettings = alertSettings;
 
-let starredPairs = JSON.parse(localStorage.getItem('ici_crypto_starred') || '[]');
 let activeChartPair = null;
-
-function toggleStar(pair) {
-    const idx = starredPairs.indexOf(pair);
-    if (idx > -1) starredPairs.splice(idx, 1);
-    else starredPairs.push(pair);
-    localStorage.setItem('ici_crypto_starred', JSON.stringify(starredPairs));
-    render();
-    if (pair === activeChartPair) updateChartStarButton();
-}
-function toggleStarFromChart() {
-    if (activeChartPair) toggleStar(activeChartPair);
-}
-function updateChartStarButton() {
-    const btn = document.getElementById('chartStarBtn');
-    if (btn) {
-        const isStarred = starredPairs.includes(activeChartPair);
-        btn.innerHTML = `<i class="${isStarred ? 'fas' : 'far'} fa-star"></i>`;
-    }
-}
 
 let renderTimer = null;
 function renderDebounced() {
@@ -402,7 +537,7 @@ function startCountdownTimer() {
 db.ref('lastScanTime/time').on('value', snap => {
     const el = document.getElementById('lastScanTime');
     const ts = snap.val();
-    el.textContent = ts ? '🕒 Last scan: ' + new Date(ts).toLocaleTimeString() : '🕒 Last scan: never';
+    el.textContent = ts ? '🕒 ' + new Date(ts).toLocaleTimeString() : '🕒 never';
 });
 
 db.ref('alertSettings/crypto').on('value', snap => {
@@ -490,19 +625,61 @@ function toggleTheme() {
     document.querySelector('#themeBtn i').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
     localStorage.setItem('ici-crypto-theme', h.getAttribute('data-theme'));
 }
-function toggleDesktopMode() {
-    const isDesktop = document.body.classList.toggle('desktop-mode');
-    document.getElementById('chartOverlay').style.display = isDesktop ? 'flex' : 'none';
-    document.querySelector('#desktopBtn i').className = isDesktop ? 'fas fa-mobile-alt' : 'fas fa-desktop';
-    localStorage.setItem('crypto-desktop-mode', isDesktop ? 'desktop' : 'mobile');
-    render();
-}
+
 
 function setFilter(f) { curF = f; render(); }
 function filterPairs(txt) {
     filteredPairs = txt ? PAIRS.filter(p => p.n.toLowerCase().includes(txt.toLowerCase())) : [...PAIRS];
     render();
 }
+
+// ── Type-anywhere-to-search (no visible search bar) ──
+let typeSearchBuffer = '';
+function updateTypeSearchIndicator() {
+    let el = document.getElementById('typeSearchIndicator');
+    const wrap = document.querySelector('.screener-wrap');
+    if (!typeSearchBuffer) { if (el) el.remove(); return; }
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'typeSearchIndicator';
+        el.className = 'type-search-indicator';
+        wrap.prepend(el);
+    }
+    el.textContent = '🔍 ' + typeSearchBuffer + ' (Esc to clear)';
+}
+document.addEventListener('keydown', function(e) {
+    const active = document.activeElement;
+    const tag = active ? active.tagName : '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (active && active.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === ' ' || e.code === 'Space') {
+        const overlay = document.getElementById('chartOverlay');
+        if (overlay && overlay.style.display === 'flex' && typeof movePair === 'function') {
+            e.preventDefault();
+            movePair(1);
+        }
+        return;
+    }
+    if (e.key === 'Escape') {
+        typeSearchBuffer = '';
+        filterPairs('');
+        updateTypeSearchIndicator();
+        return;
+    }
+    if (e.key === 'Backspace') {
+        typeSearchBuffer = typeSearchBuffer.slice(0, -1);
+        filterPairs(typeSearchBuffer);
+        updateTypeSearchIndicator();
+        e.preventDefault();
+        return;
+    }
+    if (e.key.length === 1 && /[a-zA-Z0-9]/.test(e.key)) {
+        typeSearchBuffer += e.key;
+        filterPairs(typeSearchBuffer);
+        updateTypeSearchIndicator();
+    }
+});
+
 
 function actualScan() {
     const btn = document.querySelector('.scan-btn');
@@ -576,11 +753,7 @@ function updateCounts() {
     });
     document.getElementById('bc').textContent = b;
     document.getElementById('rc').textContent = r;
-    document.getElementById('allCount').textContent = PAIRS.length;
     const u = getUniqueAutoSetups().size;
-    document.getElementById('targetCount2').textContent = u;
-    document.getElementById('targetCount').textContent = u;
-    document.getElementById('tradesCount').textContent = starredPairs.length;
 }
 
 function openTargetModal() {
@@ -713,7 +886,6 @@ function renderHeader() {
         html += `<div class="col-header-cell" onclick="openColMenu('${col.id}')">${col.label || type.label}${arrow}${badge}</div>`;
     });
     html += '<div class="col-add-btn" onclick="openColEditModal(null)"><i class="fas fa-plus-circle"></i></div>';
-    html += '<div class="col-bell-fixed col-header-cell"><i class="fas fa-bell"></i></div>';
     document.getElementById('tableHeaderRow').innerHTML = html;
 }
 
@@ -838,26 +1010,21 @@ function render() {
             return ['4h','1day','1week'].every(tf => d[tf] === curF);
         });
     else if (curF === 'target') filtered = currentPairs.filter(p => validTargets.has(p.n));
-    else if (curF === 'trades') filtered = currentPairs.filter(p => starredPairs.includes(p.n));
     else filtered = currentPairs;
 
     filtered = applyColumnSortAndFilter(filtered);
     currentDisplayPairs = filtered.map(p => p.n);
-    chartPairs = filtered.map(p => p.n);
+    if (window.activeChartSource !== 'watchlist') { chartPairs = filtered.map(p => p.n); }
 
     renderHeader();
 
     document.getElementById('pairsContainer').innerHTML = filtered.map(p => {
-        const isStarred = starredPairs.includes(p.n);
-        const starIcon = `<i class="${isStarred ? 'fas' : 'far'} fa-star" style="color:var(--gold); cursor:pointer; margin-right:4px; font-size:14px;" onclick="event.stopPropagation(); toggleStar('${p.n}')"></i>`;
-
-        let cells = `<div class="col-pair-fixed">${starIcon}<span style="font-weight:700;font-size:14px;">${p.n}</span></div>`;
+        let cells = `<div class="col-pair-fixed"><span style="font-weight:700;font-size:14px;">${p.n}</span></div>`;
         cells += columnDefs.map(col => renderColumnCell(p.n, col)).join('');
         cells += '<div class="col-add-btn" style="visibility:hidden;"></div>';
-        cells += `<div class="col-bell-fixed"><i class="fas fa-bell" style="color:var(--gold); cursor:pointer;" onclick="event.stopPropagation(); openAlertDialog('${p.n}')"></i></div>`;
 
         let row = `<div class="item-row ${p.n === activeChartPair ? 'highlighted-row' : ''}"><div class="item-main" onclick="openChartForPair('${p.n}')">${cells}</div>`;
-        if (curF === 'target' || curF === 'trades') {
+        if (curF === 'target') {
             const info = getUniqueAutoSetups().get(p.n);
             if (info) {
                 const badgeBg = info.dir === 'bull' ? '#22c55e' : '#ef4444';
@@ -872,8 +1039,9 @@ function render() {
 
 // ── Chart functions ──
 function activateChartSlot(s) {
+    s = parseInt(s);
     activeChartSlot = s;
-    for (let i=1;i<=4;i++) document.getElementById('slotBtn'+i).classList.toggle('active-slot', i===s);
+    document.getElementById('slotSelect').value = s;
     updateChartPairName();
     highlightIntervalButton(chartIntervals[s-1]);
     startCountdownTimer();
@@ -885,6 +1053,7 @@ function highlightIntervalButton(interval) {
     document.querySelectorAll('.chart-interval-btn').forEach(b => b.classList.toggle('active', b.dataset.interval===interval));
 }
 function openChartForPair(pairName) {
+    window.activeChartSource = 'screener';
     chartPairs = currentDisplayPairs.length ? currentDisplayPairs : PAIRS.map(p=>p.n);
     let idx = chartPairs.indexOf(pairName);
     if (idx===-1) idx = 0;
@@ -893,7 +1062,6 @@ function openChartForPair(pairName) {
     drawChart(activeChartSlot);
     document.getElementById('chartOverlay').style.display = 'flex';
     activeChartPair = pairName;
-    updateChartStarButton();
     render();
     startCountdownTimer();
 }
@@ -902,7 +1070,6 @@ function movePair(step) {
     chartIndices[activeChartSlot-1] = (chartIndices[activeChartSlot-1] + step + total) % total;
     updateChartPairName();
     activeChartPair = chartPairs[chartIndices[activeChartSlot-1]];
-    updateChartStarButton();
     drawChart(activeChartSlot);
     render();
 }
@@ -913,18 +1080,22 @@ function changeChartInterval(interval, btn) {
     startCountdownTimer();
 }
 async function setChartLayout(count) {
+    count = parseInt(count);
     currentChartLayout = count;
-    document.querySelectorAll('.layout-btn').forEach((b,i) => b.classList.toggle('active', i===count-1));
+    document.getElementById('layoutSelect').value = count;
     document.getElementById('chart-grid').className = 'chart-grid layout-'+count;
     for (let i=1;i<=4;i++) document.getElementById('tv_chart_'+i).classList.toggle('active', i<=count);
     for (let i=1;i<=count;i++) { drawChart(i); if (i<count) await new Promise(r=>setTimeout(r,100)); }
-    for (let i=1;i<=4;i++) document.getElementById('slotBtn'+i).style.display = i<=count ? 'inline-block' : 'none';
+    const slotSel = document.getElementById('slotSelect');
+    slotSel.innerHTML = '';
+    for (let i=1;i<=count;i++) { const o=document.createElement('option'); o.value=i; o.textContent=i; slotSel.appendChild(o); }
     if (activeChartSlot > count) {
         activeChartSlot = 1;
-        document.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('active-slot'));
-        document.getElementById('slotBtn1').classList.add('active-slot');
+        slotSel.value = 1;
         updateChartPairName();
         highlightIntervalButton(chartIntervals[0]);
+    } else {
+        slotSel.value = activeChartSlot;
     }
     startCountdownTimer();
 }
@@ -989,14 +1160,535 @@ db.ref('marketData').on('value', snap => {
         document.documentElement.setAttribute('data-theme', savedTheme);
         document.querySelector('#themeBtn i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
     }
-    if (localStorage.getItem('crypto-desktop-mode') === 'desktop') {
-        document.body.classList.add('desktop-mode');
-        document.getElementById('chartOverlay').style.display = 'flex';
-        document.querySelector('#desktopBtn i').className = 'fas fa-mobile-alt';
-    }
     setTimeout(() => render(), 200);
 })();
 updateToggleButtons();
+</script>
+<script>
+(function(){
+    var WL_KEY = 'ici_crypto_wl_tabs';
+    var wlData = null;
+    var suppressNextClick = false;
+
+    function wlLoad() {
+        try { wlData = JSON.parse(localStorage.getItem(WL_KEY)); } catch(e) { wlData = null; }
+        if (!wlData || !wlData.tabs || !wlData.tabs.length) {
+            wlData = { tabs: [{ id: 1, symbols: [] }], active: 1, height: 140 };
+        }
+    }
+    function wlSave() { localStorage.setItem(WL_KEY, JSON.stringify(wlData)); }
+    function wlGetActiveTab() {
+        var t = wlData.tabs.filter(function(x){ return x.id === wlData.active; })[0];
+        return t || wlData.tabs[0];
+    }
+    function wlRenderTabs() {
+        var tabsEl = document.getElementById('wlTabs');
+        if (!tabsEl) return;
+        tabsEl.innerHTML = '';
+        wlData.tabs.forEach(function(tab) {
+            var btn = document.createElement('button');
+            btn.className = 'wl-tab' + (tab.id === wlData.active ? ' active' : '');
+            btn.textContent = tab.id;
+            btn.onclick = function(){ wlData.active = tab.id; wlSave(); wlRenderTabs(); wlRenderRows(); };
+            var pressTimer = null;
+            btn.addEventListener('pointerdown', function(){
+                pressTimer = setTimeout(function(){
+                    if (wlData.tabs.length <= 1) { alert('At least one watchlist tab is required.'); return; }
+                    if (confirm('Delete watchlist ' + tab.id + '?')) {
+                        wlData.tabs = wlData.tabs.filter(function(x){ return x.id !== tab.id; });
+                        if (wlData.active === tab.id) wlData.active = wlData.tabs[0].id;
+                        wlSave(); wlRenderTabs(); wlRenderRows();
+                    }
+                }, 600);
+            });
+            btn.addEventListener('pointerup', function(){ clearTimeout(pressTimer); });
+            btn.addEventListener('pointerleave', function(){ clearTimeout(pressTimer); });
+            tabsEl.appendChild(btn);
+        });
+    }
+    window.wlAddTab = function() {
+        var maxId = 0;
+        wlData.tabs.forEach(function(t){ if (t.id > maxId) maxId = t.id; });
+        var newTab = { id: maxId + 1, symbols: [] };
+        wlData.tabs.push(newTab);
+        wlData.active = newTab.id;
+        wlSave(); wlRenderTabs(); wlRenderRows();
+    };
+    window.openChartFromWatchlist = function(sym) {
+        window.activeChartSource = 'watchlist';
+        var tab = wlGetActiveTab();
+        var list = (tab && tab.symbols && tab.symbols.length) ? tab.symbols.slice() : [sym];
+        chartPairs = list;
+        var idx = chartPairs.indexOf(sym);
+        if (idx === -1) idx = 0;
+        chartIndices[activeChartSlot-1] = idx;
+        updateChartPairName();
+        drawChart(activeChartSlot);
+        document.getElementById('chartOverlay').style.display = 'flex';
+        activeChartPair = sym;
+        if (typeof render === 'function') render();
+        if (typeof startCountdownTimer === 'function') startCountdownTimer();
+    };
+    window.wlRemoveSymbol = function(sym) {
+        var tab = wlGetActiveTab();
+        var idx = tab.symbols.indexOf(sym);
+        if (idx > -1) { tab.symbols.splice(idx, 1); wlSave(); wlRenderTabs(); wlRenderRows(); }
+    };
+    function wlAddSymbol(sym) {
+        var tab = wlGetActiveTab();
+        if (tab.symbols.indexOf(sym) === -1) {
+            tab.symbols.push(sym);
+            wlSave(); wlRenderTabs(); wlRenderRows();
+        }
+    }
+    function wlGetPriceChange(sym) {
+        var m = (typeof MARKET_DATA !== 'undefined' && MARKET_DATA[sym]) || {};
+        var lm = (typeof liveMarketData !== 'undefined' && liveMarketData[sym]) || {};
+        var t = (typeof techMetrics !== 'undefined' && techMetrics[sym]) || {};
+        var price = lm.price || lm.currentPrice || m.price || m.currentPrice || null;
+        var chg = (t.longTermTrend != null) ? t.longTermTrend : (m.longTermTrend != null ? m.longTermTrend : null);
+        return { price: price, chg: chg };
+    }
+    function wlRenderRows() {
+        var tab = wlGetActiveTab();
+        var rowsEl = document.getElementById('wlRows');
+        if (!rowsEl) return;
+        if (!tab || !tab.symbols.length) {
+            rowsEl.innerHTML = '<div class="wl-empty-hint">Press &amp; hold a pair below, then drag up here to add</div>';
+            return;
+        }
+        var html = '';
+        tab.symbols.forEach(function(sym) {
+            var pc = wlGetPriceChange(sym);
+            var priceStr = pc.price != null ? Number(pc.price).toFixed(2) : '--';
+            var chgStr = pc.chg != null ? (pc.chg > 0 ? '+' : '') + Number(pc.chg).toFixed(2) + '%' : '--';
+            var chgCls = pc.chg != null ? (pc.chg >= 0 ? 'up' : 'down') : '';
+            html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
+        });
+        rowsEl.innerHTML = html;
+    }
+
+    wlLoad();
+    wlRenderTabs();
+    wlRenderRows();
+    setInterval(wlRenderRows, 3000);
+
+    var wrap = document.getElementById('wlTableWrap');
+    var handle = document.getElementById('wlResizeHandle');
+    if (wrap) wrap.style.height = (wlData.height || 140) + 'px';
+    var resizing = false, startY = 0, startH = 0;
+    if (handle) {
+        handle.addEventListener('pointerdown', function(e) { resizing = true; startY = e.clientY; startH = wrap.offsetHeight; e.preventDefault(); });
+    }
+    document.addEventListener('pointermove', function(e) {
+        if (!resizing) return;
+        var dy = e.clientY - startY;
+        var newH = Math.max(60, Math.min(400, startH + dy));
+        wrap.style.height = newH + 'px';
+    });
+    document.addEventListener('pointerup', function() {
+        if (resizing) { resizing = false; wlData.height = wrap.offsetHeight; wlSave(); }
+    });
+
+    var dragSym = null, dragSource = null, dragStartX = 0, dragStartY = 0, dragTimer = null, isDraggingWL = false, ghostEl = null;
+    var wlContextMenuEl = null;
+    function wlCreateGhost(text) {
+        var g = document.createElement('div');
+        g.className = 'wl-drag-ghost';
+        g.textContent = text;
+        document.body.appendChild(g);
+        return g;
+    }
+    function wlMoveGhost(x, y) { if (ghostEl) { ghostEl.style.left = x + 'px'; ghostEl.style.top = y + 'px'; } }
+    function wlRemoveGhost() { if (ghostEl) { ghostEl.remove(); ghostEl = null; } }
+    function wlCloseContextMenu() { if (wlContextMenuEl) { wlContextMenuEl.remove(); wlContextMenuEl = null; } }
+    document.addEventListener('click', function() { wlCloseContextMenu(); });
+    document.addEventListener('selectstart', function(e) { if (isDraggingWL) e.preventDefault(); });
+    document.addEventListener('contextmenu', function(e) {
+        var row = e.target.closest && e.target.closest('.wl-row');
+        if (!row) return;
+        e.preventDefault();
+        wlCloseContextMenu();
+        var sym = row.getAttribute('data-sym');
+        var menu = document.createElement('div');
+        menu.className = 'wl-context-menu';
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+        var item = document.createElement('div');
+        item.className = 'wl-context-menu-item';
+        item.textContent = 'Delete';
+        item.onclick = function(ev) { ev.stopPropagation(); wlRemoveSymbol(sym); wlCloseContextMenu(); };
+        menu.appendChild(item);
+        document.body.appendChild(menu);
+        wlContextMenuEl = menu;
+    });
+    document.addEventListener('pointerdown', function(e) {
+        var main = e.target.closest && e.target.closest('#pairsContainer .item-main');
+        var wlRow = e.target.closest && e.target.closest('.wl-row');
+        if (main) {
+            var m = (main.getAttribute('onclick') || '').match(/openChartForPair\('([^']+)'\)/);
+            if (!m) return;
+            dragSym = m[1]; dragSource = 'screener';
+        } else if (wlRow) {
+            dragSym = wlRow.getAttribute('data-sym'); dragSource = 'watchlist';
+        } else {
+            return;
+        }
+        dragStartX = e.clientX; dragStartY = e.clientY; isDraggingWL = false;
+        clearTimeout(dragTimer);
+        dragTimer = setTimeout(function() {
+            if (!dragSym) return;
+            isDraggingWL = true;
+            if (main) main.classList.add('wl-dragging');
+            if (wlRow) wlRow.classList.add('wl-dragging');
+            ghostEl = wlCreateGhost(dragSym);
+            wlMoveGhost(e.clientX, e.clientY);
+        }, 100);
+    });
+    document.addEventListener('pointermove', function(e) {
+        if (!dragSym) return;
+        var dx = Math.abs(e.clientX - dragStartX), dy = Math.abs(e.clientY - dragStartY);
+        if (!isDraggingWL && (dx > 12 || dy > 12)) { clearTimeout(dragTimer); dragSym = null; dragSource = null; return; }
+        if (isDraggingWL) {
+            wlMoveGhost(e.clientX, e.clientY);
+            if (dragSource === 'screener') {
+                var w = document.getElementById('wlTableWrap');
+                if (w) {
+                    var r = w.getBoundingClientRect();
+                    var over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+                    w.classList.toggle('wl-drop-target', over);
+                }
+            } else if (dragSource === 'watchlist') {
+                var chartEl = document.getElementById('chartOverlay');
+                if (chartEl) {
+                    var r2 = chartEl.getBoundingClientRect();
+                    var visible = chartEl.offsetParent !== null;
+                    var over2 = visible && e.clientX >= r2.left && e.clientX <= r2.right && e.clientY >= r2.top && e.clientY <= r2.bottom;
+                    chartEl.classList.toggle('wl-drop-target', over2);
+                }
+            }
+        }
+    }, { passive: true });
+    document.addEventListener('pointerup', function(e) {
+        clearTimeout(dragTimer);
+        if (isDraggingWL && dragSym) {
+            if (dragSource === 'screener') {
+                var w = document.getElementById('wlTableWrap');
+                if (w) {
+                    var r = w.getBoundingClientRect();
+                    var over = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+                    w.classList.remove('wl-drop-target');
+                    if (over) wlAddSymbol(dragSym);
+                }
+            } else if (dragSource === 'watchlist') {
+                var chartEl = document.getElementById('chartOverlay');
+                if (chartEl) {
+                    var r2 = chartEl.getBoundingClientRect();
+                    var visible = chartEl.offsetParent !== null;
+                    var over2 = visible && e.clientX >= r2.left && e.clientX <= r2.right && e.clientY >= r2.top && e.clientY <= r2.bottom;
+                    chartEl.classList.remove('wl-drop-target');
+                    if (over2) wlRemoveSymbol(dragSym);
+                }
+            }
+            var dragging = document.querySelectorAll('.wl-dragging');
+            for (var j = 0; j < dragging.length; j++) dragging[j].classList.remove('wl-dragging');
+            wlRemoveGhost();
+            suppressNextClick = true;
+            setTimeout(function() { suppressNextClick = false; }, 50);
+        }
+        dragSym = null; dragSource = null; isDraggingWL = false;
+    });
+    document.addEventListener('click', function(e) {
+        if (suppressNextClick) {
+            var main = e.target.closest && e.target.closest('#pairsContainer .item-main');
+            if (main) { e.stopPropagation(); e.preventDefault(); }
+        }
+    }, true);
+})();
+</script>
+
+<script>
+(function(){
+    var WIDTH_KEY = 'ici_dash_width';
+    function getApp() { return document.getElementById('app'); }
+    function updateHandlePosition() {
+        var btn = document.getElementById('dashToggleBtn');
+        var app = getApp();
+        if (!btn || !app) return;
+        var r = app.getBoundingClientRect();
+        btn.style.left = r.right + 'px';
+    }
+    function loadWidth() {
+        var app = getApp();
+        if (!app) return;
+        var saved = localStorage.getItem(WIDTH_KEY);
+        if (saved) app.style.width = saved + 'px';
+    }
+    function saveWidth(px) { localStorage.setItem(WIDTH_KEY, String(px)); }
+    function initHandle() {
+        var btn = document.getElementById('dashToggleBtn');
+        var app = getApp();
+        if (!btn || !app) return;
+        loadWidth();
+        updateHandlePosition();
+        window.addEventListener('resize', updateHandlePosition);
+        var dragging = false, moved = false, startX = 0, startWidth = 0;
+        btn.addEventListener('pointerdown', function(e) {
+            dragging = true; moved = false;
+            startX = e.clientX;
+            startWidth = app.getBoundingClientRect().width;
+            e.preventDefault();
+        });
+        document.addEventListener('pointermove', function(e) {
+            if (!dragging) return;
+            var dx = e.clientX - startX;
+            if (Math.abs(dx) > 6) moved = true;
+            if (moved) {
+                var newWidth = startWidth + dx;
+                var minW = 180, maxW = Math.round(window.innerWidth * 0.6);
+                newWidth = Math.max(minW, Math.min(maxW, newWidth));
+                app.style.width = newWidth + 'px';
+                updateHandlePosition();
+            }
+        });
+        document.addEventListener('pointerup', function() {
+            if (!dragging) return;
+            dragging = false;
+            if (moved) {
+                saveWidth(Math.round(app.getBoundingClientRect().width));
+            } else if (typeof toggleDashboard === 'function') {
+                toggleDashboard();
+                setTimeout(updateHandlePosition, 0);
+            }
+        });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHandle);
+    else initHandle();
+})();
+</script>
+<script>
+(function(){
+    var CHAT_LIST_URL = '/api/chat-msg/list';
+    var CHAT_SEND_URL = '/api/chat-msg/send';
+    var renderedIds = {};
+    function fmtTime(ts) {
+        var d = new Date(ts);
+        return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    }
+    function escapeHtml(t) {
+        return (t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function renderMessages(list) {
+        var wrap = document.getElementById('chatMessages');
+        if (!wrap) return;
+        var newIds = {};
+        list.forEach(function(m){ newIds[m.id] = true; });
+        var sameCount = Object.keys(newIds).length === Object.keys(renderedIds).length;
+        var allMatch = sameCount && Object.keys(newIds).every(function(id){ return renderedIds[id]; });
+        if (allMatch) return;
+        renderedIds = newIds;
+        var html = '';
+        list.forEach(function(m) {
+            var cls = m.from === 'dashboard' ? 'from-dashboard' : 'from-telegram';
+            var myName = localStorage.getItem(DASH_NAME_KEY);
+            var senderName = m.from === 'dashboard' ? (m.senderName && m.senderName !== myName ? m.senderName : 'You') : (m.senderName || 'Telegram');
+            var avatarHtml;
+            if (m.from === 'telegram' && m.senderId) {
+                avatarHtml = '<img class="chat-avatar" src="/api/chat-msg/avatar/' + m.senderId + '" onerror="this.outerHTML=\'<div class=&quot;chat-avatar-fallback&quot;>' + escapeHtml(senderName.charAt(0).toUpperCase()) + '</div>\'">';
+            } else if (m.from === 'telegram') {
+                avatarHtml = '<div class="chat-avatar-fallback">' + escapeHtml(senderName.charAt(0).toUpperCase()) + '</div>';
+            } else {
+                avatarHtml = '<div class="chat-avatar-fallback"><i class="fas fa-user"></i></div>';
+            }
+            var bodyHtml;
+            if (m.type === 'image' && m.mediaUrl) {
+                bodyHtml = '<img class="chat-img-bubble" src="' + m.mediaUrl + '" onclick="window.open(this.src,\'_blank\')">' + (m.text ? '<div style="margin-top:4px;">' + escapeHtml(m.text) + '</div>' : '');
+            } else if (m.type === 'voice' && m.mediaUrl) {
+                bodyHtml = '<div class="chat-voice-bubble"><audio controls src="' + m.mediaUrl + '"></audio></div>';
+            } else {
+                bodyHtml = escapeHtml(m.text || '');
+            }
+            html += '<div class="chat-msg-row ' + cls + '">' + avatarHtml + '<div class="chat-msg ' + cls + '"><span class="chat-msg-sender">' + senderName + '</span>' + bodyHtml + '<span class="chat-msg-time">' + fmtTime(m.timestamp) + '</span></div></div>';
+        });
+        wrap.innerHTML = html;
+        wrap.scrollTop = wrap.scrollHeight;
+    }
+    function fetchMessages() {
+        fetch(CHAT_LIST_URL).then(function(r){ return r.json(); }).then(renderMessages).catch(function(e){ console.error('chat fetch error', e); });
+    }
+    var DASH_NAME_KEY = 'ici_dash_username';
+    function getDashUserName() {
+        var name = localStorage.getItem(DASH_NAME_KEY);
+        if (!name) {
+            name = prompt('Enter your name for chat:');
+            if (!name || !name.trim()) name = 'Guest';
+            name = name.trim();
+            localStorage.setItem(DASH_NAME_KEY, name);
+        }
+        return name;
+    }
+    window.sendChatMessage = function() {
+        var input = document.getElementById('chatInput');
+        if (!input) return;
+        var text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+        input.disabled = true;
+        fetch(CHAT_SEND_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, senderName: getDashUserName() })
+        }).then(function(r){ return r.json(); }).then(function(){
+            input.disabled = false;
+            input.focus();
+            fetchMessages();
+        }).catch(function(e){
+            console.error('chat send error', e);
+            input.disabled = false;
+        });
+    };
+    var chatImageInput = null;
+    function initChatMedia() {
+        chatImageInput = document.getElementById('chatImageInput');
+        if (chatImageInput) {
+            chatImageInput.addEventListener('change', function(e) {
+                var file = e.target.files[0];
+                if (!file) return;
+                var reader = new FileReader();
+                reader.onload = function() {
+                    var base64 = reader.result.split(',')[1];
+                    fetch('/api/chat-msg/send-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ imageBase64: base64, mimeType: file.type })
+                    }).then(function(r){ return r.json(); }).then(function(){ fetchMessages(); }).catch(function(e){ console.error('image send error', e); });
+                };
+                reader.readAsDataURL(file);
+                chatImageInput.value = '';
+            });
+        }
+        var voiceBtn = document.getElementById('chatVoiceBtn');
+        if (!voiceBtn) return;
+        var mediaRecorder = null, audioChunks = [], recording = false;
+        voiceBtn.addEventListener('click', function() {
+            if (!recording) {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Voice recording needs a secure (HTTPS) connection. Not available on plain HTTP.');
+                    return;
+                }
+                navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream) {
+                    audioChunks = [];
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = function(e) { audioChunks.push(e.data); };
+                    mediaRecorder.onstop = function() {
+                        stream.getTracks().forEach(function(t){ t.stop(); });
+                        var blob = new Blob(audioChunks, { type: 'audio/webm' });
+                        var reader = new FileReader();
+                        reader.onload = function() {
+                            var base64 = reader.result.split(',')[1];
+                            fetch('/api/chat-msg/send-voice', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ audioBase64: base64, mimeType: 'audio/webm' })
+                            }).then(function(r){ return r.json(); }).then(function(){ fetchMessages(); }).catch(function(e){ console.error('voice send error', e); });
+                        };
+                        reader.readAsDataURL(blob);
+                    };
+                    mediaRecorder.start();
+                    recording = true;
+                    voiceBtn.classList.add('recording');
+                }).catch(function(e) {
+                    alert('Microphone access denied or unavailable: ' + e.message);
+                });
+            } else {
+                if (mediaRecorder) mediaRecorder.stop();
+                recording = false;
+                voiceBtn.classList.remove('recording');
+            }
+        });
+    }
+    window.clearChat = function() {
+        if (!confirm('Clear all chat messages? This cannot be undone.')) return;
+        fetch('/api/chat-msg/clear', { method: 'POST' }).then(function(r){ return r.json(); }).then(function(){
+            renderedIds = {};
+            var wrap = document.getElementById('chatMessages');
+            if (wrap) wrap.innerHTML = '';
+        }).catch(function(e){ console.error('clear chat error', e); });
+    };
+    window.toggleChatPanel = function() {
+        document.body.classList.toggle('chat-hidden');
+        var icon = document.querySelector('#chatToggleBtn i');
+        if (icon) icon.className = document.body.classList.contains('chat-hidden') ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+    };
+    var CHAT_WIDTH_KEY = 'ici_chat_width';
+    function loadChatWidth() {
+        var panel = document.getElementById('chatPanel');
+        if (!panel) return;
+        var saved = localStorage.getItem(CHAT_WIDTH_KEY);
+        if (saved) { panel.style.width = saved + 'px'; panel.style.flexBasis = saved + 'px'; }
+    }
+    function saveChatWidth(px) { localStorage.setItem(CHAT_WIDTH_KEY, String(px)); }
+    function updateChatHandlePosition() {
+        var btn = document.getElementById('chatToggleBtn');
+        var panel = document.getElementById('chatPanel');
+        if (!btn || !panel) return;
+        if (document.body.classList.contains('chat-hidden')) { btn.style.right = '0px'; return; }
+        var r = panel.getBoundingClientRect();
+        btn.style.right = (window.innerWidth - r.left) + 'px';
+    }
+    function initChatResize() {
+        var btn = document.getElementById('chatToggleBtn');
+        var panel = document.getElementById('chatPanel');
+        if (!btn || !panel) return;
+        loadChatWidth();
+        updateChatHandlePosition();
+        window.addEventListener('resize', updateChatHandlePosition);
+        var dragging = false, moved = false, startX = 0, startWidth = 0;
+        btn.addEventListener('pointerdown', function(e) {
+            dragging = true; moved = false;
+            startX = e.clientX;
+            startWidth = panel.getBoundingClientRect().width;
+            e.preventDefault();
+        });
+        document.addEventListener('pointermove', function(e) {
+            if (!dragging) return;
+            var dx = startX - e.clientX;
+            if (Math.abs(dx) > 6) moved = true;
+            if (moved) {
+                var newWidth = startWidth + dx;
+                var minW = 220, maxW = Math.round(window.innerWidth * 0.6);
+                newWidth = Math.max(minW, Math.min(maxW, newWidth));
+                panel.style.width = newWidth + 'px';
+                panel.style.flexBasis = newWidth + 'px';
+                updateChatHandlePosition();
+            }
+        });
+        document.addEventListener('pointerup', function() {
+            if (!dragging) return;
+            dragging = false;
+            if (moved) {
+                saveChatWidth(Math.round(panel.getBoundingClientRect().width));
+            } else if (typeof toggleChatPanel === 'function') {
+                toggleChatPanel();
+                setTimeout(updateChatHandlePosition, 0);
+            }
+        });
+    }
+    function initChat() {
+        var input = document.getElementById('chatInput');
+        if (input) {
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); }
+            });
+        }
+        fetchMessages();
+        setInterval(fetchMessages, 3000);
+        initChatResize();
+        initChatMedia();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initChat);
+    else initChat();
+})();
 </script>
 </body>
 </html>

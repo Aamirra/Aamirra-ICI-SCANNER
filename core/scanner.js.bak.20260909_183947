@@ -657,14 +657,10 @@ async function fetchTF(p, tf, retryCount = 0) {
                         if (tf === '1day') {
                             const dailyCls = sorted.map(v => parseFloat(v.close));
                             const dailyVols = sorted.map(v => parseFloat(v.volume || '0'));
-                            const dailyHighs = sorted.map(v => parseFloat(v.high));
-                            const dailyLows = sorted.map(v => parseFloat(v.low));
-                            RAW_DAILY[p.n] = { opens: opns, closes: dailyCls, highs: dailyHighs, lows: dailyLows, volumes: dailyVols, times: allTimes, time: sorted[sorted.length-1]?.datetime };
+                            RAW_DAILY[p.n] = { opens: opns, closes: dailyCls, volumes: dailyVols, times: allTimes, time: sorted[sorted.length-1]?.datetime };
                         }
                         if (tf === '1week') {
-                            const weeklyHighs = sorted.map(v => parseFloat(v.high));
-                            const weeklyLows = sorted.map(v => parseFloat(v.low));
-                            RAW_WEEKLY[p.n] = { opens: opns, closes: cls, highs: weeklyHighs, lows: weeklyLows, times: allTimes, time: sorted[sorted.length-1]?.datetime };
+                            RAW_WEEKLY[p.n] = { opens: opns, closes: cls, times: allTimes, time: sorted[sorted.length-1]?.datetime };
                         }
                         resolve(true);
                     } else resolve(false);
@@ -729,10 +725,10 @@ async function fetchIndexCandlesAndStore(p, tf) {
             }
         }
         if (tf === '1day') {
-            RAW_DAILY[p.n] = { opens: data.opens, closes: data.closes, highs: data.highs, lows: data.lows, volumes: data.volumes, times: data.times, time: data.times[data.times.length-1] };
+            RAW_DAILY[p.n] = { opens: data.opens, closes: data.closes, volumes: data.volumes, times: data.times, time: data.times[data.times.length-1] };
         }
         if (tf === '1week') {
-            RAW_WEEKLY[p.n] = { opens: data.opens, closes: data.closes, highs: data.highs, lows: data.lows, times: data.times, time: data.times[data.times.length-1] };
+            RAW_WEEKLY[p.n] = { opens: data.opens, closes: data.closes, times: data.times, time: data.times[data.times.length-1] };
         }
         return true;
     } catch (e) {

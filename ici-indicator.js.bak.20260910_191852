@@ -1,0 +1,261 @@
+window.ICIIndicator = (function() {
+    function calcEMA(values, length) {
+        const k = 2 / (length + 1);
+        const out = new Array(values.length).fill(null);
+        let ema = null;
+        for (let i = 0; i < values.length; i++) {
+            const v = values[i];
+            if (v == null) { out[i] = ema; continue; }
+            ema = ema == null ? v : (v * k + ema * (1 - k));
+            out[i] = ema;
+        }
+        return out;
+    }
+
+    function calcSMA(values, length) {
+        const out = new Array(values.length).fill(null);
+        let sum = 0;
+        for (let i = 0; i < values.length; i++) {
+            sum += values[i];
+            if (i >= length) sum -= values[i - length];
+            if (i >= length - 1) out[i] = sum / length;
+        }
+        return out;
+    }
+
+    function calcATR(candles, length) {
+        const trs = candles.map((c, i) => {
+            if (i === 0) return c.high - c.low;
+            const pc = candles[i-1].close;
+            return Math.max(c.high - c.low, Math.abs(c.high - pc), Math.abs(c.low - pc));
+        });
+        const out = new Array(trs.length).fill(null);
+        let rma = null;
+        for (let i = 0; i < trs.length; i++) {
+            if (i < length - 1) continue;
+            if (i === length - 1) {
+                let sum = 0;
+                for (let j = 0; j <= i; j++) sum += trs[j];
+                rma = sum / length;
+            } else {
+                rma = (rma * (length - 1) + trs[i]) / length;
+            }
+            out[i] = rma;
+        }
+        return out;
+    }
+
+    function calcFractals(candles) {
+        const up = [], down = [];
+        for (let i = 4; i < candles.length; i++) {
+            const h0=candles[i].high, h1=candles[i-1].high, h2=candles[i-2].high, h3=candles[i-3].high, h4=candles[i-4].high;
+            if (h2>h3 && h2>h1 && h2>h4 && h2>h0) up.push({ time: candles[i-2].time, price: h2 });
+            const l0=candles[i].low, l1=candles[i-1].low, l2=candles[i-2].low, l3=candles[i-3].low, l4=candles[i-4].low;
+            if (l2<l3 && l2<l1 && l2<l4 && l2<l0) down.push({ time: candles[i-2].time, price: l2 });
+        }
+        return { up, down };
+    }
+
+    function computeStructureMap(candles) {
+        let range_dir = 1, range_high = null, range_low = null, high_locked = false, low_locked = false;
+        let lowest_since_bd = null, highest_since_bu = null;
+        const highLine = new Array(candles.length).fill(null);
+        const lowLine = new Array(candles.length).fill(null);
+        for (let i = 0; i < candles.length; i++) {
+            const o=candles[i].open, h=candles[i].high, l=candles[i].low, c=candles[i].close;
+            const prevLow = i>0 ? candles[i-1].low : null;
+            const prevHigh = i>0 ? candles[i-1].high : null;
+            const bd_event = prevLow!=null && (o<prevLow || c<prevLow);
+            lowest_since_bd = bd_event ? l : (lowest_since_bd==null ? l : Math.min(lowest_since_bd,l));
+            const bu_event = prevHigh!=null && (o>prevHigh || c>prevHigh);
+            highest_since_bu = bu_event ? h : (highest_since_bu==null ? h : Math.max(highest_since_bu,h));
+
+            let mfx_ph=false, mfx_pl=false;
+            if (i>=2) {
+                const cH=candles[i-1].high, lH=candles[i-2].high, rH=h;
+                mfx_ph = cH>lH && cH>rH;
+                const cL=candles[i-1].low, lL=candles[i-2].low, rL=l;
+                mfx_pl = cL<lL && cL<rL;
+            }
+
+            if (range_dir===1) {
+                if (!high_locked) {
+                    const cur_high = range_high==null ? h : Math.max(range_high,h);
+                    const was_na_h = range_high==null;
+                    if (was_na_h || cur_high>range_high) range_high = cur_high;
+                    if (mfx_ph) high_locked = true;
+                } else {
+                    if (o>range_high || c>range_high) {
+                        high_locked=false; range_high=h; range_low=lowest_since_bd;
+                    }
+                }
+                if (range_low==null) range_low = lowest_since_bd;
+                if (range_low!=null && (o<range_low || c<range_low)) {
+                    range_dir=-1; high_locked=false; low_locked=false;
+                    range_low=l; range_high=highest_since_bu;
+                }
+            } else {
+                if (!low_locked) {
+                    const cur_low = range_low==null ? l : Math.min(range_low,l);
+                    const was_na_l = range_low==null;
+                    if (was_na_l || cur_low<range_low) range_low = cur_low;
+                    if (mfx_pl) low_locked = true;
+                } else {
+                    if (o<range_low || c<range_low) {
+                        low_locked=false; range_low=l; range_high=highest_since_bu;
+                    }
+                }
+                if (range_high==null) range_high = highest_since_bu;
+                if (range_high!=null && (o>range_high || c>range_high)) {
+                    range_dir=1; high_locked=false; low_locked=false;
+                    range_high=h; range_low=lowest_since_bd;
+                }
+            }
+            highLine[i]=range_high;
+            lowLine[i]=range_low;
+        }
+        return { highLine, lowLine };
+    }
+
+    function aggregatePeriod(candles, period) {
+        const groups = [];
+        let curKey = null, curGroup = null;
+        for (const c of candles) {
+            const d = new Date(c.time * 1000);
+            const key = period==='month' ? (d.getUTCFullYear()+'-'+d.getUTCMonth()) : (''+d.getUTCFullYear());
+            if (key !== curKey) {
+                curKey = key;
+                curGroup = { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close };
+                groups.push(curGroup);
+            } else {
+                curGroup.high = Math.max(curGroup.high, c.high);
+                curGroup.low = Math.min(curGroup.low, c.low);
+                curGroup.close = c.close;
+            }
+        }
+        return groups;
+    }
+
+    function mapHTFValue(mainTime, htfCandles, htfEmaArr) {
+        let l=0, r=htfCandles.length-1, ans=-1;
+        while (l<=r) {
+            const mid=(l+r)>>1;
+            if (htfCandles[mid].time <= mainTime) { ans=mid; l=mid+1; } else r=mid-1;
+        }
+        const completedIdx = ans - 1;
+        if (completedIdx < 0) return null;
+        return htfEmaArr[completedIdx];
+    }
+
+    function buildHTFLine(mainCandles, htfCandles, length, smoothLen) {
+        if (!htfCandles || htfCandles.length < 2) return new Array(mainCandles.length).fill(null);
+        const closes = htfCandles.map(c => c.close);
+        let ema = calcEMA(closes, length);
+        if (smoothLen > 1) ema = calcEMA(ema.map(v=>v==null?closes[0]:v), smoothLen);
+        return mainCandles.map(c => mapHTFValue(c.time, htfCandles, ema));
+    }
+
+    async function render(opts) {
+        const { chart, series, container, candles, interval, fetchHTF } = opts;
+        if (!candles || candles.length < 5) return;
+        const closes = candles.map(c=>c.close);
+
+        if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+        container.querySelectorAll('.ici-overlay-label').forEach(el => el.remove());
+
+        // 1) EMA/SMA lines
+        const ma1 = calcEMA(closes, 5);
+        const ma2 = calcEMA(closes, 10);
+        const ma3 = calcEMA(closes, 20);
+        const ma4 = calcEMA(closes, 50);
+        const sma = calcSMA(closes, 50);
+
+        [
+            { data: ma1, color: '#00FF00', width: 1 },
+            { data: ma2, color: '#000000', width: 1 },
+            { data: ma3, color: '#FF0000', width: 2 },
+            { data: ma4, color: '#808080', width: 1 },
+            { data: sma, color: '#BABDC0', width: 1 }
+        ].forEach(def => {
+            const ls = chart.addLineSeries({ color: def.color, lineWidth: def.width, priceLineVisible: false, lastValueVisible: false });
+            ls.setData(candles.map((c,i)=>({ time: c.time, value: def.data[i] })).filter(p=>p.value!=null));
+        });
+
+        // 2) ATR + Big Candle Highlight
+        const atr = calcATR(candles, 14);
+        const bigEma20 = calcEMA(closes, 20);
+        const coloredCandles = candles.map((c,i) => {
+            const a = atr[i];
+            if (a == null) return c;
+            const range = c.high - c.low;
+            const threshold = a * 2.0;
+            const isBull = c.close > c.open, isBear = c.close < c.open;
+            const e20 = bigEma20[i];
+            const above = e20!=null && c.close > e20;
+            const below = e20!=null && c.close < e20;
+            const isBig = range >= threshold && ((above && isBull) || (below && isBear));
+            return isBig ? { ...c, color: '#2196F3', wickColor: '#2196F3', borderColor: '#2196F3' } : c;
+        });
+        series.setData(coloredCandles);
+
+        // 3) Fractals as markers
+        const { up, down } = calcFractals(candles);
+        const markers = [
+            ...up.map(f => ({ time: f.time, position: 'aboveBar', color: '#000000', shape: 'circle', text: '' })),
+            ...down.map(f => ({ time: f.time, position: 'belowBar', color: '#000000', shape: 'circle', text: '' }))
+        ].sort((a,b) => a.time - b.time);
+        series.setMarkers(markers);
+
+        // 4) Structure Map
+        const { highLine, lowLine } = computeStructureMap(candles);
+        const structHigh = chart.addLineSeries({ color: '#2196F3', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+        const structLow = chart.addLineSeries({ color: '#2196F3', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+        structHigh.setData(candles.map((c,i)=>({ time: c.time, value: highLine[i] })).filter(p=>p.value!=null));
+        structLow.setData(candles.map((c,i)=>({ time: c.time, value: lowLine[i] })).filter(p=>p.value!=null));
+
+        // 5) HTF EMA1 (auto) + HTF2 (fixed 4H)
+        try {
+            let htf1Candles = null;
+            if (interval === '1h') htf1Candles = await fetchHTF('1day');
+            else if (interval === '4h') htf1Candles = await fetchHTF('1week');
+            else if (interval === '1day') htf1Candles = aggregatePeriod(candles, 'month');
+            else if (interval === '1week') htf1Candles = aggregatePeriod(candles, 'year');
+
+            if (htf1Candles && htf1Candles.length > 5) {
+                const htf1Line = buildHTFLine(candles, htf1Candles, 20, 3);
+                const s1 = chart.addLineSeries({ color: '#FF6D00', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+                s1.setData(candles.map((c,i)=>({ time: c.time, value: htf1Line[i] })).filter(p=>p.value!=null));
+            }
+
+            const htf2Candles = interval === '4h' ? candles : await fetchHTF('4h');
+            if (htf2Candles && htf2Candles.length > 5) {
+                const htf2Line = buildHTFLine(candles, htf2Candles, 20, 3);
+                const s2 = chart.addLineSeries({ color: '#AA00FF', lineWidth: 2, priceLineVisible: false, lastValueVisible: false });
+                s2.setData(candles.map((c,i)=>({ time: c.time, value: htf2Line[i] })).filter(p=>p.value!=null));
+            }
+        } catch (e) { console.warn('[ICIIndicator] HTF EMA error:', e.message); }
+
+        // 6) Watermark + ATR text overlay
+        const lastClose = closes[closes.length-1];
+        const lastEma20 = bigEma20[bigEma20.length-1];
+        const marketBull = lastEma20!=null && lastClose > lastEma20;
+        const marketBear = lastEma20!=null && lastClose < lastEma20;
+        const wmColor = marketBull ? '#00FF7F' : marketBear ? '#FF4444' : '#CFD8DC';
+        const wmBg = marketBull ? 'rgba(0,51,0,0.6)' : marketBear ? 'rgba(45,0,0,0.6)' : 'rgba(10,14,26,0.6)';
+
+        const wmDiv = document.createElement('div');
+        wmDiv.className = 'ici-overlay-label';
+        wmDiv.textContent = '◈ ICI BY Muhammad Aamir ◈';
+        wmDiv.style.cssText = `position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:${wmBg};color:${wmColor};border:1px solid ${wmColor};padding:2px 10px;font-size:13px;font-weight:600;border-radius:3px;pointer-events:none;z-index:5;white-space:nowrap;`;
+        container.appendChild(wmDiv);
+
+        const lastAtr = atr[atr.length-1];
+        const atrDiv = document.createElement('div');
+        atrDiv.className = 'ici-overlay-label';
+        atrDiv.textContent = `◈ ATR (${interval}) : ${lastAtr!=null ? lastAtr.toFixed(5) : '-'} ◈`;
+        atrDiv.style.cssText = `position:absolute;bottom:6px;right:6px;background:${wmBg};color:${wmColor};border:1px solid ${wmColor};padding:2px 8px;font-size:11px;font-weight:600;border-radius:3px;pointer-events:none;z-index:5;white-space:nowrap;`;
+        container.appendChild(atrDiv);
+    }
+
+    return { render };
+})();

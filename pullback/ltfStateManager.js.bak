@@ -1,5 +1,3 @@
-const PB_STATE = {};
-
 function defaultLtfState() {
     return {
         ltfPhase: 'wait_ltf_dip',
@@ -7,4 +5,4 @@ function defaultLtfState() {
     };
 }
 
-module.exports = { PB_STATE, defaultLtfState };
+module.exports = { defaultLtfState };

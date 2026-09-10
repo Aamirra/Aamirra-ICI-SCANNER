@@ -1,5 +1,4 @@
 const http = require('http');
-const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const admin = require('./core/firebase');
@@ -45,16 +44,6 @@ async function commitFileChange(owner, repo, filePath, newContent, commitMessage
         body: JSON.stringify(body)
     });
     return putRes;
-}
-
-const CRYPTO_SYMBOLS_NO_WEEKEND_FILTER = new Set(['BTCUSD','ETHUSD','LTCUSD','BCHUSD','FXSUSD','LQTYUSD','MASKUSD']);
-function isWeekendGap(unixSeconds) {
-    const d = new Date(unixSeconds * 1000);
-    const day = d.getUTCDay(); // 0=Sunday, 6=Saturday
-    const hour = d.getUTCHours();
-    if (day === 6) return true;
-    if (day === 0 && hour < 22) return true;
-    return false;
 }
 
 http.createServer((req, res) => {
@@ -456,174 +445,9 @@ Always put the action block FIRST, then your reply.`;
             });
         }
         candles.sort((a, b) => a.time - b.time);
-        const finalCandles = CRYPTO_SYMBOLS_NO_WEEKEND_FILTER.has(symbol) ? candles : candles.filter(c => !isWeekendGap(c.time));
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ symbol, interval, candles: finalCandles }));
-        return;
-    }
-
-    if (safePath === '/api/crypto-chart') {
-        (async () => {
-            try {
-                const urlParams = new URL(req.url, `http://${req.headers.host}`).searchParams;
-                const symbol = urlParams.get('symbol');
-                const interval = urlParams.get('interval') || '1h';
-                const totalWanted = Math.min(parseInt(urlParams.get('limit')) || 15000, 15000);
-
-                if (!symbol) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'symbol is required' }));
-                    return;
-                }
-
-                const binanceIntervalMap = { '1h': '1h', '4h': '4h', '1day': '1d', '1week': '1w' };
-                const binanceInterval = binanceIntervalMap[interval] || '1h';
-                const binanceSymbol = symbol.replace('USD', 'USDT');
-
-                function fetchKlines(endTime) {
-                    return new Promise((resolve) => {
-                        let url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${binanceInterval}&limit=1000`;
-                        if (endTime) url += `&endTime=${endTime}`;
-                        https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (r) => {
-                            let data = '';
-                            r.on('data', c => data += c);
-                            r.on('end', () => {
-                                try {
-                                    const json = JSON.parse(data);
-                                    resolve(Array.isArray(json) ? json : []);
-                                } catch (e) { resolve([]); }
-                            });
-                        }).on('error', () => resolve([]));
-                    });
-                }
-
-                let allKlines = [];
-                let endTime = null;
-                let guard = 0;
-                while (allKlines.length < totalWanted && guard < 20) {
-                    guard++;
-                    const batch = await fetchKlines(endTime);
-                    if (!batch.length) break;
-                    allKlines = batch.concat(allKlines);
-                    endTime = batch[0][0] - 1;
-                    if (batch.length < 1000) break;
-                    await new Promise(r => setTimeout(r, 150));
-                }
-
-                if (allKlines.length > totalWanted) {
-                    allKlines = allKlines.slice(allKlines.length - totalWanted);
-                }
-
-                const candles = allKlines.map(k => ({
-                    time: Math.floor(k[0] / 1000),
-                    open: parseFloat(k[1]),
-                    high: parseFloat(k[2]),
-                    low: parseFloat(k[3]),
-                    close: parseFloat(k[4])
-                }));
-
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ symbol, interval, candles }));
-            } catch (e) {
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ error: e.message }));
-            }
-        })();
-        return;
-    }
-
-    if (safePath === '/api/stock-chart') {
-        (async () => {
-            try {
-                const urlParams = new URL(req.url, `http://${req.headers.host}`).searchParams;
-                const symbol = urlParams.get('symbol');
-                const market = urlParams.get('market') || 'exness';
-                const interval = urlParams.get('interval') || '1h';
-                const totalWanted = Math.min(parseInt(urlParams.get('limit')) || 15000, 15000);
-
-                if (!symbol) {
-                    res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: 'symbol is required' }));
-                    return;
-                }
-
-                const yahooSymbol = market === 'psx' ? `${symbol}.KA` : symbol;
-
-                function fetchYahooChart(yInterval, yRange) {
-                    return new Promise((resolve) => {
-                        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=${yRange}&interval=${yInterval}`;
-                        https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (r) => {
-                            let data = '';
-                            r.on('data', c => data += c);
-                            r.on('end', () => {
-                                try {
-                                    const json = JSON.parse(data);
-                                    resolve((json && json.chart && json.chart.result && json.chart.result[0]) || null);
-                                } catch (e) { resolve(null); }
-                            });
-                        }).on('error', () => resolve(null));
-                    });
-                }
-
-                function toCandles(result) {
-                    if (!result || !result.timestamp) return [];
-                    const q = result.indicators && result.indicators.quote && result.indicators.quote[0];
-                    if (!q) return [];
-                    const candles = [];
-                    for (let i = 0; i < result.timestamp.length; i++) {
-                        const o = q.open[i], h = q.high[i], l = q.low[i], c = q.close[i];
-                        if (o == null || h == null || l == null || c == null) continue;
-                        candles.push({ time: result.timestamp[i], open: o, high: h, low: l, close: c });
-                    }
-                    return candles;
-                }
-
-                function aggregate4h(hourly) {
-                    const agg = [];
-                    for (let i = 0; i + 3 < hourly.length; i += 4) {
-                        const group = hourly.slice(i, i + 4);
-                        agg.push({
-                            time: group[0].time,
-                            open: group[0].open,
-                            high: Math.max.apply(null, group.map(c => c.high)),
-                            low: Math.min.apply(null, group.map(c => c.low)),
-                            close: group[group.length - 1].close
-                        });
-                    }
-                    return agg;
-                }
-
-                let candles = [];
-                try {
-                    if (interval === '1h') {
-                        const result = await fetchYahooChart('60m', '730d');
-                        candles = toCandles(result);
-                    } else if (interval === '4h') {
-                        const result = await fetchYahooChart('60m', '730d');
-                        candles = aggregate4h(toCandles(result));
-                    } else if (interval === '1week') {
-                        const result = await fetchYahooChart('1wk', 'max');
-                        candles = toCandles(result);
-                    } else {
-                        const result = await fetchYahooChart('1d', 'max');
-                        candles = toCandles(result);
-                    }
-                } catch (innerErr) {
-                    candles = [];
-                }
-
-                if (candles.length > totalWanted) {
-                    candles = candles.slice(candles.length - totalWanted);
-                }
-
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ symbol, interval, candles }));
-            } catch (e) {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ symbol: '', interval: '', candles: [] }));
-            }
-        })();
+        res.end(JSON.stringify({ symbol, interval, candles }));
         return;
     }
 
