@@ -49,9 +49,9 @@ try {
 const agent = new https.Agent({ keepAlive: true, maxSockets: 20 });
 
 // ⚡ ULTRA‑SAFE RATE LIMITS ⚡
-const MAX_CONCURRENT = 25;       // 10 parallel requests (16 keys available)
-const REQUEST_DELAY_MS  = 50;   // small stagger only
-const BATCH_DELAY_MS    = 20;   // minimal gap between batches
+const MAX_CONCURRENT = 16;       // 10 parallel requests (16 keys available)
+const REQUEST_DELAY_MS  = 100;   // small stagger only
+const BATCH_DELAY_MS    = 50;   // minimal gap between batches
 const RATE_PER_MIN   = 5;        // max 5 calls per minute per key
 const MIN_CREDIT     = 10;
 const COOLDOWN_MS    = 60 * 1000;
@@ -864,27 +864,15 @@ async function masterScan() {
             const tfs = ['1h', '4h', '1day', '1week', '15m'];   // ✅ Sabke liye 15m
             return tfs.map(tf => ({ p, tf }));
         });
-        console.time('⏱️ [Phase 1] Fetch data');
         let failed = await fetchBatch(jobs);
-        console.timeEnd('⏱️ [Phase 1] Fetch data');
-
         fetchMentFXSentiment();
-
-        console.time('⏱️ [Phase 2] Technical metrics');
         await calculateAndUpdateTechnicalMetrics(RAW_DAILY, RAW_1H);
-        console.timeEnd('⏱️ [Phase 2] Technical metrics');
-
         if (calculateAndUpdateStockMetrics) {
-            console.time('⏱️ [Phase 3] Stock metrics');
             try { await calculateAndUpdateStockMetrics(); } catch (err) {
                 console.error('[Scanner] Stock metrics failed:', err.message);
             }
-            console.timeEnd('⏱️ [Phase 3] Stock metrics');
         }
-
-        console.time('⏱️ [Phase 4] Pullback notifications');
         await sendStrongPullbackNotifications();
-        console.timeEnd('⏱️ [Phase 4] Pullback notifications');
         const processPair = async (p) => {
             if (DATA_STORE[p.n]) {
                 await firebasePut(`marketData/${p.n}`, DATA_STORE[p.n]);
@@ -926,7 +914,6 @@ async function masterScan() {
             }
         };
 
-        console.time('⏱️ [Phase 5] Per-pair monitors');
         const PAIR_BATCH_SIZE = 20;
         for (let i = 0; i < config.PAIRS.length; i += PAIR_BATCH_SIZE) {
             const slice = config.PAIRS.slice(i, i + PAIR_BATCH_SIZE);
@@ -934,11 +921,7 @@ async function masterScan() {
                 console.error(`[masterScan] processPair failed for ${p.n}:`, err.message);
             })));
         }
-        console.timeEnd('⏱️ [Phase 5] Per-pair monitors');
-
-        console.time('⏱️ [Phase 6] Refresh key usage');
         await refreshRealUsage();
-        console.timeEnd('⏱️ [Phase 6] Refresh key usage');
     } catch (err) {
         console.error('[masterScan] Fatal error:', err);
     } finally {

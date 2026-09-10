@@ -262,7 +262,7 @@ async function calculateAndUpdateTechnicalMetrics(RAW_DAILY, RAW_1H) {
     const results = [];
     const CACHE_WINDOW = 2 * 60 * 60 * 1000; 
 
-    const processPair = async (pair) => {
+    for (const pair of allPairs) {
         let daily = RAW_DAILY ? RAW_DAILY[pair.n] : undefined;
         let hourly = RAW_1H ? RAW_1H[pair.n] : undefined;
         let needVolume = false;
@@ -324,7 +324,7 @@ async function calculateAndUpdateTechnicalMetrics(RAW_DAILY, RAW_1H) {
                 };
             } else if (!daily || !daily.closes || daily.closes.length < 200) {
                 console.warn(`[Metrics] Skipping ${pair.n} due to unavailability of historical tracking.`);
-                return null;
+                continue;
             }
         }
 
@@ -350,38 +350,32 @@ async function calculateAndUpdateTechnicalMetrics(RAW_DAILY, RAW_1H) {
         const todayVolume = volumesD[volumesD.length - 1] || 0;
         const dollarVolume1d = formatDollarVolume(todayVolume, currentPriceD);
 
-        return {
+        results.push({
             pair: pair.n,
             longTermTrend: parseFloat(longTermTrend.toFixed(2)),
             shortTermMomentum: parseFloat(shortTermMomentum.toFixed(2)),
             microMomentum: microMomentum !== null ? parseFloat(microMomentum.toFixed(2)) : null,
             volume7dAvg: volume7dAvg !== null ? Math.round(volume7dAvg) : null,
             dollarVolume1d
-        };
-    };
+        });
 
-    const METRICS_BATCH_SIZE = 16;
-    for (let i = 0; i < allPairs.length; i += METRICS_BATCH_SIZE) {
-        const slice = allPairs.slice(i, i + METRICS_BATCH_SIZE);
-        const batchResults = await Promise.all(slice.map(pair => processPair(pair).catch(err => {
-            console.error(`[Metrics] processPair failed for ${pair.n}:`, err.message);
-            return null;
-        })));
-        for (const r of batchResults) if (r) results.push(r);
+        await sleep(150); 
     }
 
-    // Sync results back to Firebase (parallel batches)
-    const FIREBASE_SYNC_BATCH = 20;
-    for (let i = 0; i < results.length; i += FIREBASE_SYNC_BATCH) {
-        const slice = results.slice(i, i + FIREBASE_SYNC_BATCH);
-        await Promise.all(slice.map(metric => firebasePut(`technicalMetrics/${metric.pair}`, {
-            longTermTrend: metric.longTermTrend,
-            shortTermMomentum: metric.shortTermMomentum,
-            microMomentum: metric.microMomentum,
-            volume7dAvg: metric.volume7dAvg,
-            dollarVolume1d: metric.dollarVolume1d,
-            updatedAt: Date.now()
-        }).catch(err => console.error(`[Firebase Error] Save failed for ${metric.pair}:`, err.message))));
+    // Sync results back to Firebase
+    for (const metric of results) {
+        try {
+            await firebasePut(`technicalMetrics/${metric.pair}`, {
+                longTermTrend: metric.longTermTrend,
+                shortTermMomentum: metric.shortTermMomentum,
+                microMomentum: metric.microMomentum,
+                volume7dAvg: metric.volume7dAvg,
+                dollarVolume1d: metric.dollarVolume1d,
+                updatedAt: Date.now()
+            });
+        } catch (err) {
+            console.error(`[Firebase Error] Save failed for ${metric.pair}:`, err.message);
+        }
     }
 
     console.log(`[Metrics Pipeline] 🎉 Task finished. Successfully updated ${results.length} pairs.`);

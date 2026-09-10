@@ -49,9 +49,9 @@ try {
 const agent = new https.Agent({ keepAlive: true, maxSockets: 20 });
 
 // ⚡ ULTRA‑SAFE RATE LIMITS ⚡
-const MAX_CONCURRENT = 25;       // 10 parallel requests (16 keys available)
-const REQUEST_DELAY_MS  = 50;   // small stagger only
-const BATCH_DELAY_MS    = 20;   // minimal gap between batches
+const MAX_CONCURRENT = 2;        // only 2 parallel requests
+const REQUEST_DELAY_MS  = 3500;  // 3.5 seconds between calls
+const BATCH_DELAY_MS    = 4000;  // 4 seconds after every batch
 const RATE_PER_MIN   = 5;        // max 5 calls per minute per key
 const MIN_CREDIT     = 10;
 const COOLDOWN_MS    = 60 * 1000;
@@ -821,7 +821,6 @@ function sendTelegramDirect(text) {
 async function masterScan() {
     if (isScanning) return;
     isScanning = true;
-    const scanStartTime = Date.now();
 
     // 🟢 SCAN START STATUS
     try {
@@ -864,37 +863,28 @@ async function masterScan() {
             const tfs = ['1h', '4h', '1day', '1week', '15m'];   // ✅ Sabke liye 15m
             return tfs.map(tf => ({ p, tf }));
         });
-        console.time('⏱️ [Phase 1] Fetch data');
         let failed = await fetchBatch(jobs);
-        console.timeEnd('⏱️ [Phase 1] Fetch data');
-
         fetchMentFXSentiment();
-
-        console.time('⏱️ [Phase 2] Technical metrics');
         await calculateAndUpdateTechnicalMetrics(RAW_DAILY, RAW_1H);
-        console.timeEnd('⏱️ [Phase 2] Technical metrics');
-
         if (calculateAndUpdateStockMetrics) {
-            console.time('⏱️ [Phase 3] Stock metrics');
             try { await calculateAndUpdateStockMetrics(); } catch (err) {
                 console.error('[Scanner] Stock metrics failed:', err.message);
             }
-            console.timeEnd('⏱️ [Phase 3] Stock metrics');
         }
-
-        console.time('⏱️ [Phase 4] Pullback notifications');
         await sendStrongPullbackNotifications();
-        console.timeEnd('⏱️ [Phase 4] Pullback notifications');
-        const processPair = async (p) => {
+        for (const p of config.PAIRS) {
             if (DATA_STORE[p.n]) {
                 await firebasePut(`marketData/${p.n}`, DATA_STORE[p.n]);
+                // Determine category
                 const category = p.isCrypto ? 'crypto' : 'forex';
+                // Use conditional TG for pullback engine
                 pullbackEngine.checkRules(p, DATA_STORE[p.n], RAW_1H[p.n], (msg) => conditionalSendTG(msg, category), firebasePut, '1h');
                 if (RAW_4H[p.n]) {
                     pullbackEngine.checkRules(p, DATA_STORE[p.n], RAW_4H[p.n], (msg) => conditionalSendTG(msg, category), firebasePut, '4h');
                 }
             }
 
+            // 🔥 Execute Strategy Monitors
             const pairName = p.n;
             const dailyData = {
                 closes: RAW_DAILY[pairName]?.closes,
@@ -910,6 +900,7 @@ async function masterScan() {
                 await bearMonitor(`${pairName}_BEAR`, pairName, dailyData, hourlyData, (msg) => conditionalSendTG(msg, category), firebasePut, category, alertSettings);
             }
 
+            // ✅ LTF Bull Monitor (all markets, requires 4h and 15m data)
             if (RAW_4H[pairName] && RAW_15M[pairName]) {
                 const fourHourData = { closes: RAW_4H[pairName].closes };
                 const fifteenMinData = { closes: RAW_15M[pairName].closes };
@@ -924,21 +915,8 @@ async function masterScan() {
                     alertSettings
                 );
             }
-        };
-
-        console.time('⏱️ [Phase 5] Per-pair monitors');
-        const PAIR_BATCH_SIZE = 20;
-        for (let i = 0; i < config.PAIRS.length; i += PAIR_BATCH_SIZE) {
-            const slice = config.PAIRS.slice(i, i + PAIR_BATCH_SIZE);
-            await Promise.all(slice.map(p => processPair(p).catch(err => {
-                console.error(`[masterScan] processPair failed for ${p.n}:`, err.message);
-            })));
         }
-        console.timeEnd('⏱️ [Phase 5] Per-pair monitors');
-
-        console.time('⏱️ [Phase 6] Refresh key usage');
         await refreshRealUsage();
-        console.timeEnd('⏱️ [Phase 6] Refresh key usage');
     } catch (err) {
         console.error('[masterScan] Fatal error:', err);
     } finally {
@@ -950,12 +928,9 @@ async function masterScan() {
             console.error('[masterScan] Failed to set scan complete status:', err.message);
         }
 
-        const scanDurationSec = ((Date.now() - scanStartTime) / 1000).toFixed(1);
-        console.log(`⏱️ Master Scan finished in ${scanDurationSec}s`);
-
         // 👇 AUTO‑SCAN NOTIFICATION (always send if AUTO_SCAN=true)
         if (process.env.AUTO_SCAN === 'true') {
-            await sendTelegramDirect(`✅ ICI Scanner: auto‑scan completed at ${new Date().toLocaleString()} (${scanDurationSec}s)`);
+            await sendTelegramDirect(`✅ ICI Scanner: auto‑scan completed at ${new Date().toLocaleString()}`);
         }
 
         isScanning = false;
