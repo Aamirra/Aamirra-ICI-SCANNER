@@ -169,21 +169,7 @@ window.ICIIndicator = (function() {
         bigCandle: { label:'Big Candle ATR', period:14, multiplier:2.0, color:'#2196F3', visible:true },
         fractals:  { label:'Fractals',                  color:'#000000', visible:true }
     };
-    const STORAGE_KEY = 'ici-indicator-settings';
-    function loadSavedSettings(){
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-            const saved = JSON.parse(raw);
-            const merged = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-            Object.keys(merged).forEach(function(id){ if (saved[id]) Object.assign(merged[id], saved[id]); });
-            return merged;
-        } catch(e) { return JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); }
-    }
-    function persistSettings(){
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(indicatorSettings)); } catch(e) {}
-    }
-    let indicatorSettings = loadSavedSettings();
+    let indicatorSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
     const chartStates = {};      // containerId -> { chart, series, container, candles, interval, fetchHTF, lines, lastValues }
     const legendCollapsed = {};  // containerId -> bool
     let activeSettingsTab = 'inputs';
@@ -287,7 +273,6 @@ window.ICIIndicator = (function() {
 
     function toggleIndicatorVisible(containerId, id){
         indicatorSettings[id].visible = !indicatorSettings[id].visible;
-        persistSettings();
         redrawIndicators(containerId);
     }
 
@@ -365,7 +350,6 @@ window.ICIIndicator = (function() {
         readInputsIntoTemp();
         if (!settingsCtx || !tempCfg) return;
         indicatorSettings[settingsCtx.id] = tempCfg;
-        persistSettings();
         const containerId = settingsCtx.containerId;
         closeSettings();
         redrawIndicators(containerId);
