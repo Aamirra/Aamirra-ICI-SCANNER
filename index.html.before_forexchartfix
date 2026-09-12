@@ -471,7 +471,7 @@ if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Ale
 </script>
 
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="ici-indicator.js?v=5"></script>
+<script src="ici-indicator.js"></script>
 <script src="Alerts.js"></script>
 
 <script>
@@ -1223,7 +1223,7 @@ function lwIntervalMap(tvInterval) {
 }
 async function fetchHTFCandles(symbol, tfKey) {
     try {
-        const res = await fetch(`/api/forex-chart?symbol=${encodeURIComponent(symbol)}&interval=${tfKey}&limit=15000`);
+        const res = await fetch(`/api/candles?symbol=${encodeURIComponent(symbol)}&interval=${tfKey}`);
         const data = await res.json();
         return data.candles || [];
     } catch (e) { return []; }
@@ -1272,20 +1272,14 @@ async function drawChart(slot) {
 
     const interval = lwIntervalMap(chartIntervals[slot-1]);
     try {
-        const res = await fetch(`/api/forex-chart?symbol=${encodeURIComponent(symbol)}&interval=${interval}&limit=15000`);
+        const res = await fetch(`/api/candles?symbol=${encodeURIComponent(symbol)}&interval=${interval}`);
         const data = await res.json();
         if (data.candles && data.candles.length) {
             await window.ICIIndicator.render({
                 chart, series, container, candles: data.candles, interval,
                 fetchHTF: (tfKey) => fetchHTFCandles(symbol, tfKey)
             });
-            const totalBars = data.candles.length;
-            const VISIBLE_BARS = 150;
-            if (totalBars > VISIBLE_BARS) {
-                chart.timeScale().setVisibleLogicalRange({ from: totalBars - VISIBLE_BARS, to: totalBars + 2 });
-            } else {
-                chart.timeScale().fitContent();
-            }
+            chart.timeScale().fitContent();
         } else {
             console.warn(`[Chart] No candle data for ${symbol} (${interval})`, data.error || '');
         }

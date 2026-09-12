@@ -445,7 +445,7 @@ if (typeof openAlertDialog !== 'function') window.openAlertDialog = p=>alert('Al
 if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Alerts list');
 </script>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="ici-indicator.js"></script>
+<script src="ici-indicator.js?v=5"></script>
 <script src="Alerts.js"></script>
 <script>
 (function() {
@@ -501,6 +501,10 @@ if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Ale
 <script>
 firebase.initializeApp({ databaseURL: "https://fatima-16b38-default-rtdb.firebaseio.com" });
 const db = firebase.database();
+let SLEVEL_STATE = { W: {}, '240': {}, '30': {} };
+db.ref('slevelState/W').on('value', snap => { SLEVEL_STATE.W = snap.val() || {}; if (typeof renderDebounced === 'function') renderDebounced(); });
+db.ref('slevelState/240').on('value', snap => { SLEVEL_STATE['240'] = snap.val() || {}; if (typeof renderDebounced === 'function') renderDebounced(); });
+db.ref('slevelState/30').on('value', snap => { SLEVEL_STATE['30'] = snap.val() || {}; if (typeof renderDebounced === 'function') renderDebounced(); });
 
 // ── Market state ──
 let currentMarket = 'exness';
@@ -564,15 +568,21 @@ function toggleDirection() {
 }
 
 function setSLevelFilter(level) {
-    currentSLevel = level;
-    document.querySelectorAll('.slevel-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('sLevelBtn' + level).classList.add('active');
+    if (currentSLevel === level) {
+        currentSLevel = null;
+        document.querySelectorAll('.slevel-btn').forEach(b => b.classList.remove('active'));
+    } else {
+        currentSLevel = level;
+        document.querySelectorAll('.slevel-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('sLevelBtn' + level).classList.add('active');
+    }
     if (typeof refreshSLevels === 'function') refreshSLevels();
 }
 
-// Structure engine (Choch/BOS) pending fractal N — wired here once ready.
+// Structure engine (Choch/BOS) — reads live S01-S05 state from Firebase (core/slevelEngine.js) and re-renders the list.
 function refreshSLevels() {
-    // placeholder
+    if (typeof renderDebounced === 'function') renderDebounced();
+    else if (typeof render === 'function') render();
 }
 
 window.alertSettings = alertSettings;
@@ -1133,6 +1143,16 @@ function render() {
         filtered = allSymbols.filter(sym => isStrongTrend(sym, MARKET_DATA[sym], curF));
     } else if (curF === 'target') {
         filtered = allSymbols.filter(sym => validTargets.has(sym));
+    }
+
+    if (currentSLevel) {
+        const SLEVEL_HTF_MAP = { H: 'W', M: '240', L: '30' };
+        const sLevelHtfKey = SLEVEL_HTF_MAP[currentTFPreset] || 'W';
+        const sLevelWantDir = currentDirection === 'long' ? 'bull' : 'bear';
+        filtered = filtered.filter(p => {
+            const s = (SLEVEL_STATE[sLevelHtfKey] || {})[p.n];
+            return s && s.direction === sLevelWantDir && s.level === currentSLevel;
+        });
     }
 
     filtered = applyColumnSortAndFilter(filtered);

@@ -257,9 +257,6 @@ window.ICIIndicator = (function() {
                 indicatorSettings = merged;
                 try { localStorage.setItem(STORAGE_KEY, JSON.stringify(indicatorSettings)); } catch(e) {}
                 Object.keys(chartStates).forEach(function(cid){ redrawIndicators(cid); });
-            } else {
-                // Firebase abhi khaali hai — jo settings pehle se localStorage mein hain unhe bootstrap ke tor pe push karo
-                persistSettings();
             }
         } catch(e) {}
     }

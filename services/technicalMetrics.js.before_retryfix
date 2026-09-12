@@ -178,11 +178,7 @@ function fetchYahooDailyCandles(yahooSymbol) {
 // ═══════════════════════════════════════════
 // 3. TWELVE DATA API (SAFE MULTI-KEY POOL EXECUTION)
 // ═══════════════════════════════════════════
-async function fetchTwelveDataVolume(pairName, retryCount = 0) {
-    if (retryCount > 5) {
-        console.warn(`[TwelveData] Max retries reached for ${pairName} — skipping to avoid hanging.`);
-        return null;
-    }
+async function fetchTwelveDataVolume(pairName) {
     const keyIndex = await getAvailableKeyIndex(TD_KEYS, 'td_counter', TD_DAILY_LIMIT_PER_KEY);
     if (keyIndex === -1) {
         console.warn(`[TwelveData] All daily limits exhausted for all 16 keys.`);
@@ -199,7 +195,7 @@ async function fetchTwelveDataVolume(pairName, retryCount = 0) {
     if (newCount >= TD_DAILY_LIMIT_PER_KEY) {
         console.warn(`[TwelveData] Key index ${keyIndex} hit daily maximum threshold.`);
         await setKeyExhausted('td_counter', keyIndex);
-        return fetchTwelveDataVolume(pairName, retryCount + 1);
+        return fetchTwelveDataVolume(pairName);
     }
 
     return new Promise((resolve) => {
@@ -213,8 +209,8 @@ async function fetchTwelveDataVolume(pairName, retryCount = 0) {
                     // Minutely rate limit fallback protection
                     if (json.code === 429 || (json.status === 'error' && json.message?.includes('rate limit'))) {
                         console.warn(`[TwelveData] Minutely limit triggered on key index ${keyIndex}. Retrying instantly with another key...`);
-                        await sleep(1000);
-                        resolve(await fetchTwelveDataVolume(pairName, retryCount + 1));
+                        await sleep(1000); 
+                        resolve(await fetchTwelveDataVolume(pairName)); 
                         return;
                     }
                     

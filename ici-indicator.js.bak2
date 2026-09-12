@@ -56,63 +56,6 @@ window.ICIIndicator = (function() {
         return { up, down };
     }
 
-    function ensureFractalOverlay(st) {
-        if (!st.fractalCanvas) {
-            if (getComputedStyle(st.container).position === 'static') {
-                st.container.style.position = 'relative';
-            }
-            const canvas = document.createElement('canvas');
-            canvas.style.position = 'absolute';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.pointerEvents = 'none';
-            canvas.style.zIndex = '5';
-            st.container.appendChild(canvas);
-            st.fractalCanvas = canvas;
-        }
-        if (!st.fractalRafActive) {
-            st.fractalRafActive = true;
-            const loop = () => {
-                try { redrawFractalCanvas(st); } catch(e) {}
-                st.fractalRafId = requestAnimationFrame(loop);
-            };
-            loop();
-        }
-    }
-
-    function redrawFractalCanvas(st) {
-        const canvas = st.fractalCanvas;
-        if (!canvas || !st.chart || !st.series) return;
-        const dpr = window.devicePixelRatio || 1;
-        const w = st.container.clientWidth, h = st.container.clientHeight;
-        if (canvas.width !== Math.round(w*dpr) || canvas.height !== Math.round(h*dpr)) {
-            canvas.width = Math.round(w*dpr);
-            canvas.height = Math.round(h*dpr);
-            canvas.style.width = w+'px';
-            canvas.style.height = h+'px';
-        }
-        const ctx = canvas.getContext('2d');
-        ctx.setTransform(dpr,0,0,dpr,0,0);
-        ctx.clearRect(0,0,w,h);
-        const frCfg = indicatorSettings.fractals;
-        if (!frCfg.visible || !st.fractalPoints) return;
-        const radius = Math.max(0.5, (frCfg.size||1) * 3);
-        const timeScale = st.chart.timeScale();
-        ctx.fillStyle = frCfg.color;
-        const drawSet = (pts, offsetDir) => {
-            pts.forEach(f => {
-                const x = timeScale.timeToCoordinate(f.time);
-                const y = st.series.priceToCoordinate(f.price);
-                if (x==null || y==null) return;
-                ctx.beginPath();
-                ctx.arc(x, y + offsetDir*(radius+3), radius, 0, 2*Math.PI);
-                ctx.fill();
-            });
-        };
-        drawSet(st.fractalPoints.up, -1);
-        drawSet(st.fractalPoints.down, 1);
-    }
-
     function computeStructureMap(candles) {
         let range_dir = 1, range_high = null, range_low = null, high_locked = false, low_locked = false;
         let lowest_since_bd = null, highest_since_bu = null;
@@ -239,33 +182,9 @@ window.ICIIndicator = (function() {
     }
     function persistSettings(){
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(indicatorSettings)); } catch(e) {}
-        try {
-            fetch('/api/indicator-settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ settings: indicatorSettings })
-            }).catch(function(){});
-        } catch(e) {}
-    }
-    async function syncSettingsFromFirebase(){
-        try {
-            const res = await fetch('/api/indicator-settings');
-            const saved = await res.json();
-            if (saved && Object.keys(saved).length) {
-                const merged = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-                Object.keys(merged).forEach(function(id){ if (saved[id]) Object.assign(merged[id], saved[id]); });
-                indicatorSettings = merged;
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(indicatorSettings)); } catch(e) {}
-                Object.keys(chartStates).forEach(function(cid){ redrawIndicators(cid); });
-            } else {
-                // Firebase abhi khaali hai — jo settings pehle se localStorage mein hain unhe bootstrap ke tor pe push karo
-                persistSettings();
-            }
-        } catch(e) {}
     }
     let indicatorSettings = loadSavedSettings();
     const chartStates = {};      // containerId -> { chart, series, container, candles, interval, fetchHTF, lines, lastValues }
-    syncSettingsFromFirebase();
     const legendCollapsed = {};  // containerId -> bool
     let activeSettingsTab = 'inputs';
     let tempCfg = null;
@@ -414,7 +333,7 @@ window.ICIIndicator = (function() {
         if (multEl) tempCfg.multiplier = parseFloat(multEl.value)||tempCfg.multiplier;
         if (colorEl) tempCfg.color = colorEl.value;
         if (widthEl) tempCfg.width = Math.max(1, parseInt(widthEl.value)||tempCfg.width);
-        if (sizeEl) tempCfg.size = Math.max(0.1, parseFloat(sizeEl.value)||tempCfg.size);
+        if (sizeEl) tempCfg.size = Math.max(0.5, parseFloat(sizeEl.value)||tempCfg.size);
         if (visEl) tempCfg.visible = visEl.checked;
     }
 
@@ -439,7 +358,7 @@ window.ICIIndicator = (function() {
         } else {
             let html = `<div class="tv-settings-field"><span>Color</span><input type="color" id="ici-set-color" value="${cfg.color}"></div>`;
             if (cfg.width !== undefined) html += `<div class="tv-settings-field"><span>Line width</span><input type="number" id="ici-set-width" min="1" max="4" value="${cfg.width}"></div>`;
-            if (cfg.size !== undefined) html += `<div class="tv-settings-field"><span>Marker Size</span><input type="number" step="0.1" min="0.1" max="5" id="ici-set-size" value="${cfg.size}"></div>`;
+            if (cfg.size !== undefined) html += `<div class="tv-settings-field"><span>Marker Size</span><input type="number" step="0.5" min="0.5" max="5" id="ici-set-size" value="${cfg.size}"></div>`;
             html += `<div class="tv-settings-field"><span>Visible</span><input type="checkbox" id="ici-set-visible" ${cfg.visible?'checked':''}></div>`;
             body.innerHTML = html;
         }
@@ -530,12 +449,18 @@ window.ICIIndicator = (function() {
         }
         series.setData(coloredCandles);
 
-        // 3) Fractals as custom-drawn dots (bypasses Lightweight Charts' built-in marker size floor)
-        {
+        // 3) Fractals as markers
+        const frCfg = indicatorSettings.fractals;
+        if (frCfg.visible) {
+            const { up, down } = calcFractals(candles);
+            const frSize = frCfg.size || 1;
+            const markers = [
+                ...up.map(f => ({ time: f.time, position: 'aboveBar', color: frCfg.color, shape: 'circle', text: '', size: frSize })),
+                ...down.map(f => ({ time: f.time, position: 'belowBar', color: frCfg.color, shape: 'circle', text: '', size: frSize }))
+            ].sort((a,b) => a.time - b.time);
+            series.setMarkers(markers);
+        } else {
             series.setMarkers([]);
-            st.fractalPoints = calcFractals(candles);
-            ensureFractalOverlay(st);
-            redrawFractalCanvas(st);
         }
 
         // 4) Structure Map

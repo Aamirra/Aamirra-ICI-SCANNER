@@ -1,0 +1,207 @@
+// Cold (full history, parallel) + warm (tail-only) fetchers for
+// /api/crypto-chart and /api/stock-chart.
+const https = require('https');
+const keepAliveAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
+
+// ---------- Binance (crypto) ----------
+const BINANCE_INTERVAL_MAP = { '1h': '1h', '4h': '4h', '1day': '1d', '1week': '1w' };
+const BINANCE_CANDLE_MS = { '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000 };
+
+function binanceSymbolOf(symbol) { return symbol.replace('USD', 'USDT'); }
+
+function fetchKlines(binanceSymbol, binanceInterval, endTime) {
+    return new Promise((resolve) => {
+        let url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${binanceInterval}&limit=1000`;
+        if (endTime) url += `&endTime=${endTime}`;
+        https.get(url, { agent: keepAliveAgent, headers: { 'User-Agent': 'Mozilla/5.0' } }, (r) => {
+            let data = '';
+            r.on('data', c => data += c);
+            r.on('end', () => {
+                try {
+                    const json = JSON.parse(data);
+                    resolve(Array.isArray(json) ? json : []);
+                } catch (e) { resolve([]); }
+            });
+        }).on('error', () => resolve([]));
+    });
+}
+
+function klinesToCandles(klines) {
+    return klines.map(k => ({
+        time: Math.floor(k[0] / 1000),
+        open: parseFloat(k[1]),
+        high: parseFloat(k[2]),
+        low: parseFloat(k[3]),
+        close: parseFloat(k[4])
+    }));
+}
+
+function dedupeSorted(klines) {
+    klines.sort((a, b) => a[0] - b[0]);
+    const out = [];
+    let lastT = null;
+    for (const k of klines) {
+        if (k[0] === lastT) continue;
+        out.push(k);
+        lastT = k[0];
+    }
+    return out;
+}
+
+async function fetchCryptoCandlesFull(symbol, interval, totalWanted) {
+    const binanceInterval = BINANCE_INTERVAL_MAP[interval] || '1h';
+    const stepMs = (BINANCE_CANDLE_MS[binanceInterval] || 3600000) * 1000; // ms spanned by one 1000-candle batch
+    const binanceSymbol = binanceSymbolOf(symbol);
+    const batches = Math.min(Math.ceil(totalWanted / 1000), 20);
+    const now = Date.now();
+
+    const jobs = [];
+    for (let i = 0; i < batches; i++) {
+        jobs.push(fetchKlines(binanceSymbol, binanceInterval, i === 0 ? null : now - i * stepMs));
+    }
+    const results = await Promise.all(jobs);
+    let all = dedupeSorted([].concat(...results));
+    if (all.length > totalWanted) all = all.slice(all.length - totalWanted);
+    return klinesToCandles(all);
+}
+
+async function refreshCryptoCandles(meta, oldCandles) {
+    const binanceInterval = BINANCE_INTERVAL_MAP[meta.interval] || '1h';
+    const binanceSymbol = binanceSymbolOf(meta.symbol);
+    const latest = klinesToCandles(await fetchKlines(binanceSymbol, binanceInterval, null));
+    if (!latest.length) return oldCandles;
+    if (!oldCandles || !oldCandles.length) return latest;
+    const cutoff = latest[0].time;
+    return oldCandles.filter(c => c.time < cutoff).concat(latest);
+}
+
+// ---------- Yahoo Finance (stocks / PSX / exness) ----------
+function fetchYahooChart(yahooSymbol, yInterval, yRange) {
+    return new Promise((resolve) => {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=${yRange}&interval=${yInterval}`;
+        https.get(url, { agent: keepAliveAgent, headers: { 'User-Agent': 'Mozilla/5.0' } }, (r) => {
+            let data = '';
+            r.on('data', c => data += c);
+            r.on('end', () => {
+                try {
+                    const json = JSON.parse(data);
+                    resolve((json && json.chart && json.chart.result && json.chart.result[0]) || null);
+                } catch (e) { resolve(null); }
+            });
+        }).on('error', () => resolve(null));
+    });
+}
+
+function yahooToCandles(result) {
+    if (!result || !result.timestamp) return [];
+    const q = result.indicators && result.indicators.quote && result.indicators.quote[0];
+    if (!q) return [];
+    const candles = [];
+    for (let i = 0; i < result.timestamp.length; i++) {
+        const o = q.open[i], h = q.high[i], l = q.low[i], c = q.close[i];
+        if (o == null || h == null || l == null || c == null) continue;
+        candles.push({ time: result.timestamp[i], open: o, high: h, low: l, close: c });
+    }
+    return candles;
+}
+
+function aggregate4h(hourly) {
+    const agg = [];
+    for (let i = 0; i + 3 < hourly.length; i += 4) {
+        const group = hourly.slice(i, i + 4);
+        agg.push({
+            time: group[0].time,
+            open: group[0].open,
+            high: Math.max.apply(null, group.map(c => c.high)),
+            low: Math.min.apply(null, group.map(c => c.low)),
+            close: group[group.length - 1].close
+        });
+    }
+    return agg;
+}
+
+function aggregateDaily(hourly) {
+    const groups = {};
+    const order = [];
+    for (const c of hourly) {
+        const key = new Date(c.time * 1000).toISOString().slice(0, 10);
+        if (!groups[key]) { groups[key] = []; order.push(key); }
+        groups[key].push(c);
+    }
+    return order.map(key => {
+        const group = groups[key];
+        return {
+            time: group[0].time,
+            open: group[0].open,
+            high: Math.max.apply(null, group.map(c => c.high)),
+            low: Math.min.apply(null, group.map(c => c.low)),
+            close: group[group.length - 1].close
+        };
+    });
+}
+
+async function fetchStockCandlesFull(symbol, market, interval, totalWanted) {
+    const yahooSymbol = market === 'psx' ? `${symbol}.KA` : symbol;
+    let candles = [];
+    try {
+        if (interval === '1h') {
+            candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d'));
+        } else if (interval === '4h') {
+            candles = aggregate4h(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
+        } else if (interval === '1week') {
+            candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '1wk', 'max'));
+        } else {
+            candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '1d', 'max'));
+        }
+    } catch (e) { candles = []; }
+    if (candles.length > totalWanted) candles = candles.slice(candles.length - totalWanted);
+    return candles;
+}
+
+async function refreshStockCandles(meta) {
+    return fetchStockCandlesFull(meta.symbol, meta.market, meta.interval, 15000);
+}
+
+// ---------- Yahoo Finance (forex) ----------
+const NON_FOREX_YAHOO_MAP = {
+    'XAUUSD': 'GC=F',
+    'USOIL':  'CL=F',
+    'US500':  '^GSPC',
+    'US100':  '^NDX',
+    'US30':   '^DJI',
+    'GER40':  '^GDAXI',
+    'UK100':  '^FTSE',
+    'JPN225': '^N225',
+    'BTCUSD': 'BTC-USD',
+    'ETHUSD': 'ETH-USD',
+};
+
+function forexYahooSymbol(pairName) {
+    if (NON_FOREX_YAHOO_MAP[pairName]) return NON_FOREX_YAHOO_MAP[pairName];
+    // e.g. EURUSD -> EURUSD=X
+    return `${pairName}=X`;
+}
+
+async function fetchForexCandlesFull(symbol, interval, totalWanted) {
+    const yahooSymbol = forexYahooSymbol(symbol);
+    let candles = [];
+    try {
+        if (interval === '1h') {
+            candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d'));
+        } else if (interval === '4h') {
+            candles = aggregate4h(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
+        } else if (interval === '1week') {
+            candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '1wk', '20y'));
+        } else {
+            candles = aggregateDaily(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
+        }
+    } catch (e) { candles = []; }
+    if (candles.length > totalWanted) candles = candles.slice(candles.length - totalWanted);
+    return candles;
+}
+
+async function refreshForexCandles(meta) {
+    return fetchForexCandlesFull(meta.symbol, meta.interval, 15000);
+}
+
+module.exports = { fetchCryptoCandlesFull, refreshCryptoCandles, fetchStockCandlesFull, refreshStockCandles, fetchForexCandlesFull, refreshForexCandles };

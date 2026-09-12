@@ -239,33 +239,9 @@ window.ICIIndicator = (function() {
     }
     function persistSettings(){
         try { localStorage.setItem(STORAGE_KEY, JSON.stringify(indicatorSettings)); } catch(e) {}
-        try {
-            fetch('/api/indicator-settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ settings: indicatorSettings })
-            }).catch(function(){});
-        } catch(e) {}
-    }
-    async function syncSettingsFromFirebase(){
-        try {
-            const res = await fetch('/api/indicator-settings');
-            const saved = await res.json();
-            if (saved && Object.keys(saved).length) {
-                const merged = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-                Object.keys(merged).forEach(function(id){ if (saved[id]) Object.assign(merged[id], saved[id]); });
-                indicatorSettings = merged;
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(indicatorSettings)); } catch(e) {}
-                Object.keys(chartStates).forEach(function(cid){ redrawIndicators(cid); });
-            } else {
-                // Firebase abhi khaali hai — jo settings pehle se localStorage mein hain unhe bootstrap ke tor pe push karo
-                persistSettings();
-            }
-        } catch(e) {}
     }
     let indicatorSettings = loadSavedSettings();
     const chartStates = {};      // containerId -> { chart, series, container, candles, interval, fetchHTF, lines, lastValues }
-    syncSettingsFromFirebase();
     const legendCollapsed = {};  // containerId -> bool
     let activeSettingsTab = 'inputs';
     let tempCfg = null;
