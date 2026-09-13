@@ -1,0 +1,34 @@
+const fs = require('fs');
+const file = 'crypto.html';
+const original = fs.readFileSync(file, 'utf8');
+
+if (original.includes('new ICIBarReplay(chart, series, container.id')) {
+  console.log('Already patched — skipping.');
+  process.exit(0);
+}
+
+fs.writeFileSync(file + '.before_replay', original);
+
+const anchor = `            chart.timeScale().fitContent();
+        } else {`;
+
+if (!original.includes(anchor)) {
+  console.error('Anchor not found in ' + file + ' — aborting, no changes made.');
+  process.exit(1);
+}
+
+const inject = `            chart.timeScale().fitContent();
+
+            if (window.iciReplay && window.iciReplay[slot]) { try { window.iciReplay[slot].destroy(); } catch(e){} }
+            window.iciReplay = window.iciReplay || {};
+            window.iciReplay[slot] = new ICIBarReplay(chart, series, container.id, data.candles);
+        } else {`;
+
+let src = original.replace(anchor, inject);
+
+if (!src.includes('barReplay.js')) {
+  src = src.replace('</body>', '<script src="/barReplay.js"></script>\n</body>');
+}
+
+fs.writeFileSync(file, src);
+console.log('✅ crypto.html patched. Backup: crypto.html.before_replay');

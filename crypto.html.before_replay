@@ -1218,10 +1218,6 @@ async function drawChart(slot) {
                 fetchHTF: (tfKey) => fetchHTFCandles(symbol, tfKey)
             });
             chart.timeScale().fitContent();
-
-            if (window.iciReplay && window.iciReplay[slot]) { try { window.iciReplay[slot].destroy(); } catch(e){} }
-            window.iciReplay = window.iciReplay || {};
-            window.iciReplay[slot] = new ICIBarReplay(chart, series, container.id, data.candles);
         } else {
             console.warn(`[Chart] No candle data for ${symbol} (${interval})`, data.error || '');
         }
@@ -1840,6 +1836,5 @@ updateToggleButtons();
     else initChat();
 })();
 </script>
-<script src="/barReplay.js"></script>
 </body>
 </html>

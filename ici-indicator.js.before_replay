@@ -607,13 +607,6 @@ window.ICIIndicator = (function() {
         container.appendChild(atrDiv);
     }
 
-    async function setReplayCandles(containerId, slicedCandles){
-        const st = chartStates[containerId];
-        if (!st) return;
-        st.candles = slicedCandles;
-        await drawIndicatorSeries(st);
-    }
-
     async function render(opts) {
         const { chart, series, container, candles, interval, fetchHTF } = opts;
         if (!candles || candles.length < 5) return;
@@ -630,7 +623,6 @@ window.ICIIndicator = (function() {
 
     return {
         render,
-        setReplayCandles,
         _toggleVisible: toggleIndicatorVisible,
         _toggleCollapse: toggleLegendCollapse,
         _openSettings: openIndicatorSettings,
