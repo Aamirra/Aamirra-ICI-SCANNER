@@ -1,6 +1,7 @@
 /* ICI Bar Replay — ici-indicator.js ke setReplayCandles() ko use karta hai
    taake EMA/SMA/fractals/structure/HTF sab replay ke sath sync rahein.
-   Timeframe change pe bhi replay position yaad rehti hai (per-slot). */
+   Timeframe change pe resume karta hai (agar naya timeframe utni purani
+   history rakhta ho), aur har step pe zoom/visible-range khud sahi karta hai. */
 class ICIBarReplay {
   constructor(chart, series, containerId, allBars) {
     this.chart = chart;
@@ -26,6 +27,14 @@ class ICIBarReplay {
   _tryResume() {
     const saved = window.ICIReplayState[this.containerId];
     if (!saved || !saved.active || saved.time == null) return;
+    if (!this.allBars.length) return;
+
+    // Naya timeframe itni purani history rakhta hi nahi — safely skip, resume mat karo
+    if (this.allBars[0].time > saved.time) {
+      delete window.ICIReplayState[this.containerId];
+      return;
+    }
+
     let idx = 0;
     for (let i = 0; i < this.allBars.length; i++) {
       if (this.allBars[i].time <= saved.time) idx = i; else break;
@@ -119,6 +128,15 @@ class ICIBarReplay {
     } else {
       this.series.setData(slice);
     }
+    // Zoom/visible-range hamesha current slice ke hisab se sahi rakho
+    // (isi se "1 candle poori width mai stretch" wala bug fix hota hai)
+    const VISIBLE_BARS = 150;
+    const total = slice.length;
+    if (total > VISIBLE_BARS) {
+      this.chart.timeScale().setVisibleLogicalRange({ from: total - VISIBLE_BARS, to: total + 2 });
+    } else {
+      this.chart.timeScale().fitContent();
+    }
     this._updateLabel();
     this._saveState();
   }
@@ -177,6 +195,7 @@ class ICIBarReplay {
     } else {
       this.series.setData(this.allBars);
     }
+    this.chart.timeScale().fitContent();
   }
 
   destroy() {
