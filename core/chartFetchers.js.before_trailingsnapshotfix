@@ -108,14 +108,6 @@ function yahooToCandles(result) {
         if (o == null || h == null || l == null || c == null) continue;
         candles.push({ time: result.timestamp[i], open: o, high: h, low: l, close: c });
     }
-    // Yahoo sometimes appends a spurious zero-range "snapshot" bar right after a session
-    // closes (a single last-trade tick, not a real time-bucketed candle) - drop it if present.
-    if (candles.length > 1) {
-        const last = candles[candles.length - 1];
-        if (last.high === last.low && last.open === last.close) {
-            candles.pop();
-        }
-    }
     return candles;
 }
 

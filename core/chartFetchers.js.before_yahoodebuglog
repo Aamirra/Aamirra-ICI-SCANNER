@@ -86,15 +86,9 @@ function fetchYahooChart(yahooSymbol, yInterval, yRange) {
                 try {
                     const json = JSON.parse(data);
                     resolve((json && json.chart && json.chart.result && json.chart.result[0]) || null);
-                } catch (e) {
-                    console.error('[fetchYahooChart PARSE ERROR]', yahooSymbol, yInterval, yRange, 'status:', r.statusCode, 'dataLen:', data.length, 'snippet:', data.slice(0, 200), e.message);
-                    resolve(null);
-                }
+                } catch (e) { resolve(null); }
             });
-        }).on('error', (err) => {
-            console.error('[fetchYahooChart REQUEST ERROR]', yahooSymbol, yInterval, yRange, err.message);
-            resolve(null);
-        });
+        }).on('error', () => resolve(null));
     });
 }
 
@@ -107,14 +101,6 @@ function yahooToCandles(result) {
         const o = q.open[i], h = q.high[i], l = q.low[i], c = q.close[i];
         if (o == null || h == null || l == null || c == null) continue;
         candles.push({ time: result.timestamp[i], open: o, high: h, low: l, close: c });
-    }
-    // Yahoo sometimes appends a spurious zero-range "snapshot" bar right after a session
-    // closes (a single last-trade tick, not a real time-bucketed candle) - drop it if present.
-    if (candles.length > 1) {
-        const last = candles[candles.length - 1];
-        if (last.high === last.low && last.open === last.close) {
-            candles.pop();
-        }
     }
     return candles;
 }
@@ -152,23 +138,6 @@ function aggregateDaily(hourly) {
             close: group[group.length - 1].close
         };
     });
-}
-
-function fixNativeOpens(daily) {
-    const fixed = [];
-    for (let i = 0; i < daily.length; i++) {
-        const c = daily[i];
-        const open = i === 0 ? c.open : daily[i - 1].close;
-        fixed.push({ time: c.time, open, high: c.high, low: c.low, close: c.close });
-    }
-    return fixed;
-}
-
-function mergeOlderWithRecent(older, recent) {
-    if (!recent.length) return older;
-    const cutoff = recent[0].time;
-    const trimmedOlder = older.filter(c => c.time < cutoff);
-    return trimmedOlder.concat(recent);
 }
 
 async function fetchStockCandlesFull(symbol, market, interval, totalWanted) {
@@ -226,9 +195,7 @@ async function fetchForexCandlesFull(symbol, interval, totalWanted) {
         } else if (interval === '1week') {
             candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '1wk', '20y'));
         } else {
-            const recentDaily = aggregateDaily(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
-            const olderDaily = fixNativeOpens(yahooToCandles(await fetchYahooChart(yahooSymbol, '1d', '10y')));
-            candles = mergeOlderWithRecent(olderDaily, recentDaily);
+            candles = aggregateDaily(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
         }
     } catch (e) { candles = []; }
     if (candles.length > totalWanted) candles = candles.slice(candles.length - totalWanted);
