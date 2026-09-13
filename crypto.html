@@ -93,6 +93,7 @@
         body.desktop-mode .dash-toggle-btn { display:flex; position:fixed; top:50%; left:25%; transform:translate(-50%,-50%); z-index:1001; width:20px; height:50px; border-radius:0 8px 8px 0; background:var(--surface); border:1px solid var(--border); border-left:none; color:var(--txt); align-items:center; justify-content:center; cursor:pointer; font-size:12px; box-shadow:2px 0 6px rgba(0,0,0,0.1); }
         body.desktop-mode.dash-hidden .phone-container { display:none !important; }
         body.desktop-mode.dash-hidden .dash-toggle-btn { left:0; border-radius:0 8px 8px 0; }
+        .chat-unread-badge { position:absolute; top:-4px; right:-4px; background:#ef4444; color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center; padding:0 3px; line-height:1; z-index:5; }
         .chat-panel { width:300px; flex:0 0 300px; height:100vh; background:var(--surface); border-left:1px solid var(--border); display:flex; flex-direction:column; }
         .chat-toggle-btn { cursor:ew-resize; }
         body.chat-hidden .chat-panel { display:none; }
@@ -208,7 +209,7 @@
 
 </style>
 </head>
-<body class="desktop-mode">
+<body class="desktop-mode chat-hidden">
 <div class="phone-container" id="app">
     <div class="header-row">
         <div class="brand"><span id="scanStatusText" class="scan-status-line" style="margin-left:0;"></span><span id="lastScanTime" class="last-scan-line" style="margin-left:6px;" title="Last scan time">🕒 never</span></div>
@@ -1590,6 +1591,7 @@ updateToggleButtons();
         var sameCount = Object.keys(newIds).length === Object.keys(renderedIds).length;
         var allMatch = sameCount && Object.keys(newIds).every(function(id){ return renderedIds[id]; });
         if (allMatch) return;
+        var freshMsgs = list.filter(function(m){ return !renderedIds[m.id]; });
         renderedIds = newIds;
         var html = '';
         list.forEach(function(m) {
@@ -1616,6 +1618,40 @@ updateToggleButtons();
         });
         wrap.innerHTML = html;
         wrap.scrollTop = wrap.scrollHeight;
+        if (freshMsgs.length && document.body.classList.contains('chat-hidden')) {
+            var myName = localStorage.getItem(DASH_NAME_KEY);
+            var incoming = freshMsgs.filter(function(m){ return !(m.from === 'dashboard' && m.senderName === myName); });
+            if (incoming.length) {
+                showChatBadge(incoming.length);
+                showChatNotification(incoming[incoming.length - 1]);
+            }
+        }
+    }
+    var chatUnreadCount = 0;
+    function showChatBadge(count) {
+        chatUnreadCount += count;
+        var btn = document.getElementById('chatToggleBtn');
+        if (!btn) return;
+        var badge = btn.querySelector('.chat-unread-badge');
+        if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'chat-unread-badge';
+            btn.appendChild(badge);
+        }
+        badge.textContent = chatUnreadCount > 9 ? '9+' : String(chatUnreadCount);
+        badge.style.display = 'flex';
+    }
+    function clearChatBadge() {
+        chatUnreadCount = 0;
+        var btn = document.getElementById('chatToggleBtn');
+        if (!btn) return;
+        var badge = btn.querySelector('.chat-unread-badge');
+        if (badge) badge.style.display = 'none';
+    }
+    function showChatNotification(m) {
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        var body = m.type === 'image' ? '📷 Photo' : (m.type === 'voice' ? '🎤 Voice message' : (m.text || 'New message'));
+        try { new Notification((m.senderName || 'Trade Talk') + ' — Trade Talk', { body: body }); } catch (e) {}
     }
     function fetchMessages() {
         fetch(CHAT_LIST_URL).then(function(r){ return r.json(); }).then(renderMessages).catch(function(e){ console.error('chat fetch error', e); });
@@ -1723,6 +1759,9 @@ updateToggleButtons();
         document.body.classList.toggle('chat-hidden');
         var icon = document.querySelector('#chatToggleBtn i');
         if (icon) icon.className = document.body.classList.contains('chat-hidden') ? 'fas fa-chevron-left' : 'fas fa-chevron-right';
+        if (!document.body.classList.contains('chat-hidden') && typeof clearChatBadge === 'function') {
+            clearChatBadge();
+        }
     };
     var CHAT_WIDTH_KEY = 'ici_chat_width';
     function loadChatWidth() {
@@ -1779,6 +1818,9 @@ updateToggleButtons();
         });
     }
     function initChat() {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
         var input = document.getElementById('chatInput');
         if (input) {
             input.addEventListener('keydown', function(e) {
