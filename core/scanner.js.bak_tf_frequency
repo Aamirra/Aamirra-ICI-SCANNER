@@ -882,13 +882,6 @@ async function restoreRawCandleCache() {
     }
 }
 
-// ✅ Forex (TwelveData) rate-limit ke andar rehne ke liye: 1h/4h/15m har cycle
-// fetch hote hain (live signals ke liye zaroori), lekin 1day/1week — jo bohot
-// kam badalte hain — sirf har N cycles mein ek baar fetch hote hain. Crypto/
-// indices (free Binance source) is limit se azad hain, unke liye hamesha sab TFs.
-let forexTfCycleCount = 0;
-const WEEKLY_DAILY_REFRESH_EVERY = 4; // ~har ghante (agar cycle 15-min ka hai)
-
 async function masterScan() {
     if (isScanning) return;
     isScanning = true;
@@ -934,13 +927,8 @@ async function masterScan() {
         // ✅ Weekend/weekday dono mein fetch karo — TwelveData/Binance purana valid data
         // dete hain chahe market band ho, is se S-level backscan (S01-S05) forex ke liye
         // bhi hamesha up to date rehta hai. shouldSkip() ab yahan use nahi hoti.
-        forexTfCycleCount++;
-        const fetchSlowTFsThisCycle = (forexTfCycleCount % WEEKLY_DAILY_REFRESH_EVERY === 0);
         const jobs = config.PAIRS.flatMap(p => {
-            const isFastSource = p.isCrypto || INDICES.includes(p.n);
-            const tfs = (isFastSource || fetchSlowTFsThisCycle)
-                ? ['1h', '4h', '1day', '1week', '15m']
-                : ['1h', '4h', '15m']; // forex: 1day/1week is cycle mein skip
+            const tfs = ['1h', '4h', '1day', '1week', '15m'];   // ✅ Sabke liye 15m
             return tfs.map(tf => ({ p, tf }));
         });
         console.time('⏱️ [Phase 1] Fetch data');

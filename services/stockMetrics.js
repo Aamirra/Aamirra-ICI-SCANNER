@@ -4,8 +4,9 @@ const calcEMA = require('../utils/emaCalc');
 const calcSMA = require('../utils/smaCalc');
 const stockList = require('../stockList');
 const psxStockList = require('../psxStockList');
+const { updateSLevelsForPair } = require('../core/slevelEngine');
 
-// ── Fetch Yahoo candles (generic) ──
+// ── Fetch Yahoo candles (generic, full OHLCV, index-aligned) ──
 function fetchYahooCandles(symbol, range = '1y', interval = '1d') {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${range}&interval=${interval}`;
     return new Promise((resolve) => {
@@ -19,21 +20,51 @@ function fetchYahooCandles(symbol, range = '1y', interval = '1d') {
                     if (!result) { resolve(null); return; }
                     const quotes = result.indicators.quote[0];
                     if (!quotes || !quotes.close || quotes.close.length === 0) { resolve(null); return; }
-                    const closes = quotes.close.filter(v => v !== null);
-                    const volumes = (quotes.volume || []).map(v => v || 0);
-                    resolve({ closes, volumes });
+                    const timestamps = result.timestamp || [];
+                    const rawOpens = quotes.open || [];
+                    const rawHighs = quotes.high || [];
+                    const rawLows = quotes.low || [];
+                    const rawCloses = quotes.close || [];
+                    const rawVolumes = quotes.volume || [];
+                    const opens = [], highs = [], lows = [], closes = [], volumes = [], times = [];
+                    for (let i = 0; i < rawCloses.length; i++) {
+                        if (rawCloses[i] == null || rawOpens[i] == null || rawHighs[i] == null || rawLows[i] == null) continue;
+                        opens.push(rawOpens[i]);
+                        highs.push(rawHighs[i]);
+                        lows.push(rawLows[i]);
+                        closes.push(rawCloses[i]);
+                        volumes.push(rawVolumes[i] || 0);
+                        times.push(timestamps[i] ? new Date(timestamps[i] * 1000).toISOString() : null);
+                    }
+                    resolve({ opens, highs, lows, closes, volumes, times });
                 } catch (e) { resolve(null); }
             });
         }).on('error', () => resolve(null));
     });
 }
 
-// ── Aggregate 1h → 4h ──
+// ── Aggregate 1h → 4h (closes only, used for legacy signal calc) ──
 function aggregateTo4Hour(hourlyCloses) {
     if (!hourlyCloses || hourlyCloses.length === 0) return [];
     const agg = [];
     for (let i = 3; i < hourlyCloses.length; i += 4) agg.push(hourlyCloses[i]);
     return agg;
+}
+
+// ── Aggregate 1h OHLC → 4h OHLC (used for S01-S05 structure engine) ──
+function aggregateOHLCTo4Hour(hourlyOHLC) {
+    const empty = { opens: [], highs: [], lows: [], closes: [], times: [] };
+    if (!hourlyOHLC || !hourlyOHLC.closes || hourlyOHLC.closes.length === 0) return empty;
+    const { opens, highs, lows, closes, times } = hourlyOHLC;
+    const aggOpens = [], aggHighs = [], aggLows = [], aggCloses = [], aggTimes = [];
+    for (let i = 3; i < closes.length; i += 4) {
+        aggOpens.push(opens[i - 3]);
+        aggHighs.push(Math.max(highs[i - 3], highs[i - 2], highs[i - 1], highs[i]));
+        aggLows.push(Math.min(lows[i - 3], lows[i - 2], lows[i - 1], lows[i]));
+        aggCloses.push(closes[i]);
+        aggTimes.push(times[i]);
+    }
+    return { opens: aggOpens, highs: aggHighs, lows: aggLows, closes: aggCloses, times: aggTimes };
 }
 
 function formatDollarVolume(volume, price) {
@@ -86,10 +117,11 @@ async function processStockList(list, firebaseNode, prefix = '') {
             const yahooSymbol = prefix ? `${symbol}.${prefix}` : symbol.includes('.') ? symbol : symbol;
             console.log(`[Stocks] Fetching ${symbol} (${yahooSymbol})...`);
 
-            const [dailyData, hourlyRaw, weeklyData] = await Promise.all([
+            const [dailyData, hourlyRaw, weeklyData, m15Data] = await Promise.all([
                 fetchYahooCandles(yahooSymbol, '1y', '1d'),
                 fetchYahooCandles(yahooSymbol, '6mo', '1h'),
-                fetchYahooCandles(yahooSymbol, '5y', '1wk')
+                fetchYahooCandles(yahooSymbol, '5y', '1wk'),
+                fetchYahooCandles(yahooSymbol, '60d', '15m')
             ]);
 
             if (!dailyData || dailyData.closes.length < 50) {
@@ -160,6 +192,10 @@ async function processStockList(list, firebaseNode, prefix = '') {
 
             const pbState = detectStockPullback(symbol, hourlyCloses, signal1d, signal1w);
             if (pbState) pbStates[symbol] = pbState;
+
+            // ── S01-S05 structure engine (same engine used for forex/crypto/indices) ──
+            const h4Raw = hourlyRaw ? aggregateOHLCTo4Hour(hourlyRaw) : null;
+            await updateSLevelsForPair(symbol, weeklyData, h4Raw, m15Data, firebasePut);
 
             console.log(`[Stocks] ${symbol} saved (1H:${signal1h}, 4H:${signal4h}, 1D:${signal1d}, 1W:${signal1w})`);
         } catch (err) {

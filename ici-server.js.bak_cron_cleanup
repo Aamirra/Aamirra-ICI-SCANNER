@@ -973,9 +973,17 @@ function runSafeMasterScan() {
         runSafeMasterScan();
     });
 
-    // 🟢 2 & 3. 30-min aur Hourly crons hata diye — 15-min cron hi kaafi hai,
-    // ye dono sirf redundant full-scan trigger kar rahe the (koi alag pairs/TF
-    // nahi scan karte the), jisse TwelveData calls bewajah ~43% zyada ho rahi thi.
+    // 🟢 2. 30-Min Scan
+    cron.schedule('*/30 * * * *', () => {
+        console.log('[CRON] 🕒 Running 30-min Master Scan...');
+        runSafeMasterScan();
+    });
+
+    // 🟢 3. Hourly Scan
+    cron.schedule('0 * * * *', () => {
+        console.log('[CRON] 🕒 Running Hourly Master Scan...');
+        runSafeMasterScan();
+    });
 
     console.log('⏰ All Automated Scans Scheduled Successfully without broken scrapers!');
 })();

@@ -291,7 +291,7 @@ function fetchBinanceCandles(symbol, tf) {
     else if (tf === '15m') interval = '15m'; // ✅ 15m added
     else interval = '1h';
 
-    const limit = tf === '1week' ? 700 : 200;
+    const limit = tf === '1week' ? 200 : 200;
     const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`;
 
     return new Promise((resolve) => {
@@ -633,7 +633,7 @@ async function fetchTF(p, tf, retryCount = 0) {
         return await fetchIndexCandlesAndStore(p, tf);
     }
     const key = await getKey();
-    if (!key) { console.warn(`[TwelveData] No key available, skipping ${p.n} (${tf})`); return false; }
+    if (!key) return false;
     let twelveInterval = tf;
     if (tf === '15m') twelveInterval = '15min';
     const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(p.s)}&interval=${twelveInterval}&outputsize=200&apikey=${key}`;
@@ -645,7 +645,7 @@ async function fetchTF(p, tf, retryCount = 0) {
             r.on('end', async () => {
                 try {
                     const j = JSON.parse(d);
-                    if (j.code === 429) { console.warn(`[TwelveData] 429 rate-limit for ${p.n} (${tf}), retry ${retryCount + 1}/${config.KEYS.length}`); coolDownKey(key, '429'); return resolve(retryCount < config.KEYS.length ? await fetchTF(p, tf, retryCount + 1) : false); }
+                    if (j.code === 429) { coolDownKey(key, '429'); return resolve(retryCount < config.KEYS.length ? await fetchTF(p, tf, retryCount + 1) : false); }
                     if (j.values && j.values.length > 1) {
                         if (!DATA_STORE[p.n]) DATA_STORE[p.n] = {};
                         const sorted = [...j.values].sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
@@ -692,20 +692,13 @@ async function fetchTF(p, tf, retryCount = 0) {
                             const weeklyLows = sorted.map(v => parseFloat(v.low));
                             RAW_WEEKLY[p.n] = { opens: opns, closes: cls, highs: weeklyHighs, lows: weeklyLows, times: allTimes, time: sorted[sorted.length-1]?.datetime };
                         }
-                        console.log(`[TwelveData] Fetched ${p.n} (${tf}) - ${sorted.length} candles`);
                         resolve(true);
-                    } else {
-                        console.error(`[TwelveData] Bad/empty response for ${p.n} (${tf}):`, JSON.stringify(j).slice(0, 200));
-                        resolve(false);
-                    }
-                } catch (e) {
-                    console.error(`[TwelveData] Parse error for ${p.n} (${tf}):`, e.message, '| raw:', d.slice(0, 200));
-                    resolve(false);
-                }
+                    } else resolve(false);
+                } catch (e) { resolve(false); }
             });
         });
-        req.setTimeout(15000, () => { console.error(`[TwelveData] Timeout for ${p.n} (${tf})`); req.destroy(); resolve(false); });
-        req.on('error', (err) => { console.error(`[TwelveData] Request error for ${p.n} (${tf}):`, err.message); resolve(false); });
+        req.setTimeout(15000, () => { req.destroy(); resolve(false); });
+        req.on('error', () => resolve(false));
     });
 }
 
@@ -882,13 +875,6 @@ async function restoreRawCandleCache() {
     }
 }
 
-// ✅ Forex (TwelveData) rate-limit ke andar rehne ke liye: 1h/4h/15m har cycle
-// fetch hote hain (live signals ke liye zaroori), lekin 1day/1week — jo bohot
-// kam badalte hain — sirf har N cycles mein ek baar fetch hote hain. Crypto/
-// indices (free Binance source) is limit se azad hain, unke liye hamesha sab TFs.
-let forexTfCycleCount = 0;
-const WEEKLY_DAILY_REFRESH_EVERY = 4; // ~har ghante (agar cycle 15-min ka hai)
-
 async function masterScan() {
     if (isScanning) return;
     isScanning = true;
@@ -931,16 +917,8 @@ async function masterScan() {
 
     try {
         maybeResetDaily();
-        // ✅ Weekend/weekday dono mein fetch karo — TwelveData/Binance purana valid data
-        // dete hain chahe market band ho, is se S-level backscan (S01-S05) forex ke liye
-        // bhi hamesha up to date rehta hai. shouldSkip() ab yahan use nahi hoti.
-        forexTfCycleCount++;
-        const fetchSlowTFsThisCycle = (forexTfCycleCount % WEEKLY_DAILY_REFRESH_EVERY === 0);
-        const jobs = config.PAIRS.flatMap(p => {
-            const isFastSource = p.isCrypto || INDICES.includes(p.n);
-            const tfs = (isFastSource || fetchSlowTFsThisCycle)
-                ? ['1h', '4h', '1day', '1week', '15m']
-                : ['1h', '4h', '15m']; // forex: 1day/1week is cycle mein skip
+        const jobs = config.PAIRS.filter(p => !shouldSkip(p.n)).flatMap(p => {
+            const tfs = ['1h', '4h', '1day', '1week', '15m'];   // ✅ Sabke liye 15m
             return tfs.map(tf => ({ p, tf }));
         });
         console.time('⏱️ [Phase 1] Fetch data');
