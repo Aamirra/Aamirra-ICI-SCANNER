@@ -1129,16 +1129,6 @@ function render() {
             const s = (SLEVEL_STATE[sLevelHtfKey] || {})[p.n];
             return s && s.direction === sLevelWantDir && s.level === currentSLevel;
         });
-        if (!sortColumn) {
-            const moveCol = { type: 'change_200' };
-            filtered = [...filtered].sort((a, b) => {
-                const va = sortValueFor(a.n, moveCol);
-                const vb = sortValueFor(b.n, moveCol);
-                const aAbs = va == null ? -Infinity : Math.abs(va);
-                const bAbs = vb == null ? -Infinity : Math.abs(vb);
-                return bAbs - aAbs;
-            });
-        }
     }
 
     filtered = applyColumnSortAndFilter(filtered);
@@ -1268,7 +1258,7 @@ function startCandleTimer(slot, candles, resolution) {
     if (!label) {
         label = document.createElement('div');
         label.className = 'ici-candle-timer';
-        label.style.cssText = 'position:absolute; right:0px; z-index:5; padding:1px 4px; font-size:10px; font-weight:600; border-radius:0 0 3px 3px; pointer-events:none; white-space:nowrap; line-height:14px; text-align:center; box-sizing:border-box;';
+        label.style.cssText = 'position:absolute; right:4px; z-index:5; padding:1px 6px; font-size:11px; font-weight:600; border-radius:3px; pointer-events:none; white-space:nowrap;';
         if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
         container.appendChild(label);
     }
@@ -1290,7 +1280,7 @@ function startCandleTimer(slot, candles, resolution) {
         label.textContent = formatCandleCountdown(remaining);
         try {
             const y = series.priceToCoordinate(last.close);
-            if (y != null) { label.style.top = (y + 17) + 'px'; label.style.display = 'block'; }
+            if (y != null) { label.style.top = (y + 14) + 'px'; label.style.display = 'block'; }
             else { label.style.display = 'none'; }
         } catch(e) {}
     }
@@ -1339,8 +1329,7 @@ async function drawChart(slot) {
         grid: { vertLines: { visible: false }, horzLines: { visible: false } },
         rightPriceScale: { borderColor: '#d1d4dc' },
         timeScale: { borderColor: '#d1d4dc', timeVisible: true, secondsVisible: false },
-        autoSize: true,
-        crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
+        autoSize: true
     });
     const jpyPairs = ['USDJPY','EURJPY','GBPJPY','AUDJPY','NZDJPY','CADJPY','CHFJPY'];
     let priceFormat;

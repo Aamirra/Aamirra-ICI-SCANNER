@@ -1154,6 +1154,16 @@ function render() {
             const s = (SLEVEL_STATE[sLevelHtfKey] || {})[p.n];
             return s && s.direction === sLevelWantDir && s.level === currentSLevel;
         });
+        if (!sortColumn) {
+            const moveCol = { type: 'change_200' };
+            filtered = [...filtered].sort((a, b) => {
+                const va = sortValueFor(a.n, moveCol);
+                const vb = sortValueFor(b.n, moveCol);
+                const aAbs = va == null ? -Infinity : Math.abs(va);
+                const bAbs = vb == null ? -Infinity : Math.abs(vb);
+                return bAbs - aAbs;
+            });
+        }
     }
 
     filtered = applyColumnSortAndFilter(filtered);
@@ -1312,6 +1322,64 @@ async function fetchHTFCandles(symbol, tfKey) {
     } catch (e) { return []; }
 }
 
+
+window.__candleTimerState = window.__candleTimerState || {};
+function resolutionToSeconds(res) {
+    if (res === 'D') return 86400;
+    if (res === 'W') return 604800;
+    const n = parseInt(res);
+    return (isNaN(n) ? 60 : n) * 60;
+}
+function formatCandleCountdown(sec) {
+    if (sec < 0) sec = 0;
+    const d = Math.floor(sec / 86400); sec %= 86400;
+    const h = Math.floor(sec / 3600); sec %= 3600;
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    if (d > 0) return d + 'd ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+    if (h > 0) return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+function startCandleTimer(slot, candles, resolution) {
+    const container = document.getElementById('tv_chart_'+slot);
+    if (!container || !candles || !candles.length) return;
+    const st = window.__candleTimerState;
+    if (st[slot] && st[slot].intervalId) clearInterval(st[slot].intervalId);
+
+    let label = container.querySelector('.ici-candle-timer');
+    if (!label) {
+        label = document.createElement('div');
+        label.className = 'ici-candle-timer';
+        label.style.cssText = 'position:absolute; right:0px; z-index:5; padding:1px 4px; font-size:10px; font-weight:600; border-radius:0 0 3px 3px; pointer-events:none; white-space:nowrap; line-height:14px; text-align:center; box-sizing:border-box;';
+        if (getComputedStyle(container).position === 'static') container.style.position = 'relative';
+        container.appendChild(label);
+    }
+
+    const last = candles[candles.length-1];
+    const secondsPerBar = resolutionToSeconds(resolution);
+    const barStart = last.time;
+    const isUp = last.close >= last.open;
+    label.style.background = isUp ? '#0a8a0a' : '#c0392b';
+    label.style.color = '#fff';
+
+    function tick() {
+        const series = lwSeries[slot];
+        if (!series) { clearInterval(st[slot].intervalId); return; }
+        const now = Math.floor(Date.now()/1000);
+        let elapsed = (now - barStart) % secondsPerBar;
+        if (elapsed < 0) elapsed += secondsPerBar;
+        const remaining = secondsPerBar - elapsed;
+        label.textContent = formatCandleCountdown(remaining);
+        try {
+            const y = series.priceToCoordinate(last.close);
+            if (y != null) { label.style.top = (y + 17) + 'px'; label.style.display = 'block'; }
+            else { label.style.display = 'none'; }
+        } catch(e) {}
+    }
+    tick();
+    st[slot] = { intervalId: setInterval(tick, 1000) };
+}
+
 async function softRefreshChart(slot) {
     if (!lwCharts[slot] || !lwSeries[slot]) { drawChart(slot); return; }
     const idx = chartIndices[slot-1];
@@ -1330,6 +1398,7 @@ async function softRefreshChart(slot) {
                 candles: data.candles, interval,
                 fetchHTF: (tfKey) => fetchHTFCandles(sym, tfKey)
             });
+            startCandleTimer(slot, data.candles, chartIntervals[slot-1]);
         }
     } catch (e) {
         console.error(`[Chart] Soft refresh failed for ${sym} (${interval}):`, e.message);
@@ -1355,7 +1424,8 @@ async function drawChart(slot) {
         grid: { vertLines: { visible: false }, horzLines: { visible: false } },
         rightPriceScale: { borderColor: '#d1d4dc' },
         timeScale: { borderColor: '#d1d4dc', timeVisible: true, secondsVisible: false },
-        autoSize: true
+        autoSize: true,
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
     });
 
     const series = chart.addCandlestickSeries({
@@ -1385,6 +1455,7 @@ async function drawChart(slot) {
             if (window.iciReplay && window.iciReplay[slot]) { try { window.iciReplay[slot].destroy(); } catch(e){} }
             window.iciReplay = window.iciReplay || {};
             window.iciReplay[slot] = new ICIBarReplay(chart, series, container.id, data.candles);
+            startCandleTimer(slot, data.candles, chartIntervals[slot-1]);
         } else {
             console.warn(`[Chart] No candle data for ${sym} (${interval})`);
         }

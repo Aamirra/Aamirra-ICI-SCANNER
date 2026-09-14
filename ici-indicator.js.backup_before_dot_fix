@@ -491,7 +491,7 @@ window.ICIIndicator = (function() {
             const lastVal = vals.slice().reverse().find(v=>v!=null);
             st.lastValues[id] = lastVal!=null ? lastVal : null;
             if (!cfg.visible) return;
-            const ls = chart.addLineSeries({ color: cfg.color, lineWidth: cfg.width, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+            const ls = chart.addLineSeries({ color: cfg.color, lineWidth: cfg.width, priceLineVisible: false, lastValueVisible: false });
             ls.setData(candles.map((c,i)=>({ time: c.time, value: vals[i] })).filter(p=>p.value!=null));
             st.lines[id] = ls;
         });
@@ -501,7 +501,7 @@ window.ICIIndicator = (function() {
             const lastVal = vals.slice().reverse().find(v=>v!=null);
             st.lastValues.sma = lastVal!=null ? lastVal : null;
             if (cfg.visible) {
-                const ls = chart.addLineSeries({ color: cfg.color, lineWidth: cfg.width, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+                const ls = chart.addLineSeries({ color: cfg.color, lineWidth: cfg.width, priceLineVisible: false, lastValueVisible: false });
                 ls.setData(candles.map((c,i)=>({ time: c.time, value: vals[i] })).filter(p=>p.value!=null));
                 st.lines.sma = ls;
             }
@@ -545,8 +545,8 @@ window.ICIIndicator = (function() {
             const lastHigh = highLine.slice().reverse().find(v=>v!=null);
             st.lastValues.structure = lastHigh!=null ? lastHigh : null;
             if (cfg.visible) {
-                const structHigh = chart.addLineSeries({ color: cfg.color, lineWidth: cfg.width, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
-                const structLow = chart.addLineSeries({ color: cfg.color, lineWidth: cfg.width, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+                const structHigh = chart.addLineSeries({ color: cfg.color, lineWidth: cfg.width, priceLineVisible: false, lastValueVisible: false });
+                const structLow = chart.addLineSeries({ color: cfg.color, lineWidth: cfg.width, priceLineVisible: false, lastValueVisible: false });
                 structHigh.setData(candles.map((c,i)=>({ time: c.time, value: highLine[i] })).filter(p=>p.value!=null));
                 structLow.setData(candles.map((c,i)=>({ time: c.time, value: lowLine[i] })).filter(p=>p.value!=null));
                 st.lines.structHigh = structHigh;
@@ -567,7 +567,7 @@ window.ICIIndicator = (function() {
                     const htf1Line = buildHTFLine(candles, htf1Candles, h1Cfg.period, h1Cfg.smooth);
                     const lastVal = htf1Line.slice().reverse().find(v=>v!=null);
                     st.lastValues.htf1 = lastVal!=null ? lastVal : null;
-                    const s1 = chart.addLineSeries({ color: h1Cfg.color, lineWidth: h1Cfg.width, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+                    const s1 = chart.addLineSeries({ color: h1Cfg.color, lineWidth: h1Cfg.width, priceLineVisible: false, lastValueVisible: false });
                     s1.setData(candles.map((c,i)=>({ time: c.time, value: htf1Line[i] })).filter(p=>p.value!=null));
                     st.lines.htf1 = s1;
                 }
@@ -579,7 +579,7 @@ window.ICIIndicator = (function() {
                     const htf2Line = buildHTFLine(candles, htf2Candles, h2Cfg.period, h2Cfg.smooth);
                     const lastVal = htf2Line.slice().reverse().find(v=>v!=null);
                     st.lastValues.htf2 = lastVal!=null ? lastVal : null;
-                    const s2 = chart.addLineSeries({ color: h2Cfg.color, lineWidth: h2Cfg.width, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false });
+                    const s2 = chart.addLineSeries({ color: h2Cfg.color, lineWidth: h2Cfg.width, priceLineVisible: false, lastValueVisible: false });
                     s2.setData(candles.map((c,i)=>({ time: c.time, value: htf2Line[i] })).filter(p=>p.value!=null));
                     st.lines.htf2 = s2;
                 }
