@@ -1229,6 +1229,29 @@ async function fetchHTFCandles(symbol, tfKey) {
         return data.candles || [];
     } catch (e) { return []; }
 }
+
+async function softRefreshChart(slot) {
+    if (!lwCharts[slot] || !lwSeries[slot]) { drawChart(slot); return; }
+    const idx = chartIndices[slot-1];
+    if (!chartPairs[idx]) return;
+    const symbol = chartPairs[idx];
+    const interval = lwIntervalMap(chartIntervals[slot-1]);
+    try {
+        const res = await fetch(`/api/forex-chart?symbol=${encodeURIComponent(symbol)}&interval=${interval}&limit=15000`);
+        const data = await res.json();
+        if (data.candles && data.candles.length) {
+            lwSeries[slot].setData(data.candles);
+            await window.ICIIndicator.render({
+                chart: lwCharts[slot], series: lwSeries[slot], container: document.getElementById('tv_chart_'+slot),
+                candles: data.candles, interval,
+                fetchHTF: (tfKey) => fetchHTFCandles(symbol, tfKey)
+            });
+        }
+    } catch (e) {
+        console.error(`[Chart] Soft refresh failed for ${symbol} (${interval}):`, e.message);
+    }
+}
+
 async function drawChart(slot) {
     const container = document.getElementById('tv_chart_'+slot);
     container.innerHTML = '';
@@ -1459,6 +1482,7 @@ updateToggleButtons();
     wlRenderTabs();
     wlRenderRows();
     setInterval(wlRenderRows, 3000);
+    if (!window.__chartAutoRefreshStarted) { window.__chartAutoRefreshStarted = true; setInterval(function(){ if (typeof activeChartSlot !== "undefined") { if (typeof softRefreshChart === "function" && lwCharts && lwCharts[activeChartSlot]) { softRefreshChart(activeChartSlot); } else if (typeof drawChart === "function") { drawChart(activeChartSlot); } } }, 10000); }
 
     var wrap = document.getElementById('wlTableWrap');
     var handle = document.getElementById('wlResizeHandle');

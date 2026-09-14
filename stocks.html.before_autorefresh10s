@@ -1311,31 +1311,6 @@ async function fetchHTFCandles(symbol, tfKey) {
         return data.candles || [];
     } catch (e) { return []; }
 }
-
-async function softRefreshChart(slot) {
-    if (!lwCharts[slot] || !lwSeries[slot]) { drawChart(slot); return; }
-    const idx = chartIndices[slot-1];
-    if (!chartPairs[idx]) return;
-    const sym = chartPairs[idx];
-    const isPSX = currentMarket === 'psx';
-    const market = isPSX ? 'psx' : 'exness';
-    const interval = lwIntervalMap(chartIntervals[slot-1]);
-    try {
-        const res = await fetch(`/api/stock-chart?symbol=${encodeURIComponent(sym)}&market=${market}&interval=${interval}&limit=15000`);
-        const data = await res.json();
-        if (data.candles && data.candles.length) {
-            lwSeries[slot].setData(data.candles);
-            await window.ICIIndicator.render({
-                chart: lwCharts[slot], series: lwSeries[slot], container: document.getElementById('tv_chart_'+slot),
-                candles: data.candles, interval,
-                fetchHTF: (tfKey) => fetchHTFCandles(sym, tfKey)
-            });
-        }
-    } catch (e) {
-        console.error(`[Chart] Soft refresh failed for ${sym} (${interval}):`, e.message);
-    }
-}
-
 async function drawChart(slot) {
     const container = document.getElementById('tv_chart_'+slot);
     container.innerHTML = '';
@@ -1553,7 +1528,6 @@ function toggleTheme() {
     wlRenderTabs();
     wlRenderRows();
     setInterval(wlRenderRows, 3000);
-    if (!window.__chartAutoRefreshStarted) { window.__chartAutoRefreshStarted = true; setInterval(function(){ if (typeof activeChartSlot !== "undefined") { if (typeof softRefreshChart === "function" && lwCharts && lwCharts[activeChartSlot]) { softRefreshChart(activeChartSlot); } else if (typeof drawChart === "function") { drawChart(activeChartSlot); } } }, 10000); }
 
     var wrap = document.getElementById('wlTableWrap');
     var handle = document.getElementById('wlResizeHandle');
