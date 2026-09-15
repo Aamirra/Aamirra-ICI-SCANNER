@@ -339,10 +339,10 @@
     <div style="display:flex;align-items:center;padding:5px 10px;background:var(--surface);border-bottom:1px solid var(--border);gap:6px;flex-wrap:wrap;">
         <button onclick="movePair(-1)" style="background:none;border:none;font-size:15px;padding:5px;margin-right:10px;color:var(--txt)"><i class="fas fa-chevron-left"></i></button>
         <div class="chart-interval-selector" style="display:flex;gap:6px;align-items:center;">
-            <button class="chart-interval-btn active" id="chartIntBtn1" data-interval="60" onclick="changeChartInterval(this.dataset.interval, this)" oncontextmenu="iciOpenCustomTFMenu(event, this)">1H</button>
-            <button class="chart-interval-btn" id="chartIntBtn2" data-interval="240" onclick="changeChartInterval(this.dataset.interval, this)" oncontextmenu="iciOpenCustomTFMenu(event, this)">4H</button>
-            <button class="chart-interval-btn" id="chartIntBtn3" data-interval="D" onclick="changeChartInterval(this.dataset.interval, this)" oncontextmenu="iciOpenCustomTFMenu(event, this)">1D</button>
-            <button class="chart-interval-btn" id="chartIntBtn4" data-interval="W" onclick="changeChartInterval(this.dataset.interval, this)" oncontextmenu="iciOpenCustomTFMenu(event, this)">1W</button>
+            <button class="chart-interval-btn active" id="chartIntBtn1" data-interval="60" onclick="changeChartInterval(this.dataset.interval, this)">1H</button>
+            <button class="chart-interval-btn" id="chartIntBtn2" data-interval="240" onclick="changeChartInterval(this.dataset.interval, this)">4H</button>
+            <button class="chart-interval-btn" id="chartIntBtn3" data-interval="D" onclick="changeChartInterval(this.dataset.interval, this)">1D</button>
+            <button class="chart-interval-btn" id="chartIntBtn4" data-interval="W" onclick="changeChartInterval(this.dataset.interval, this)">1W</button>
             <span id="countdownDisplay" class="countdown-display"></span>
         </div>
         <span id="chartPairName" style="flex:1;text-align:center;font-weight:700;font-size:13px;color:var(--txt)"></span>
@@ -488,8 +488,8 @@ let currentDirection = 'long';
 let currentSLevel = 1;
 const TF_PRESET_MAP = {
     H: { intervals: ['W','D','240','60'], labels: ['1W','1D','4H','1H'], htf: 'W' },
-    M: { intervals: ['D','240','60','5m'], labels: ['1D','4H','1H','M5'], htf: '240' },
-    L: { intervals: ['240','60','5m','1m'], labels: ['4H','1H','M5','M1'], htf: '60' }
+    M: { intervals: ['D','240','60','5'], labels: ['1D','4H','1H','M5'], htf: '240' },
+    L: { intervals: ['240','60','5','1'], labels: ['4H','1H','M5','M1'], htf: '60' }
 };
 
 function setTFPreset(preset) {
@@ -1170,7 +1170,7 @@ let lwCharts = [null,null,null,null];
 let lwSeries = [null,null,null,null];
 function lwIntervalMap(tvInterval) {
     const map = { '60': '1h', '240': '4h', 'D': '1day', 'W': '1week' };
-    return map[tvInterval] || tvInterval;
+    return map[tvInterval] || '1h';
 }
 async function fetchHTFCandles(symbol, tfKey) {
     try {
@@ -1936,131 +1936,4 @@ updateToggleButtons();
 </script>
 <script src="/barReplay.js"></script>
 </body>
-<style>
-#iciCustomTFMenu {
-  position: fixed;
-  z-index: 99999;
-  background: #ffffff;
-  border: 1px solid #d1d4dc;
-  border-radius: 6px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-  padding: 6px;
-  width: 140px;
-  font-family: inherit;
-  font-size: 13px;
-  display: none;
-}
-#iciCustomTFMenu.open { display: block; }
-#iciCustomTFMenu input#iciCustomTFInput {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 6px 8px;
-  border: 1px solid #d1d4dc;
-  border-radius: 4px;
-  margin-bottom: 6px;
-  font-size: 13px;
-}
-#iciCustomTFMenu input#iciCustomTFInput.invalid { border-color: #e5484d; }
-#iciCustomTFMenu .ici-tf-list { display: flex; flex-direction: column; }
-#iciCustomTFMenu .ici-tf-item {
-  padding: 6px 8px;
-  cursor: pointer;
-  border-radius: 4px;
-  color: #333;
-}
-#iciCustomTFMenu .ici-tf-item:hover { background: #1a73e8; color: #fff; }
-</style>
-<div id="iciCustomTFMenu">
-  <input type="text" id="iciCustomTFInput" placeholder="e.g. 6h, 3d, 2m" autocomplete="off">
-  <div class="ici-tf-list">
-    <div class="ici-tf-item" data-tf="1m">M1</div>
-    <div class="ici-tf-item" data-tf="5m">M5</div>
-    <div class="ici-tf-item" data-tf="10m">M10</div>
-    <div class="ici-tf-item" data-tf="15m">M15</div>
-    <div class="ici-tf-item" data-tf="30m">M30</div>
-    <div class="ici-tf-item" data-tf="1h">H1</div>
-  </div>
-</div>
-<script>
-(function(){
-  var STORAGE_KEY = 'ici_customTF_' + location.pathname.replace(/[^a-z0-9]/gi,'_');
-  var menuTargetBtn = null;
-  var menu = document.getElementById('iciCustomTFMenu');
-  var input = document.getElementById('iciCustomTFInput');
-
-  function normalizeLabel(tf) {
-    var m = /^(\d+)([mhdw])$/i.exec(tf);
-    if (!m) return tf;
-    return m[1] + m[2].toUpperCase();
-  }
-
-  function readSaved() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { return {}; }
-  }
-
-  function applyToButton(btn, tf) {
-    btn.dataset.interval = tf;
-    btn.textContent = normalizeLabel(tf);
-    if (typeof changeChartInterval === 'function') changeChartInterval(tf, btn);
-    var saved = readSaved();
-    saved[btn.id] = tf;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-  }
-
-  function restoreSaved() {
-    var saved = readSaved();
-    Object.keys(saved).forEach(function(btnId) {
-      var btn = document.getElementById(btnId);
-      if (!btn) return;
-      var tf = saved[btnId];
-      btn.dataset.interval = tf;
-      btn.textContent = normalizeLabel(tf);
-    });
-  }
-
-  function openMenu(evt, btn) {
-    evt.preventDefault();
-    menuTargetBtn = btn;
-    var x = Math.min(evt.clientX, window.innerWidth - 160);
-    var y = Math.min(evt.clientY, window.innerHeight - 220);
-    menu.style.left = x + 'px';
-    menu.style.top = y + 'px';
-    menu.classList.add('open');
-    input.value = '';
-    input.classList.remove('invalid');
-    setTimeout(function(){ input.focus(); }, 0);
-  }
-
-  function closeMenu() {
-    menu.classList.remove('open');
-    menuTargetBtn = null;
-  }
-
-  document.addEventListener('click', function(e) {
-    if (menu.classList.contains('open') && !menu.contains(e.target)) closeMenu();
-  });
-
-  Array.prototype.forEach.call(menu.querySelectorAll('.ici-tf-item'), function(item) {
-    item.addEventListener('click', function() {
-      if (!menuTargetBtn) return;
-      applyToButton(menuTargetBtn, item.dataset.tf);
-      closeMenu();
-    });
-  });
-
-  input.addEventListener('keydown', function(e) {
-    if (e.key !== 'Enter') return;
-    if (!menuTargetBtn) return;
-    var val = input.value.trim();
-    var m = /^(\d+)\s*([mhdw])$/i.exec(val);
-    if (!m) { input.classList.add('invalid'); return; }
-    applyToButton(menuTargetBtn, m[1] + m[2].toLowerCase());
-    closeMenu();
-  });
-  input.addEventListener('input', function() { input.classList.remove('invalid'); });
-
-  window.iciOpenCustomTFMenu = openMenu;
-  restoreSaved();
-})();
-</script>
 </html>

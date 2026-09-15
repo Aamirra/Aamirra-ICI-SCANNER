@@ -1,51 +1,11 @@
 // Cold (full history, parallel) + warm (tail-only) fetchers for
-// /api/crypto-chart, /api/forex-chart and /api/stock-chart.
+// /api/crypto-chart and /api/stock-chart.
 const https = require('https');
 const keepAliveAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
 
-// ---------- Shared: custom-interval parsing + aggregation ----------
-function parseCustomInterval(intervalStr) {
-    const m = /^(\d+)([mhdw])$/i.exec(intervalStr || '');
-    if (!m) return null;
-    return { value: parseInt(m[1], 10), unit: m[2].toLowerCase() };
-}
-
-function aggregateCandles(candles, groupSize) {
-    if (groupSize <= 1) return candles;
-    const agg = [];
-    for (let i = 0; i + groupSize <= candles.length; i += groupSize) {
-        const group = candles.slice(i, i + groupSize);
-        agg.push({
-            time: group[0].time,
-            open: group[0].open,
-            high: Math.max.apply(null, group.map(c => c.high)),
-            low: Math.min.apply(null, group.map(c => c.low)),
-            close: group[group.length - 1].close
-        });
-    }
-    return agg;
-}
-
 // ---------- Binance (crypto) ----------
-const LEGACY_INTERVAL_MAP = { '1h': '1h', '4h': '4h', '1day': '1d', '1week': '1w' };
-const BINANCE_NATIVE = new Set(['1m','3m','5m','15m','30m','1h','2h','4h','6h','8h','12h','1d','3d','1w','1M']);
-const BINANCE_CANDLE_MS = {
-    '1m':60000,'3m':180000,'5m':300000,'15m':900000,'30m':1800000,
-    '1h':3600000,'2h':7200000,'4h':14400000,'6h':21600000,'8h':28800000,'12h':43200000,
-    '1d':86400000,'3d':259200000,'1w':604800000,'1M':2592000000
-};
-
-function resolveBinanceInterval(interval) {
-    if (LEGACY_INTERVAL_MAP[interval]) return { base: LEGACY_INTERVAL_MAP[interval], groupSize: 1 };
-    if (BINANCE_NATIVE.has(interval)) return { base: interval, groupSize: 1 };
-    const parsed = parseCustomInterval(interval);
-    if (!parsed) return { base: '1h', groupSize: 1 };
-    if (parsed.unit === 'm') return { base: '1m', groupSize: parsed.value };
-    if (parsed.unit === 'h') return { base: '1h', groupSize: parsed.value };
-    if (parsed.unit === 'd') return { base: '1d', groupSize: parsed.value };
-    if (parsed.unit === 'w') return { base: '1w', groupSize: parsed.value };
-    return { base: '1h', groupSize: 1 };
-}
+const BINANCE_INTERVAL_MAP = { '1h': '1h', '4h': '4h', '1day': '1d', '1week': '1w' };
+const BINANCE_CANDLE_MS = { '1h': 3600000, '4h': 14400000, '1d': 86400000, '1w': 604800000 };
 
 function binanceSymbolOf(symbol) { return symbol.replace('USD', 'USDT'); }
 
@@ -89,39 +49,33 @@ function dedupeSorted(klines) {
 }
 
 async function fetchCryptoCandlesFull(symbol, interval, totalWanted) {
-    const { base, groupSize } = resolveBinanceInterval(interval);
-    const stepMs = (BINANCE_CANDLE_MS[base] || 3600000) * 1000;
+    const binanceInterval = BINANCE_INTERVAL_MAP[interval] || '1h';
+    const stepMs = (BINANCE_CANDLE_MS[binanceInterval] || 3600000) * 1000; // ms spanned by one 1000-candle batch
     const binanceSymbol = binanceSymbolOf(symbol);
-    const rawWanted = totalWanted * groupSize;
-    const batches = Math.min(Math.ceil(rawWanted / 1000), 20);
+    const batches = Math.min(Math.ceil(totalWanted / 1000), 20);
     const now = Date.now();
 
     const jobs = [];
     for (let i = 0; i < batches; i++) {
-        jobs.push(fetchKlines(binanceSymbol, base, i === 0 ? null : now - i * stepMs));
+        jobs.push(fetchKlines(binanceSymbol, binanceInterval, i === 0 ? null : now - i * stepMs));
     }
     const results = await Promise.all(jobs);
     let all = dedupeSorted([].concat(...results));
-    let candles = klinesToCandles(all);
-    if (groupSize > 1) candles = aggregateCandles(candles, groupSize);
-    if (candles.length > totalWanted) candles = candles.slice(candles.length - totalWanted);
-    return candles;
+    if (all.length > totalWanted) all = all.slice(all.length - totalWanted);
+    return klinesToCandles(all);
 }
 
 async function refreshCryptoCandles(meta, oldCandles) {
-    const { base, groupSize } = resolveBinanceInterval(meta.interval);
-    if (groupSize > 1) {
-        return fetchCryptoCandlesFull(meta.symbol, meta.interval, (oldCandles && oldCandles.length) || 500);
-    }
+    const binanceInterval = BINANCE_INTERVAL_MAP[meta.interval] || '1h';
     const binanceSymbol = binanceSymbolOf(meta.symbol);
-    const latest = klinesToCandles(await fetchKlines(binanceSymbol, base, null));
+    const latest = klinesToCandles(await fetchKlines(binanceSymbol, binanceInterval, null));
     if (!latest.length) return oldCandles;
     if (!oldCandles || !oldCandles.length) return latest;
     const cutoff = latest[0].time;
     return oldCandles.filter(c => c.time < cutoff).concat(latest);
 }
 
-// ---------- Yahoo Finance (stocks / PSX / forex) ----------
+// ---------- Yahoo Finance (stocks / PSX / exness) ----------
 function fetchYahooChart(yahooSymbol, yInterval, yRange) {
     return new Promise((resolve) => {
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=${yRange}&interval=${yInterval}`;
@@ -154,6 +108,8 @@ function yahooToCandles(result) {
         if (o == null || h == null || l == null || c == null) continue;
         candles.push({ time: result.timestamp[i], open: o, high: h, low: l, close: c });
     }
+    // Yahoo sometimes appends a spurious zero-range "snapshot" bar right after a session
+    // closes (a single last-trade tick, not a real time-bucketed candle) - drop it if present.
     if (candles.length > 1) {
         const last = candles[candles.length - 1];
         if (last.high === last.low && last.open === last.close) {
@@ -215,34 +171,6 @@ function mergeOlderWithRecent(older, recent) {
     return trimmedOlder.concat(recent);
 }
 
-const YAHOO_NATIVE_MINUTES = new Set([1, 2, 5, 15, 30]);
-
-async function fetchYahooCustomCandles(yahooSymbol, custom) {
-    const { value, unit } = custom;
-    if (unit === 'm') {
-        if (YAHOO_NATIVE_MINUTES.has(value)) {
-            return yahooToCandles(await fetchYahooChart(yahooSymbol, value + 'm', '60d'));
-        }
-        const base = yahooToCandles(await fetchYahooChart(yahooSymbol, '1m', '7d'));
-        return aggregateCandles(base, value);
-    }
-    if (unit === 'h') {
-        const base = yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d'));
-        return aggregateCandles(base, value);
-    }
-    if (unit === 'd') {
-        const recentDaily = aggregateDaily(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
-        const olderDaily = fixNativeOpens(yahooToCandles(await fetchYahooChart(yahooSymbol, '1d', '10y')));
-        const daily = mergeOlderWithRecent(olderDaily, recentDaily);
-        return aggregateCandles(daily, value);
-    }
-    if (unit === 'w') {
-        const weekly = yahooToCandles(await fetchYahooChart(yahooSymbol, '1wk', '20y'));
-        return aggregateCandles(weekly, value);
-    }
-    return [];
-}
-
 async function fetchStockCandlesFull(symbol, market, interval, totalWanted) {
     const yahooSymbol = market === 'psx' ? `${symbol}.KA` : symbol;
     let candles = [];
@@ -254,14 +182,9 @@ async function fetchStockCandlesFull(symbol, market, interval, totalWanted) {
         } else if (interval === '1week') {
             candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '1wk', '20y'));
         } else {
-            const custom = parseCustomInterval(interval);
-            if (custom) {
-                candles = await fetchYahooCustomCandles(yahooSymbol, custom);
-            } else {
-                const recentDaily = aggregateDaily(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
-                const olderDaily = fixNativeOpens(yahooToCandles(await fetchYahooChart(yahooSymbol, '1d', '10y')));
-                candles = mergeOlderWithRecent(olderDaily, recentDaily);
-            }
+            const recentDaily = aggregateDaily(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
+            const olderDaily = fixNativeOpens(yahooToCandles(await fetchYahooChart(yahooSymbol, '1d', '10y')));
+            candles = mergeOlderWithRecent(olderDaily, recentDaily);
         }
     } catch (e) { console.error('[fetchStockCandlesFull ERROR]', symbol, interval, e && e.stack); candles = []; }
     if (candles.length > totalWanted) candles = candles.slice(candles.length - totalWanted);
@@ -288,6 +211,7 @@ const NON_FOREX_YAHOO_MAP = {
 
 function forexYahooSymbol(pairName) {
     if (NON_FOREX_YAHOO_MAP[pairName]) return NON_FOREX_YAHOO_MAP[pairName];
+    // e.g. EURUSD -> EURUSD=X
     return `${pairName}=X`;
 }
 
@@ -302,14 +226,9 @@ async function fetchForexCandlesFull(symbol, interval, totalWanted) {
         } else if (interval === '1week') {
             candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '1wk', '20y'));
         } else {
-            const custom = parseCustomInterval(interval);
-            if (custom) {
-                candles = await fetchYahooCustomCandles(yahooSymbol, custom);
-            } else {
-                const recentDaily = aggregateDaily(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
-                const olderDaily = fixNativeOpens(yahooToCandles(await fetchYahooChart(yahooSymbol, '1d', '10y')));
-                candles = mergeOlderWithRecent(olderDaily, recentDaily);
-            }
+            const recentDaily = aggregateDaily(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
+            const olderDaily = fixNativeOpens(yahooToCandles(await fetchYahooChart(yahooSymbol, '1d', '10y')));
+            candles = mergeOlderWithRecent(olderDaily, recentDaily);
         }
     } catch (e) { candles = []; }
     if (candles.length > totalWanted) candles = candles.slice(candles.length - totalWanted);
