@@ -5,191 +5,33 @@ function initIciAlertsUI() {
     if (!document.getElementById('ici-alert-style') && document.head) {
         var style = document.createElement('style');
         style.id = 'ici-alert-style';
-        style.textContent = `
-.alert-cell{flex:0.8;display:flex;justify-content:center}
-.bell-btn{background:none;border:none;font-size:18px;cursor:pointer;position:relative;padding:2px 4px;line-height:1}
-.bell-count{position:absolute;top:-3px;right:-1px;background:#f7931a;color:#131722;border-radius:50%;font-size:8px;font-weight:800;width:13px;height:13px;display:flex;align-items:center;justify-content:center}
-.al-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
-.al-overlay.show{display:flex}
-.al-sheet{background:#fff;border-radius:12px;width:380px;max-width:92vw;max-height:88vh;display:flex;flex-direction:column;border:1px solid #e0e3eb;box-shadow:0 12px 40px rgba(0,0,0,0.25);animation:alPopIn 0.15s ease}
-@keyframes alPopIn{from{transform:scale(0.96);opacity:0}to{transform:scale(1);opacity:1}}
-.al-handle{display:none}
-.al-sheet-header{padding:14px 18px;border-bottom:1px solid #eef0f3;display:flex;justify-content:space-between;align-items:center}
-.al-sheet-title{font-size:15px;font-weight:700;color:#131722}
-.al-sheet-pair{font-size:12px;color:#2962ff;font-weight:700;margin-top:2px}
-.al-close-btn{background:#f0f3fa;border:none;color:#787b86;width:26px;height:26px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.al-sheet-body{overflow-y:auto;padding:2px 18px 10px;flex:1}
-.al-sheet-footer{padding:12px 18px;border-top:1px solid #eef0f3;display:flex;gap:10px}
-.al-sec{padding:12px 0;border-bottom:1px solid #f0f3fa}
-.al-sec:last-child{border-bottom:none}
-.al-sec-title{font-size:10px;color:#787b86;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px}
-.al-lbl{font-size:11px;color:#787b86;margin-bottom:4px}
-.al-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.al-sec select,.al-sec input,.al-sec textarea{width:100%;background:#f8f9fb;border:1px solid #e0e3eb;color:#131722;border-radius:8px;padding:9px 10px;font-size:13px;font-family:inherit;outline:none;-webkit-appearance:none;box-sizing:border-box}
-.al-sec select:focus,.al-sec input:focus{border-color:#2962ff;background:#fff}
-.al-sec textarea{resize:none;height:54px}
-.al-hint{font-size:10px;color:#a7abb3;margin-top:3px}
-.al-preview{background:#f4f6fb;border:1px solid #e0e3eb;border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
-.al-prev-pair{color:#2962ff;font-weight:800;font-size:13px}
-.al-prev-arr{color:#a7abb3}
-.al-prev-cond{color:#089981;font-size:12px}
-.al-prev-tf{background:#2962ff1a;color:#2962ff;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:800}
-.al-chip-row{display:flex;flex-wrap:wrap;gap:6px}
-.al-chip{border-radius:7px;padding:7px 11px;font-size:12px;cursor:pointer;border:1px solid #e0e3eb;color:#787b86;background:#f8f9fb;transition:all 0.15s;user-select:none}
-.al-chip.active{background:#2962ff1a;border-color:#2962ff;color:#2962ff}
-.al-tog-row{display:flex;align-items:center;gap:8px;margin-top:10px}
-.al-tog{width:38px;height:21px;border-radius:11px;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0}
-.al-tog-knob{position:absolute;top:2.5px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
-.btn-al-cancel{flex:1;background:#f0f3fa;border:1px solid #e0e3eb;color:#5d606b;border-radius:9px;padding:11px;font-size:14px;font-weight:700;cursor:pointer}
-.btn-al-create{flex:2;background:#131722;border:none;color:#fff;border-radius:9px;padding:11px;font-size:14px;font-weight:700;cursor:pointer}
-.al-item{padding:12px 0;border-bottom:1px solid #f0f3fa;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.al-i-pair{color:#2962ff;font-size:13px;font-weight:800}
-.al-i-name{color:#131722;font-size:12px;margin-top:1px}
-.al-i-cond{color:#089981;font-size:11px;margin-top:2px}
-.al-i-meta{color:#a7abb3;font-size:10px;margin-top:2px}
-.al-i-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.al-edit-btn,.al-del-btn{background:none;border:none;font-size:15px;cursor:pointer;padding:4px}
-.al-empty{padding:40px 0;text-align:center;color:#a7abb3}
-.al-toast-wrap{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:6px;width:90%;max-width:360px;pointer-events:none}
-.al-toast{border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;text-align:center;animation:alToastIn 0.25s ease;border:1px solid;background:#fff}
-@keyframes alToastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.al-toast-success{border-color:#089981;color:#089981}
-.al-toast-error{border-color:#ef5350;color:#ef5350}
-.al-toast-info{border-color:#2962ff;color:#2962ff}
-`;
+        style.textContent = '.alert-cell{flex:0.8;display:flex;justify-content:center}.bell-btn{background:none;border:none;font-size:18px;cursor:pointer;position:relative;padding:2px 4px;line-height:1}.bell-count{position:absolute;top:-3px;right:-1px;background:#f7931a;color:#131722;border-radius:50%;font-size:8px;font-weight:800;width:13px;height:13px;display:flex;align-items:center;justify-content:center}.al-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px)}.al-overlay.show{display:flex}.al-sheet{background:#1e222d;border-radius:18px 18px 0 0;width:100%;max-height:92vh;display:flex;flex-direction:column;border-top:1px solid #363a45;animation:alSlideUp 0.25s ease}@keyframes alSlideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}.al-handle{width:36px;height:4px;background:#363a45;border-radius:2px;margin:10px auto 0}.al-sheet-header{padding:12px 18px 10px;border-bottom:1px solid #363a45;display:flex;justify-content:space-between;align-items:center}.al-sheet-title{font-size:15px;font-weight:800;color:#d1d4dc}.al-sheet-pair{font-size:12px;color:#2962ff;font-weight:700;margin-top:1px}.al-close-btn{background:#2a2e39;border:none;color:#787b86;width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}.al-sheet-body{overflow-y:auto;padding:0 18px 10px;flex:1}.al-sheet-footer{padding:12px 18px;border-top:1px solid #363a45;display:flex;gap:10px}.al-sec{padding:13px 0;border-bottom:1px solid #1e222d}.al-sec:last-child{border-bottom:none}.al-sec-title{font-size:10px;color:#787b86;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:9px}.al-lbl{font-size:11px;color:#787b86;margin-bottom:4px}.al-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}.al-sec select,.al-sec input,.al-sec textarea{width:100%;background:#2a2e39;border:1px solid #363a45;color:#d1d4dc;border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;-webkit-appearance:none;box-sizing:border-box}.al-sec select:focus,.al-sec input:focus{border-color:#2962ff}.al-sec textarea{resize:none;height:56px}.al-hint{font-size:10px;color:#444;margin-top:3px}.al-preview{background:#131722;border:1px solid #363a45;border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 4px}.al-prev-pair{color:#2962ff;font-weight:800;font-size:13px}.al-prev-arr{color:#444}.al-prev-cond{color:#26a69a;font-size:12px}.al-prev-tf{background:#2962ff22;color:#2962ff;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:800}.al-chip-row{display:flex;flex-wrap:wrap;gap:6px}.al-chip{border-radius:7px;padding:7px 11px;font-size:12px;cursor:pointer;border:1px solid #363a45;color:#787b86;background:transparent;transition:all 0.15s;user-select:none}.al-chip.active{background:#2962ff22;border-color:#2962ff;color:#4f9eff}.al-tog-row{display:flex;align-items:center;gap:8px;margin-top:10px}.al-tog{width:38px;height:21px;border-radius:11px;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0}.al-tog-knob{position:absolute;top:2.5px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left 0.2s}.btn-al-cancel{flex:1;background:#2a2e39;border:1px solid #363a45;color:#787b86;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}.btn-al-create{flex:2;background:#2962ff;border:none;color:#fff;border-radius:9px;padding:12px;font-size:14px;font-weight:700;cursor:pointer}.al-item{padding:12px 0;border-bottom:1px solid #363a45;display:flex;justify-content:space-between;align-items:center;gap:8px}.al-i-pair{color:#2962ff;font-size:13px;font-weight:800}.al-i-name{color:#d1d4dc;font-size:12px;margin-top:1px}.al-i-cond{color:#26a69a;font-size:11px;margin-top:2px}.al-i-meta{color:#444;font-size:10px;margin-top:2px}.al-i-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}.al-edit-btn,.al-del-btn{background:none;border:none;font-size:15px;cursor:pointer;padding:4px}.al-empty{padding:40px 0;text-align:center;color:#444}.al-toast-wrap{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:6px;width:90%;pointer-events:none}.al-toast{border-radius:10px;padding:11px 16px;font-size:13px;font-weight:700;text-align:center;animation:alToastIn 0.25s ease;border:1px solid}@keyframes alToastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}.al-toast-success{background:#26a69a22;border-color:#26a69a;color:#26a69a}.al-toast-error{background:#ef535022;border-color:#ef5350;color:#ef5350}.al-toast-info{background:#2962ff22;border-color:#2962ff;color:#4f9eff}';
         document.head.appendChild(style);
     }
 
     // Inject HTML Safely
     if (!document.getElementById('alToastWrap') && document.body) {
-        var html = `
-<div class="al-toast-wrap" id="alToastWrap"></div>
-<div class="al-overlay" id="alertOverlay" onclick="closeAlertDialog()">
-  <div class="al-sheet" onclick="event.stopPropagation()">
-    <div class="al-handle"></div>
-    <div class="al-sheet-header">
-      <div>
-        <div class="al-sheet-title" id="sheetTitle">Create Alert</div>
-        <div class="al-sheet-pair" id="sheetPairName"></div>
-      </div>
-      <button class="al-close-btn" onclick="closeAlertDialog()">&#10005;</button>
-    </div>
-    <div class="al-sheet-body">
-      <div class="al-sec">
-        <div class="al-sec-title">Condition</div>
-        <div class="al-lbl">Alert Type</div>
-        <select id="fCondition" onchange="alOnConditionChange()" style="margin-bottom:10px">
-          <optgroup label="-- Price / EMA --">
-            <option value="PRICE_ABOVE_EMA20">Price Crossing Above 20 EMA</option>
-            <option value="PRICE_BELOW_EMA20">Price Crossing Below 20 EMA</option>
-            <option value="PRICE_ABOVE_VAL">Price Crossing Above [X]</option>
-            <option value="PRICE_BELOW_VAL">Price Crossing Below [X]</option>
-          </optgroup>
-          <optgroup label="-- Price / SMA --">
-            <option value="PRICE_ABOVE_SMA20">Price Crossing Above 20 SMA</option>
-            <option value="PRICE_BELOW_SMA20">Price Crossing Below 20 SMA</option>
-            <option value="PRICE_ABOVE_SMA50">Price Crossing Above 50 SMA</option>
-            <option value="PRICE_BELOW_SMA50">Price Crossing Below 50 SMA</option>
-          </optgroup>
-        </select>
-        <div id="alPriceWrap" style="display:none;margin-bottom:10px">
-          <div class="al-lbl" style="color:#2962ff;font-weight:700">Target Price</div>
-          <input type="number" id="fTargetPrice" placeholder="" style="background:#fff;border:2px solid #2962ff;color:#131722;font-size:16px;font-weight:700;border-radius:8px;padding:10px 12px;outline:none">
-        </div>
-        <div id="alTechPercentWrap" style="display:none;margin-bottom:10px">
-          <div class="al-lbl" style="color:#2962ff;font-weight:700">Threshold %</div>
-          <input type="number" id="fTargetPercent" placeholder="e.g. 2.5" step="0.1" style="background:#fff;border:2px solid #2962ff;color:#131722;font-size:16px;font-weight:700;border-radius:8px;padding:10px 12px;outline:none">
-        </div>
-        <div id="alTfWrap">
-          <div class="al-lbl">Timeframe</div>
-          <select id="fTimeframe" onchange="alUpdatePreview()" style="margin-bottom:10px">
-            <option value="1H">1H</option>
-            <option value="4H">4H</option>
-            <option value="1D">1D</option>
-            <option value="1W">1W</option>
-          </select>
-        </div>
-        <div class="al-preview">
-          <span class="al-prev-pair" id="alPrevPair"></span>
-          <span class="al-prev-arr">=></span>
-          <span class="al-prev-cond" id="alPrevCond"></span>
-          <span class="al-prev-tf" id="alPrevTf"></span>
-        </div>
-      </div>
-      <div class="al-sec">
-        <div class="al-sec-title">Alert Details</div>
-        <div class="al-lbl">Alert Name</div>
-        <input type="text" id="fName" placeholder="e.g. EURUSD EMA Alert" style="margin-bottom:8px">
-        <div class="al-lbl">Message</div>
-        <textarea id="fMessage" placeholder="{{ticker}} - Alert triggered! Price: {{price}}"></textarea>
-        <div class="al-hint">Variables: {{ticker}} | {{price}} | {{ema20}} | {{time}}</div>
-      </div>
-      <div class="al-sec">
-        <div class="al-sec-title">Notifications</div>
-        <div class="al-chip-row" id="alNotifyChips">
-          <div class="al-chip active" data-val="push" onclick="this.classList.toggle('active')">Push</div>
-          <div class="al-chip" data-val="popup" onclick="this.classList.toggle('active')">Popup</div>
-          <div class="al-chip" data-val="email" onclick="this.classList.toggle('active')">Email</div>
-          <div class="al-chip" data-val="webhook" onclick="this.classList.toggle('active')">Webhook</div>
-        </div>
-        <div class="al-tog-row">
-          <div class="al-tog" id="alSoundTog" onclick="alToggleSound()" style="background:#2962ff">
-            <div class="al-tog-knob" id="alSoundKnob" style="left:19px"></div>
-          </div>
-          <span style="color:#131722;font-size:13px">Sound</span>
-          <select id="fSoundType" style="width:130px;margin-left:auto">
-            <option>Notification</option>
-            <option>Alarm</option>
-            <option>Bell</option>
-            <option>Chime</option>
-          </select>
-        </div>
-      </div>
-      <div class="al-sec">
-        <div class="al-2col">
-          <div>
-            <div class="al-sec-title">Trigger</div>
-            <select id="fFrequency">
-              <option>Only Once</option>
-              <option>Once Per Bar</option>
-              <option>Once Per Bar Close</option>
-              <option>Every Time</option>
-            </select>
-          </div>
-          <div>
-            <div class="al-sec-title">Expiry</div>
-            <select id="fExpiry" onchange="document.getElementById('fExpiryDate').style.display=this.value==='custom'?'block':'none'">
-              <option value="open">Open-ended</option>
-              <option value="1d">1 Day</option>
-              <option value="1w">1 Week</option>
-              <option value="1m">1 Month</option>
-              <option value="custom">Custom Date</option>
-            </select>
-          </div>
-        </div>
-        <input type="date" id="fExpiryDate" style="display:none;margin-top:8px">
-      </div>
-    </div>
-    <div class="al-sheet-footer">
-      <button class="btn-al-cancel" onclick="closeAlertDialog()">Cancel</button>
-      <button class="btn-al-create" id="btnCreate" onclick="alSaveAlert()">Create Alert</button>
-    </div>
-  </div>
-</div>
-<div class="al-overlay" id="alListOverlay" onclick="closeAlertsList()">
-  <div class="al-sheet" onclick="event.stopPropagation()">
-    <div class="al-handle"></div>
-    <div class="al-sheet-header">
-      <div class="al-sheet-title">My Alerts</div>
-      <button class="al-close-btn" onclick="closeAlertsList()">&#10005;</button>
-    </div>
-    <div class="al-sheet-body" id="alListBody" style="padding:0 18px 20px"></div>
-  </div>
-</div>
-`;
+        var html = '<div class="al-toast-wrap" id="alToastWrap"></div>';
+        html += '<div class="al-overlay" id="alertOverlay" onclick="closeAlertDialog()">';
+        html += '<div class="al-sheet" onclick="event.stopPropagation()">';
+        html += '<div class="al-handle"></div>';
+        html += '<div class="al-sheet-header"><div><div class="al-sheet-title" id="sheetTitle">Create Alert</div><div class="al-sheet-pair" id="sheetPairName"></div></div><button class="al-close-btn" onclick="closeAlertDialog()">X</button></div>';
+        html += '<div class="al-sheet-body">';
+        html += '<div class="al-sec"><div class="al-sec-title">Condition</div><div class="al-lbl">Alert Type</div><select id="fCondition" onchange="alOnConditionChange()" style="margin-bottom:10px"><optgroup label="-- Price / EMA --"><option value="PRICE_ABOVE_EMA20">Price Crossing Above 20 EMA</option><option value="PRICE_BELOW_EMA20">Price Crossing Below 20 EMA</option><option value="PRICE_ABOVE_VAL">Price Crossing Above [X]</option><option value="PRICE_BELOW_VAL">Price Crossing Below [X]</option></optgroup><optgroup label="-- Price / SMA --"><option value="PRICE_ABOVE_SMA20">Price Crossing Above 20 SMA</option><option value="PRICE_BELOW_SMA20">Price Crossing Below 20 SMA</option><option value="PRICE_ABOVE_SMA50">Price Crossing Above 50 SMA</option><option value="PRICE_BELOW_SMA50">Price Crossing Below 50 SMA</option></optgroup><optgroup label="-- Sentiment --"><option value="SENT_ABOVE_60">Sentiment Above 60%</option><option value="SENT_BELOW_60">Sentiment Below 60%</option><option value="SENT_ABOVE_75">Sentiment Above 75%</option><option value="SENT_BELOW_25">Sentiment Below 25%</option></optgroup><optgroup label="-- Technical Metrics --"><option value="TECH_200D_ABOVE">200 Candle Change Above X%</option><option value="TECH_200D_BELOW">200 Candle Change Below X%</option><option value="TECH_10D_ABOVE">10 Candle Change (1D) Above X%</option><option value="TECH_10D_BELOW">10 Candle Change (1D) Below X%</option><option value="TECH_1H_ABOVE">10 Candle Change (1H) Above X%</option><option value="TECH_1H_BELOW">10 Candle Change (1H) Below X%</option></optgroup></select>';
+        html += '<div id="alPriceWrap" style="display:none;margin-bottom:10px"><div class="al-lbl" style="color:#f7931a;font-weight:700">Target Price</div><input type="number" id="fTargetPrice" placeholder="" style="background:#131722;border:2px solid #f7931a;color:#f7931a;font-size:16px;font-weight:700;border-radius:7px;padding:10px 12px;outline:none"></div>';
+        html += '<div id="alTechPercentWrap" style="display:none;margin-bottom:10px"><div class="al-lbl" style="color:#f7931a;font-weight:700">Threshold %</div><input type="number" id="fTargetPercent" placeholder="e.g. 2.5" step="0.1" style="background:#131722;border:2px solid #f7931a;color:#f7931a;font-size:16px;font-weight:700;border-radius:7px;padding:10px 12px;outline:none"></div>';
+        html += '<div id="alTfWrap"><div class="al-lbl">Timeframe</div><select id="fTimeframe" onchange="alUpdatePreview()" style="margin-bottom:10px"><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option></select></div>';
+        html += '<div class="al-preview"><span class="al-prev-pair" id="alPrevPair"></span><span class="al-prev-arr">=></span><span class="al-prev-cond" id="alPrevCond"></span><span class="al-prev-tf" id="alPrevTf"></span></div></div>';
+        html += '<div class="al-sec"><div class="al-sec-title">Alert Details</div><div class="al-lbl">Alert Name</div><input type="text" id="fName" placeholder="e.g. EURUSD EMA Alert" style="margin-bottom:8px"><div class="al-lbl">Message</div><textarea id="fMessage" placeholder="{{ticker}} - Alert triggered! Price: {{price}}"></textarea><div class="al-hint">Variables: {{ticker}} | {{price}} | {{ema20}} | {{time}}</div></div>';
+        html += '<div class="al-sec"><div class="al-sec-title">Notifications</div><div class="al-chip-row" id="alNotifyChips"><div class="al-chip active" data-val="push" onclick="this.classList.toggle(\'active\')">Push</div><div class="al-chip" data-val="popup" onclick="this.classList.toggle(\'active\')">Popup</div><div class="al-chip" data-val="email" onclick="this.classList.toggle(\'active\')">Email</div><div class="al-chip" data-val="webhook" onclick="this.classList.toggle(\'active\')">Webhook</div></div>';
+        html += '<div class="al-tog-row"><div class="al-tog" id="alSoundTog" onclick="alToggleSound()" style="background:#2962ff"><div class="al-tog-knob" id="alSoundKnob" style="left:19px"></div></div><span style="color:#d1d4dc;font-size:13px">Sound</span><select id="fSoundType" style="width:130px;margin-left:auto"><option>Notification</option><option>Alarm</option><option>Bell</option><option>Chime</option></select></div></div>';
+        html += '<div class="al-sec"><div class="al-2col"><div><div class="al-sec-title">Trigger</div><select id="fFrequency"><option>Only Once</option><option>Once Per Bar</option><option>Once Per Bar Close</option><option>Every Time</option></select></div><div><div class="al-sec-title">Expiry</div><select id="fExpiry" onchange="document.getElementById(\'fExpiryDate\').style.display=this.value===\'custom\'?\'block\':\'none\'"><option value="open">Open-ended</option><option value="1d">1 Day</option><option value="1w">1 Week</option><option value="1m">1 Month</option><option value="custom">Custom Date</option></select></div></div><input type="date" id="fExpiryDate" style="display:none;margin-top:8px"></div></div>';
+        html += '<div class="al-sheet-footer"><button class="btn-al-cancel" onclick="closeAlertDialog()">Cancel</button><button class="btn-al-create" id="btnCreate" onclick="alSaveAlert()">Create Alert</button></div></div></div>';
+        html += '<div class="al-overlay" id="alListOverlay" onclick="closeAlertsList()"><div class="al-sheet" onclick="event.stopPropagation()"><div class="al-handle"></div><div class="al-sheet-header"><div class="al-sheet-title">My Alerts</div><button class="al-close-btn" onclick="closeAlertsList()">X</button></div><div class="al-sheet-body" id="alListBody" style="padding:0 18px 20px"></div></div></div>';
         document.body.insertAdjacentHTML('beforeend', html);
     }
 }
+
 // Trigger initialization correctly based on page state
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initIciAlertsUI);
@@ -408,50 +250,25 @@ function alEditItem(id) {
 
 var AL_LAST_TRIGGER = {};
 
-var AL_TF_MS = { '1H': 3600000, '4H': 14400000, '1D': 86400000, '1W': 604800000 };
-var AL_BAR_STATE = {};
-
-function _alUpdateBarState(alert) {
-    var barMs = AL_TF_MS[alert.timeframe] || AL_TF_MS['1H'];
-    var barIndex = Math.floor(Date.now() / barMs);
-    var st = AL_BAR_STATE[alert.id];
-    if (!st) {
-        AL_BAR_STATE[alert.id] = { barIndex: barIndex, closedFired: false };
-        return false;
-    }
-    if (barIndex !== st.barIndex) {
-        st.barIndex = barIndex;
-        st.closedFired = false;
-        return true;
-    }
-    return false;
-}
-
 function shouldFire(alert) {
     var freq = alert.frequency || 'Only Once';
     if (freq === 'Every Time') return true;
+    var nowHour = Math.floor(Date.now() / 3600000);
+    var dedupKey = alert.id + '_' + nowHour;
     if (freq === 'Only Once') {
         if (AL_LAST_TRIGGER[alert.id]) return false;
         AL_LAST_TRIGGER[alert.id] = true;
         return true;
     }
-    if (freq === 'Once Per Bar') {
-        var barMs = AL_TF_MS[alert.timeframe] || AL_TF_MS['1H'];
-        var barIndex = Math.floor(Date.now() / barMs);
-        var dedupKey = alert.id + '_' + barIndex;
+    if (freq === 'Once Per Bar' || freq === 'Once Per Bar Close') {
         if (AL_LAST_TRIGGER[dedupKey]) return false;
         AL_LAST_TRIGGER[dedupKey] = true;
+        var oldest = nowHour - 2;
         Object.keys(AL_LAST_TRIGGER).forEach(function(k) {
-            if (k.indexOf(alert.id + '_') !== 0) return;
-            var idx = parseInt(k.substring((alert.id + '_').length));
-            if (!isNaN(idx) && idx < barIndex - 2) delete AL_LAST_TRIGGER[k];
+            var parts = k.split('_');
+            var hr = parseInt(parts[parts.length-1]);
+            if (!isNaN(hr) && hr < oldest) delete AL_LAST_TRIGGER[k];
         });
-        return true;
-    }
-    if (freq === 'Once Per Bar Close') {
-        var st = AL_BAR_STATE[alert.id];
-        if (!st || st.closedFired) return false;
-        st.closedFired = true;
         return true;
     }
     return true;
@@ -461,19 +278,12 @@ function checkAllAlerts(pairsData) {
     if (pairsData) window._alPairs = pairsData;
     var alerts = alLoadAlerts().filter(function(a) { return a.active; });
     if (!alerts.length || !window._alPairs) return;
-    var pairMap = {};
-    window._alPairs.forEach(function(p) { pairMap[p.name] = p; });
-
-    alerts.forEach(function(alert) {
-        var pair = pairMap[alert.pair];
-        if (!pair) return;
-        if (alert.frequency === 'Once Per Bar Close') {
-            var justClosed = _alUpdateBarState(alert);
-            if (!justClosed) return;
-        }
-        if (_alConditionMet(alert, pair) && shouldFire(alert)) {
-            _alFireAlert(alert, pair);
-        }
+    window._alPairs.forEach(function(pair) {
+        alerts.filter(function(a) { return a.pair === pair.name; }).forEach(function(alert) {
+            if (_alConditionMet(alert, pair) && shouldFire(alert)) {
+                _alFireAlert(alert, pair);
+            }
+        });
     });
 }
 

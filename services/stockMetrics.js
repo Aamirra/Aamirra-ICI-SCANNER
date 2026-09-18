@@ -194,8 +194,13 @@ async function processStockList(list, firebaseNode, prefix = '') {
             if (pbState) pbStates[symbol] = pbState;
 
             // ── S01-S05 structure engine (same engine used for forex/crypto/indices) ──
+            // Guard: a truncated/partial Yahoo weekly fetch computes a DIFFERENT (wrong)
+            // structure than the full history, so only pass it through if it looks complete —
+            // otherwise skip this cycle's write and leave the last good value in Firebase.
+            const MIN_WEEKLY_FOR_SLEVEL = 100;
+            const weeklyOkForSLevel = weeklyData && weeklyData.closes && weeklyData.closes.length >= MIN_WEEKLY_FOR_SLEVEL;
             const h4Raw = hourlyRaw ? aggregateOHLCTo4Hour(hourlyRaw) : null;
-            await updateSLevelsForPair(symbol, weeklyData, h4Raw, m15Data, firebasePut);
+            await updateSLevelsForPair(symbol, weeklyOkForSLevel ? weeklyData : null, h4Raw, m15Data, firebasePut);
 
             console.log(`[Stocks] ${symbol} saved (1H:${signal1h}, 4H:${signal4h}, 1D:${signal1d}, 1W:${signal1w})`);
         } catch (err) {

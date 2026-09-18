@@ -91,6 +91,20 @@ function initIciAlertsUI() {
             <option value="PRICE_ABOVE_SMA50">Price Crossing Above 50 SMA</option>
             <option value="PRICE_BELOW_SMA50">Price Crossing Below 50 SMA</option>
           </optgroup>
+          <optgroup label="-- Sentiment --">
+            <option value="SENT_ABOVE_60">Sentiment Above 60%</option>
+            <option value="SENT_BELOW_60">Sentiment Below 60%</option>
+            <option value="SENT_ABOVE_75">Sentiment Above 75%</option>
+            <option value="SENT_BELOW_25">Sentiment Below 25%</option>
+          </optgroup>
+          <optgroup label="-- Technical Metrics --">
+            <option value="TECH_200D_ABOVE">200 Candle Change Above X%</option>
+            <option value="TECH_200D_BELOW">200 Candle Change Below X%</option>
+            <option value="TECH_10D_ABOVE">10 Candle Change (1D) Above X%</option>
+            <option value="TECH_10D_BELOW">10 Candle Change (1D) Below X%</option>
+            <option value="TECH_1H_ABOVE">10 Candle Change (1H) Above X%</option>
+            <option value="TECH_1H_BELOW">10 Candle Change (1H) Below X%</option>
+          </optgroup>
         </select>
         <div id="alPriceWrap" style="display:none;margin-bottom:10px">
           <div class="al-lbl" style="color:#2962ff;font-weight:700">Target Price</div>
@@ -408,50 +422,25 @@ function alEditItem(id) {
 
 var AL_LAST_TRIGGER = {};
 
-var AL_TF_MS = { '1H': 3600000, '4H': 14400000, '1D': 86400000, '1W': 604800000 };
-var AL_BAR_STATE = {};
-
-function _alUpdateBarState(alert) {
-    var barMs = AL_TF_MS[alert.timeframe] || AL_TF_MS['1H'];
-    var barIndex = Math.floor(Date.now() / barMs);
-    var st = AL_BAR_STATE[alert.id];
-    if (!st) {
-        AL_BAR_STATE[alert.id] = { barIndex: barIndex, closedFired: false };
-        return false;
-    }
-    if (barIndex !== st.barIndex) {
-        st.barIndex = barIndex;
-        st.closedFired = false;
-        return true;
-    }
-    return false;
-}
-
 function shouldFire(alert) {
     var freq = alert.frequency || 'Only Once';
     if (freq === 'Every Time') return true;
+    var nowHour = Math.floor(Date.now() / 3600000);
+    var dedupKey = alert.id + '_' + nowHour;
     if (freq === 'Only Once') {
         if (AL_LAST_TRIGGER[alert.id]) return false;
         AL_LAST_TRIGGER[alert.id] = true;
         return true;
     }
-    if (freq === 'Once Per Bar') {
-        var barMs = AL_TF_MS[alert.timeframe] || AL_TF_MS['1H'];
-        var barIndex = Math.floor(Date.now() / barMs);
-        var dedupKey = alert.id + '_' + barIndex;
+    if (freq === 'Once Per Bar' || freq === 'Once Per Bar Close') {
         if (AL_LAST_TRIGGER[dedupKey]) return false;
         AL_LAST_TRIGGER[dedupKey] = true;
+        var oldest = nowHour - 2;
         Object.keys(AL_LAST_TRIGGER).forEach(function(k) {
-            if (k.indexOf(alert.id + '_') !== 0) return;
-            var idx = parseInt(k.substring((alert.id + '_').length));
-            if (!isNaN(idx) && idx < barIndex - 2) delete AL_LAST_TRIGGER[k];
+            var parts = k.split('_');
+            var hr = parseInt(parts[parts.length-1]);
+            if (!isNaN(hr) && hr < oldest) delete AL_LAST_TRIGGER[k];
         });
-        return true;
-    }
-    if (freq === 'Once Per Bar Close') {
-        var st = AL_BAR_STATE[alert.id];
-        if (!st || st.closedFired) return false;
-        st.closedFired = true;
         return true;
     }
     return true;
@@ -461,19 +450,12 @@ function checkAllAlerts(pairsData) {
     if (pairsData) window._alPairs = pairsData;
     var alerts = alLoadAlerts().filter(function(a) { return a.active; });
     if (!alerts.length || !window._alPairs) return;
-    var pairMap = {};
-    window._alPairs.forEach(function(p) { pairMap[p.name] = p; });
-
-    alerts.forEach(function(alert) {
-        var pair = pairMap[alert.pair];
-        if (!pair) return;
-        if (alert.frequency === 'Once Per Bar Close') {
-            var justClosed = _alUpdateBarState(alert);
-            if (!justClosed) return;
-        }
-        if (_alConditionMet(alert, pair) && shouldFire(alert)) {
-            _alFireAlert(alert, pair);
-        }
+    window._alPairs.forEach(function(pair) {
+        alerts.filter(function(a) { return a.pair === pair.name; }).forEach(function(alert) {
+            if (_alConditionMet(alert, pair) && shouldFire(alert)) {
+                _alFireAlert(alert, pair);
+            }
+        });
     });
 }
 

@@ -370,11 +370,14 @@
     </div>
     
     
-    <div id="chart-grid" class="chart-grid layout-1">
-        <div id="tv_chart_1" class="chart-box active"></div>
-        <div id="tv_chart_2" class="chart-box"></div>
-        <div id="tv_chart_3" class="chart-box"></div>
-        <div id="tv_chart_4" class="chart-box"></div>
+    <div id="chart-area-wrapper" style="display:flex;flex-direction:row;flex:1;min-height:0;width:100%;">
+        <div id="ici-toolbar-col" style="flex:0 0 40px;background:var(--surface);"></div>
+        <div id="chart-grid" class="chart-grid layout-1" style="flex:1;min-height:0;width:auto;">
+            <div id="tv_chart_1" class="chart-box active"></div>
+            <div id="tv_chart_2" class="chart-box"></div>
+            <div id="tv_chart_3" class="chart-box"></div>
+            <div id="tv_chart_4" class="chart-box"></div>
+        </div>
     </div>
 </div>
 
@@ -1262,6 +1265,9 @@ async function softRefreshChart(slot) {
 
 async function drawChart(slot) {
     const container = document.getElementById('tv_chart_'+slot);
+    if (window.ICIDrawingTools) { try { window.ICIDrawingTools.destroy(slot); } catch(e){} }
+    if (window.ICIChartAlertButton) { try { window.ICIChartAlertButton.destroy(slot); } catch(e){} }
+    if (window.ICIChartAlertLines) { try { window.ICIChartAlertLines.destroy(slot); } catch(e){} }
     container.innerHTML = '';
     const idx = chartIndices[slot-1];
     if (!chartPairs[idx]) return;
@@ -1309,7 +1315,12 @@ async function drawChart(slot) {
                 chart, series, container, candles: data.candles, interval,
                 fetchHTF: (tfKey) => fetchHTFCandles(symbol, tfKey)
             });
-            chart.timeScale().fitContent();
+            if (window.ICIDrawingTools) { try { window.ICIDrawingTools.init({ chart, series, container, slot, symbol, interval }); } catch(e){} }
+            if (window.ICIChartAlertButton) { try { window.ICIChartAlertButton.attach({ chart, series, container, slot, symbol }); } catch(e){} }
+            if (window.ICIChartAlertLines) { try { window.ICIChartAlertLines.attach({ chart, series, container, slot, symbol }); } catch(e){} }
+            const __iciTotal = data.candles.length;
+            const __iciBars = Math.min(150, __iciTotal);
+            chart.timeScale().setVisibleLogicalRange({ from: __iciTotal - __iciBars, to: __iciTotal });
 
             if (window.iciReplay && window.iciReplay[slot]) { try { window.iciReplay[slot].destroy(); } catch(e){} }
             window.iciReplay = window.iciReplay || {};
@@ -1934,6 +1945,9 @@ updateToggleButtons();
     else initChat();
 })();
 </script>
+<script src="drawing-tools.js?v=9"></script>
+<script src="chart-alert-button.js?v=1"></script>
+<script src="chart-alert-lines.js?v=1"></script>
 <script src="/barReplay.js"></script>
 </body>
 <style>
