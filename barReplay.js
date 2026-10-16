@@ -59,11 +59,32 @@ class ICIBarReplay {
       this.containerEl.style.position = 'relative';
     }
 
-    const trigger = document.createElement('button');
-    trigger.textContent = '⟲ Replay';
-    trigger.style.cssText = 'position:absolute;top:8px;right:8px;z-index:40;background:#2a2e39;color:#d1d4dc;border:1px solid #363a45;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:sans-serif;';
-    trigger.onclick = () => this.enable();
-    this.containerEl.appendChild(trigger);
+    const hdrAnchor = document.querySelector('#chartOverlay button[onclick="movePair(1)"]');
+    let trigger = document.getElementById('iciReplayHeaderBtn');
+    if (hdrAnchor && hdrAnchor.parentNode) {
+      if (!trigger) {
+        trigger = document.createElement('button');
+        trigger.id = 'iciReplayHeaderBtn';
+        trigger.textContent = '\u27F2 Replay';
+        trigger.style.cssText = 'background:var(--pill-bg,#2a2e39);color:var(--txt,#d1d4dc);border:1px solid var(--border,#363a45);border-radius:5px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-left:6px;white-space:nowrap;';
+        hdrAnchor.parentNode.insertBefore(trigger, hdrAnchor);
+      }
+      this.sharedTrigger = true;
+      trigger.onclick = () => {
+        let r = null;
+        try { r = window.iciReplay && window.iciReplay[activeChartSlot]; } catch (e) {}
+        r = r || this;
+        if (r.active) return;
+        r.trigger = trigger;
+        r.enable();
+      };
+    } else {
+      trigger = document.createElement('button');
+      trigger.textContent = '\u27F2 Replay';
+      trigger.style.cssText = 'position:absolute;top:8px;right:8px;z-index:40;background:#2a2e39;color:#d1d4dc;border:1px solid #363a45;border-radius:4px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:sans-serif;';
+      trigger.onclick = () => this.enable();
+      this.containerEl.appendChild(trigger);
+    }
     this.trigger = trigger;
 
     const bar = document.createElement('div');
@@ -115,28 +136,45 @@ class ICIBarReplay {
   async start(index) {
     this.pickingStart = false;
     this.active = true;
-    this.trigger.style.display = 'none';
+    if (!this.sharedTrigger) this.trigger.style.display = 'none';
     this.index = Math.max(0, Math.min(index, this.allBars.length - 1));
+    this._needJump = true;
     this.bar.style.display = 'flex';
     await this._renderSlice();
   }
 
   async _renderSlice() {
+    this._dirty = true;
+    if (this._busy) return this._busy;
+    this._busy = (async () => {
+      try {
+        while (this._dirty) { this._dirty = false; await this._renderSliceNow(); }
+      } finally { this._busy = null; }
+    })();
+    return this._busy;
+  }
+
+  async _renderSliceNow() {
     const slice = this.allBars.slice(0, this.index + 1);
+    const ts = this.chart.timeScale();
+    const keep = this._needJump ? null : ts.getVisibleLogicalRange();
+    this._needJump = false;
+    const applyView = () => {
+      try {
+        if (keep) { ts.setVisibleLogicalRange(keep); return; }
+        const VISIBLE_BARS = 150, total = slice.length;
+        if (total > VISIBLE_BARS) ts.setVisibleLogicalRange({ from: total - VISIBLE_BARS, to: total + 2 });
+        else ts.fitContent();
+      } catch (e) {}
+    };
+    try { this.series.setData(slice); } catch (e) {}
+    applyView();
     if (window.ICIIndicator && window.ICIIndicator.setReplayCandles) {
       await window.ICIIndicator.setReplayCandles(this.containerId, slice);
     } else {
       this.series.setData(slice);
     }
-    // Zoom/visible-range hamesha current slice ke hisab se sahi rakho
-    // (isi se "1 candle poori width mai stretch" wala bug fix hota hai)
-    const VISIBLE_BARS = 150;
-    const total = slice.length;
-    if (total > VISIBLE_BARS) {
-      this.chart.timeScale().setVisibleLogicalRange({ from: total - VISIBLE_BARS, to: total + 2 });
-    } else {
-      this.chart.timeScale().fitContent();
-    }
+    applyView();
     this._updateLabel();
     this._saveState();
   }
@@ -187,7 +225,7 @@ class ICIBarReplay {
     this.pause();
     this.active = false;
     this.bar.style.display = 'none';
-    this.trigger.style.display = 'block';
+    if (!this.sharedTrigger) this.trigger.style.display = 'block';
     this.trigger.textContent = '⟲ Replay';
     this._saveState();
     if (window.ICIIndicator && window.ICIIndicator.setReplayCandles) {
@@ -201,7 +239,7 @@ class ICIBarReplay {
   destroy() {
     this.pause();
     try { this.chart.unsubscribeClick(this._clickHandler); } catch(e) {}
-    try { this.trigger.remove(); } catch(e) {}
+    if (!this.sharedTrigger) { try { this.trigger.remove(); } catch(e) {} }
     try { this.bar.remove(); } catch(e) {}
   }
 }

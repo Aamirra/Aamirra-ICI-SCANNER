@@ -56,6 +56,7 @@ async function syncAllTargets(firebasePut) {
 }
 
 async function checkSetup(p, r, raw, sendTG, firebasePut, tf = '1h') {
+    return; // bull/bear monitors disabled
     if (!p || !p.n) return;
     if (shouldSkip(p.n)) return;
     if (!raw?.closes || raw.closes.length < 50) return;

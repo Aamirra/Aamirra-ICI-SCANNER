@@ -1,0 +1,459 @@
+######## A. toolbar build (184-262)
+  function buildToolbarOnce() {
+    if (toolbarEl) return;
+    var grid = document.getElementById('ici-toolbar-col');
+    if (!grid) { setTimeout(buildToolbarOnce, 300); return; }
+
+    injectStyles();
+
+    toolbarEl = document.createElement('div');
+    toolbarEl.className = 'ici-draw-toolbar';
+    toolbarEl.id = 'iciDrawToolbar';
+
+    var cursorBtn = makeBtn('fa-mouse-pointer', 'Cursor', function () { selectTool('cursor'); });
+    cursorBtn.dataset.tool = 'cursor';
+    toolbarEl.appendChild(cursorBtn);
+
+    pinsEl = document.createElement('div');
+    pinsEl.style.display = 'flex';
+    pinsEl.style.flexDirection = 'column';
+    pinsEl.style.gap = '2px';
+    toolbarEl.appendChild(pinsEl);
+
+    pinsEl.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    pinsEl.addEventListener('drop', function (e) {
+      e.preventDefault();
+      if (dragFromIndex == null) return;
+      var children = Array.prototype.slice.call(pinsEl.children);
+      var targetIdx = children.length - 1;
+      for (var i = 0; i < children.length; i++) {
+        var rect = children[i].getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) { targetIdx = i; break; }
+      }
+      if (targetIdx !== dragFromIndex && dragFromIndex >= 0 && dragFromIndex < favorites.length) {
+        var moved = favorites.splice(dragFromIndex, 1)[0];
+        if (targetIdx > dragFromIndex) targetIdx--;
+        favorites.splice(targetIdx, 0, moved);
+        saveFavorites();
+      }
+      dragFromIndex = null;
+      renderPins();
+    });
+
+    var sep1 = document.createElement('div');
+    sep1.className = 'ici-draw-sep';
+    toolbarEl.appendChild(sep1);
+
+    var moreBtn = makeBtn('fa-chevron-down', 'More tools', toggleFlyout);
+    moreBtn.id = 'iciDrawMoreBtn';
+    toolbarEl.appendChild(moreBtn);
+
+    var sep2 = document.createElement('div');
+    sep2.className = 'ici-draw-sep';
+    toolbarEl.appendChild(sep2);
+
+    colorBtnEl = makeBtn(null, 'Color', toggleColorPanel);
+    var swatch = document.createElement('span');
+    swatch.className = 'ici-draw-swatch';
+    swatch.id = 'iciDrawSwatch';
+    swatch.style.background = PALETTE[currentColorIdx];
+    colorBtnEl.appendChild(swatch);
+    toolbarEl.appendChild(colorBtnEl);
+
+    var trashBtn = makeBtn('fa-trash', 'Remove all drawings on active chart', function () {
+      var s = (typeof activeChartSlot !== 'undefined') ? activeChartSlot : 1;
+      if (!slots[s]) return;
+      if (!confirm('Remove all drawings on this chart (' + slots[s].symbol + ')?')) return;
+      slots[s].drawings = [];
+      clearAllDrawingsRemote(s);
+      redraw(s);
+    });
+    toolbarEl.appendChild(trashBtn);
+
+    grid.appendChild(toolbarEl);
+
+    buildFlyout(grid);
+    buildColorPanel(grid);
+
+
+######## B. makeBtn (299-330)
+  function makeBtn(icon, title, onClick) {
+    var b = document.createElement('div');
+    b.className = 'ici-draw-btn';
+    b.title = title;
+    if (icon) b.innerHTML = '<i class="fas ' + icon + '"></i>';
+    b.addEventListener('click', function (e) { e.stopPropagation(); onClick(e); });
+    return b;
+  }
+
+  function buildFlyout(grid) {
+    flyoutEl = document.createElement('div');
+    flyoutEl.className = 'ici-draw-flyout';
+    flyoutEl.id = 'iciDrawFlyout';
+    flyoutEl.style.display = 'none';
+    TOOLS.forEach(function (tool) {
+      var row = document.createElement('div');
+      row.className = 'ici-draw-row';
+      row.innerHTML = '<span class="ici-draw-icon"><i class="fas ' + tool.icon + '"></i></span><span>' + tool.name + '</span>';
+      var star = document.createElement('span');
+      star.className = 'ici-draw-star' + (favorites.indexOf(tool.id) > -1 ? ' on' : '');
+      star.innerHTML = '<i class="fa' + (favorites.indexOf(tool.id) > -1 ? 's' : 'r') + ' fa-star"></i>';
+      star.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleFavorite(tool.id, star);
+      });
+      row.appendChild(star);
+      row.addEventListener('click', function () {
+        selectTool(tool.id);
+        flyoutEl.style.display = 'none';
+      });
+      flyoutEl.appendChild(row);
+    });
+
+######## C. coordinate + candle data (1375-1430)
+
+  // ==================================================================
+  // Coordinate helpers
+  // ==================================================================
+  function getBarInfo(st) {
+    var now = Date.now();
+    if (st.__bi && now - st.__biT < 1000) return st.__bi;
+    var arr = null;
+    try { arr = (typeof st.series.data === 'function') ? st.series.data() : null; } catch (e) {}
+    if (!arr || arr.length < 2 || typeof arr[arr.length - 1].time !== 'number') return st.__bi || null;
+    var n = arr.length, step = Infinity;
+    for (var i = n - 1; i > 0 && i > n - 12; i--) { var df = arr[i].time - arr[i - 1].time; if (df > 0 && df < step) step = df; }
+    if (!isFinite(step)) return st.__bi || null;
+    st.__bi = { n: n, first: arr[0].time, last: arr[n - 1].time, step: step };
+    st.__biT = now;
+    return st.__bi;
+  }
+  function timeToX(st, time) {
+    try {
+      var __ts = st.chart.timeScale();
+      var __x = __ts.timeToCoordinate(time);
+      if (__x != null) return __x;
+      var __bi = getBarInfo(st);
+      if (!__bi || typeof time !== 'number') return null;
+      var __lg = null;
+      if (time > __bi.last) __lg = (__bi.n - 1) + (time - __bi.last) / __bi.step;
+      else if (time < __bi.first) __lg = (time - __bi.first) / __bi.step;
+      if (__lg == null) return null;
+      return __ts.logicalToCoordinate(__lg);
+    } catch (e) { return null; }
+  }
+  function xToTime(st, x) {
+    try {
+      var __ts = st.chart.timeScale();
+      var __t = __ts.coordinateToTime(x);
+      if (__t != null) return __t;
+      var __bi = getBarInfo(st);
+      if (!__bi) return null;
+      var __lg = __ts.coordinateToLogical(x);
+      if (__lg == null) return null;
+      if (__lg > __bi.n - 1) return __bi.last + Math.round((__lg - (__bi.n - 1)) * __bi.step);
+      if (__lg < 0) return __bi.first + Math.round(__lg * __bi.step);
+      return null;
+    } catch (e) { return null; }
+  }
+  function priceToY(st, price) {
+    try { return st.series.priceToCoordinate(price); } catch (e) { return null; }
+  }
+  function yToPrice(st, y) {
+    try { return st.series.coordinateToPrice(y); } catch (e) { return null; }
+  }
+  function ptToXY(st, pt) {
+    var x = timeToX(st, pt.time), y = priceToY(st, pt.price);
+    return (x == null || y == null) ? null : { x: x, y: y };
+  }
+  function xyToPt(st, x, y) {
+
+######## D. where onDown/onMove/onUp/onTouch are defined
+1926:    st.onDown = function (e) {
+1990:    st.onMove = function (e) {
+2049:    st.onUp = function (e) {
+2067:    st.onDblClick = function (e) {
+2096:    st.onTouchStart = function (e) {
+2102:    st.onTouchMove = function (e) {
+2108:    st.onTouchEnd = function (e) {
+
+######## E. st.onDown (line 1926)
+    st.onDown = function (e) {
+      if (e.target && e.target.closest && e.target.closest('.ici-draw-hdr')) return;
+      if (e.button !== 0) return;
+      var xy = mouseXY(st, e);
+      var tool = TOOL_MAP[activeTool];
+
+      if (activeTool === 'cursor') {
+        var hit = hitTest(st, xy.x, xy.y);
+        if (hit) {
+          e.preventDefault(); e.stopPropagation();
+          setSelection(slot, hit.drawing);
+          if (hit.part === 'p3' && !hit.drawing.p3 && hit.drawing.p1 && hit.drawing.p2) {
+            var __r = Math.abs(hit.drawing.p1.price - hit.drawing.p2.price);
+            hit.drawing.p3 = { time: hit.drawing.p2.time, price: hit.drawing.type === 'long' ? hit.drawing.p1.price + __r * DEFAULT_RR : hit.drawing.p1.price - __r * DEFAULT_RR };
+          }
+          if (!hit.drawing.locked) st.dragging = { drawing: hit.drawing, part: hit.part, startX: xy.x, startY: xy.y, startPt: xyToPt(st, xy.x, xy.y) };
+        } else {
+          clearSelection();
+        }
+        return;
+      }
+
+      e.preventDefault(); e.stopPropagation();
+      var pt = xyToPt(st, xy.x, xy.y);
+
+      if (tool.pts === 1) {
+        var draw1 = { type: activeTool, p1: pt, color: PALETTE[currentColorIdx] };
+        if (activeTool === 'text') {
+          selectTool('cursor');
+          showInlineTextInput(st, xy, '', function (val) {
+            if (!val) return;
+            draw1.text = val;
+            st.drawings.push(draw1);
+            persistDrawing(slot, draw1);
+            redraw(slot);
+          });
+          return;
+        }
+        st.drawings.push(draw1);
+        persistDrawing(slot, draw1);
+        selectTool('cursor');
+        redraw(slot);
+      } else if (tool.pts === 2) {
+        if (!st.pending) {
+          st.pending = { type: activeTool, p1: pt, color: PALETTE[currentColorIdx] };
+        } else {
+          st.pending.p2 = pt;
+          if (st.pending.type === 'long' || st.pending.type === 'short') {
+            var riskI = Math.abs(st.pending.p1.price - st.pending.p2.price);
+            var targetPriceI = st.pending.type === 'long' ? st.pending.p1.price + riskI * DEFAULT_RR : st.pending.p1.price - riskI * DEFAULT_RR;
+            st.pending.p3 = { time: st.pending.p2.time, price: targetPriceI };
+          }
+          st.drawings.push(st.pending);
+          persistDrawing(slot, st.pending);
+          st.pending = null;
+          selectTool('cursor');
+        }
+        redraw(slot);
+      } else if (tool.pts === -1) {
+        st.isBrushing = true;
+        st.pending = { type: 'brush', points: [pt], color: PALETTE[currentColorIdx] };
+
+######## E. st.onMove (line 1990)
+    st.onMove = function (e) {
+      var xy = mouseXY(st, e);
+      st.mousePt = xy;
+
+      if (st.dragging) {
+        e.preventDefault(); e.stopPropagation();
+        var curPt = xyToPt(st, xy.x, xy.y);
+        var d = st.dragging.drawing;
+        var __pt = st.dragging.part;
+        if ((__pt === 'p1' || __pt === 'p2' || __pt === 'p3') && (curPt.price == null || ((__pt === 'p1' || __pt === 'p2') && curPt.time == null))) { redraw(slot); return; }
+        var dt = (curPt.time != null && st.dragging.startPt.time != null) ? (curPt.time - st.dragging.startPt.time) : 0;
+        var dp = (curPt.price != null && st.dragging.startPt.price != null) ? (curPt.price - st.dragging.startPt.price) : 0;
+
+        if (st.dragging.part === 'ps' && d.p2) { if (curPt.price != null) d.p2 = { time: d.p2.time, price: curPt.price }; }
+        else if (st.dragging.part === 'pe' && d.p1) { if (curPt.price != null) d.p1 = { time: d.p1.time, price: curPt.price }; }
+        else if (st.dragging.part === 'pw' && d.p2) { if (curPt.time != null) d.p2 = { time: curPt.time, price: d.p2.price }; }
+        else if (st.dragging.part === 'p1' && d.p1) { d.p1 = { time: curPt.time, price: curPt.price }; }
+        else if (st.dragging.part === 'pa' && d.p1 && d.p2) { if (curPt.time != null && curPt.price != null) { d.p2 = { time: curPt.time, price: d.p2.price }; d.p1 = { time: d.p1.time, price: curPt.price }; } }
+        else if (st.dragging.part === 'pb' && d.p1 && d.p2) { if (curPt.time != null && curPt.price != null) { d.p1 = { time: curPt.time, price: d.p1.price }; d.p2 = { time: d.p2.time, price: curPt.price }; } }
+        else if (st.dragging.part === 'e1y' && d.p1) { if (curPt.price != null) d.p1 = { time: d.p1.time, price: curPt.price }; }
+        else if (st.dragging.part === 'e2y' && d.p2) { if (curPt.price != null) d.p2 = { time: d.p2.time, price: curPt.price }; }
+        else if (st.dragging.part === 'e1x' && d.p1) { if (curPt.time != null) d.p1 = { time: curPt.time, price: d.p1.price }; }
+        else if (st.dragging.part === 'e2x' && d.p2) { if (curPt.time != null) d.p2 = { time: curPt.time, price: d.p2.price }; }
+        else if (st.dragging.part === 'p2' && d.p2) { d.p2 = { time: curPt.time, price: curPt.price }; }
+        else if (st.dragging.part === 'p3' && d.p3) { d.p3 = { time: d.p3.time, price: curPt.price }; }
+        else if (st.dragging.part === 'body') {
+          if (d.points) {
+            d.points = st.dragging.origPoints ? st.dragging.origPoints.map(function (p) {
+              return { time: (typeof p.time === 'number' ? p.time + dt : p.time), price: p.price + dp };
+            }) : d.points;
+          } else {
+            if (!st.dragging.origP1) { st.dragging.origP1 = d.p1; st.dragging.origP2 = d.p2; st.dragging.origP3 = d.p3; }
+            if (d.p1) d.p1 = { time: (typeof st.dragging.origP1.time === 'number' ? st.dragging.origP1.time + dt : st.dragging.origP1.time), price: st.dragging.origP1.price + dp };
+            if (d.p2) d.p2 = { time: (typeof st.dragging.origP2.time === 'number' ? st.dragging.origP2.time + dt : st.dragging.origP2.time), price: st.dragging.origP2.price + dp };
+            if (d.p3) d.p3 = { time: (typeof st.dragging.origP3.time === 'number' ? st.dragging.origP3.time + dt : st.dragging.origP3.time), price: st.dragging.origP3.price + dp };
+          }
+        }
+        if (d.points && !st.dragging.origPoints) st.dragging.origPoints = d.points.map(function (p) { return { time: p.time, price: p.price }; });
+        redraw(slot);
+        return;
+      }
+
+      if (st.isBrushing && st.pending) {
+        e.preventDefault(); e.stopPropagation();
+        st.pending.points.push(xyToPt(st, xy.x, xy.y));
+        redraw(slot);
+        return;
+      }
+
+      if (activeTool === 'cursor' && !st.pending && !st.isBrushing) {
+        var __h = hitTest(st, xy.x, xy.y);
+        var __hid = __h ? __h.drawing.id : null;
+        if (st.hoverId !== __hid) { st.hoverId = __hid; redraw(slot); }
+      }
+      if (st.pending || activeTool !== 'cursor') {
+        redraw(slot);
+      }
+    };
+
+    st.onUp = function (e) {
+      if (st.dragging) {
+
+######## E. st.onUp (line 2049)
+    st.onUp = function (e) {
+      if (st.dragging) {
+        persistDrawing(slot, st.dragging.drawing);
+        st.dragging = null;
+        return;
+      }
+      if (st.isBrushing) {
+        st.isBrushing = false;
+        if (st.pending && st.pending.points.length > 1) {
+          st.drawings.push(st.pending);
+          persistDrawing(slot, st.pending);
+        }
+        st.pending = null;
+        selectTool('cursor');
+        redraw(slot);
+      }
+    };
+
+    st.onDblClick = function (e) {
+      var xy = mouseXY(st, e);
+      var hit = hitTest(st, xy.x, xy.y);
+      if (hit && hit.drawing.type === 'text') {
+        e.preventDefault(); e.stopPropagation();
+        var d = hit.drawing;
+        var anchor = ptToXY(st, d.p1) || xy;
+        showInlineTextInput(st, anchor, d.text || '', function (val) {
+          if (val == null) return;
+          d.text = val;
+          persistDrawing(slot, d);
+          redraw(slot);
+        });
+      }
+    };
+
+    st.container.addEventListener('mousedown', st.onDown, opts);
+    st.container.addEventListener('mousemove', st.onMove, opts);
+    st.container.addEventListener('mouseup', st.onUp, opts);
+    st.container.addEventListener('dblclick', st.onDblClick, opts);
+    // ---- Touch support: maps touch events onto the mouse handlers above ----
+    var tmap = function (e, t) {
+      return {
+        button: 0, clientX: t.clientX, clientY: t.clientY, target: e.target,
+        preventDefault: function () { if (e.cancelable) e.preventDefault(); },
+        stopPropagation: function () { e.stopPropagation(); }
+      };
+    };
+    st.touchInfo = null;
+    st.onTouchStart = function (e) {
+      if (e.touches.length !== 1) { st.touchInfo = null; return; }
+      var t = e.touches[0];
+      st.touchInfo = { x: t.clientX, y: t.clientY, lx: t.clientX, ly: t.clientY, hadPending: !!st.pending };
+      st.onDown(tmap(e, t));
+    };
+    st.onTouchMove = function (e) {
+      if (!st.touchInfo || e.touches.length !== 1) return;
+      var t = e.touches[0];
+      st.touchInfo.lx = t.clientX; st.touchInfo.ly = t.clientY;
+      st.onMove(tmap(e, t));
+    };
+    st.onTouchEnd = function (e) {
+      var ti = st.touchInfo; st.touchInfo = null;
+
+######## F. 2060-2130 (listeners)
+        }
+        st.pending = null;
+        selectTool('cursor');
+        redraw(slot);
+      }
+    };
+
+    st.onDblClick = function (e) {
+      var xy = mouseXY(st, e);
+      var hit = hitTest(st, xy.x, xy.y);
+      if (hit && hit.drawing.type === 'text') {
+        e.preventDefault(); e.stopPropagation();
+        var d = hit.drawing;
+        var anchor = ptToXY(st, d.p1) || xy;
+        showInlineTextInput(st, anchor, d.text || '', function (val) {
+          if (val == null) return;
+          d.text = val;
+          persistDrawing(slot, d);
+          redraw(slot);
+        });
+      }
+    };
+
+    st.container.addEventListener('mousedown', st.onDown, opts);
+    st.container.addEventListener('mousemove', st.onMove, opts);
+    st.container.addEventListener('mouseup', st.onUp, opts);
+    st.container.addEventListener('dblclick', st.onDblClick, opts);
+    // ---- Touch support: maps touch events onto the mouse handlers above ----
+    var tmap = function (e, t) {
+      return {
+        button: 0, clientX: t.clientX, clientY: t.clientY, target: e.target,
+        preventDefault: function () { if (e.cancelable) e.preventDefault(); },
+        stopPropagation: function () { e.stopPropagation(); }
+      };
+    };
+    st.touchInfo = null;
+    st.onTouchStart = function (e) {
+      if (e.touches.length !== 1) { st.touchInfo = null; return; }
+      var t = e.touches[0];
+      st.touchInfo = { x: t.clientX, y: t.clientY, lx: t.clientX, ly: t.clientY, hadPending: !!st.pending };
+      st.onDown(tmap(e, t));
+    };
+    st.onTouchMove = function (e) {
+      if (!st.touchInfo || e.touches.length !== 1) return;
+      var t = e.touches[0];
+      st.touchInfo.lx = t.clientX; st.touchInfo.ly = t.clientY;
+      st.onMove(tmap(e, t));
+    };
+    st.onTouchEnd = function (e) {
+      var ti = st.touchInfo; st.touchInfo = null;
+      if (!ti) return;
+      var t = e.changedTouches && e.changedTouches[0];
+      var ev = t ? tmap(e, t) : { button: 0, clientX: ti.lx, clientY: ti.ly, preventDefault: function () {}, stopPropagation: function () {} };
+      // finger dragged after starting a 2-point tool -> finish the drawing at release point
+      if (!st.dragging && !st.isBrushing && st.pending && !ti.hadPending && Math.hypot(ev.clientX - ti.x, ev.clientY - ti.y) > 12) {
+        st.onDown(ev);
+        return;
+      }
+      st.onUp(ev);
+    };
+    st.onTouchCancel = function () { st.touchInfo = null; st.onUp({}); };
+    st.container.addEventListener('touchstart', st.onTouchStart, { capture: true, passive: false });
+    st.container.addEventListener('touchmove', st.onTouchMove, { capture: true, passive: false });
+    st.container.addEventListener('touchend', st.onTouchEnd, { capture: true, passive: false });
+    st.container.addEventListener('touchcancel', st.onTouchCancel, { capture: true, passive: false });
+  }
+
+  function detachEvents(st) {
+    if (!st) return;
+    var opts = true;
+    if (st.onDown) st.container.removeEventListener('mousedown', st.onDown, opts);
+
+######## G. event -> point helper
+215:        var rect = children[i].getBoundingClientRect();
+433:  function drawPosHandles(st, d) {
+564:      var pr = par.getBoundingClientRect();
+650:  function isPosType(d) { return d.type === 'long' || d.type === 'short'; }
+738:  function labelXY(st, d) {
+1426:  function ptToXY(st, pt) {
+1430:  function xyToPt(st, x, y) {
+1434:  function mouseXY(st, e) {
+1435:    var rect = st.container.getBoundingClientRect();
+1504:  function anchorXY(st, d) {
+1676:  function drawPosProgress(st, d, dir, x0, x1, entryY, entryPrice, stopPrice, targetPrice) {
+1695:  function getHdrPos() {
+1706:  function drawPosPills(st, d, dir, x0, x1, targetY, stopY, entryY, entryPrice, stopPrice, targetPrice) {
+1734:  function drawPosition(st, d, dir) {

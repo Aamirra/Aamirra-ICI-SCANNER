@@ -1,0 +1,336 @@
+
+######## index.html : watchlist lines
+429:        .wl-widget { margin-bottom:8px; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--surface); }
+439:        .wl-row { display:flex; align-items:center; padding:5px 8px; font-size:12px; border-bottom:1px solid var(--border); position:relative; -webkit-user-select:none; user-select:none; }
+440:        .wl-row span:nth-child(1){flex:1.4;font-weight:600;} .wl-row span:nth-child(2){flex:1;text-align:right;}
+453:    <div class="wl-widget" id="wlWidget">
+460:            <div class="wl-rows" id="wlRows"></div>
+1609:    function wlLoad() {
+1615:    function wlSave() { localStorage.setItem(WL_KEY, JSON.stringify(wlData)); }
+1616:    function wlGetActiveTab() {
+1620:    function wlRenderTabs() {
+1628:            btn.onclick = function(){ wlData.active = tab.id; wlSave(); wlRenderTabs(); wlRenderRows(); };
+1636:                        wlSave(); wlRenderTabs(); wlRenderRows();
+1651:        wlSave(); wlRenderTabs(); wlRenderRows();
+1671:        if (idx > -1) { tab.symbols.splice(idx, 1); wlSave(); wlRenderTabs(); wlRenderRows(); }
+1673:    function wlAddSymbol(sym) {
+1677:            wlSave(); wlRenderTabs(); wlRenderRows();
+1680:    function wlGetPriceChange(sym) {
+1688:    function wlRenderRows() {
+1690:        var rowsEl = document.getElementById('wlRows');
+1702:            html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
+1708:    wlRenderTabs();
+1709:    wlRenderRows();
+1710:    setInterval(wlRenderRows, 3000);
+1730:    var dragSym = null, dragSource = null, dragStartX = 0, dragStartY = 0, dragTimer = null, isDraggingWL = false, ghostEl = null;
+1732:    function wlCreateGhost(text) {
+1739:    function wlMoveGhost(x, y) { if (ghostEl) { ghostEl.style.left = x + 'px'; ghostEl.style.top = y + 'px'; } }
+1740:    function wlRemoveGhost() { if (ghostEl) { ghostEl.remove(); ghostEl = null; } }
+1741:    function wlCloseContextMenu() { if (wlContextMenuEl) { wlContextMenuEl.remove(); wlContextMenuEl = null; } }
+1745:        var row = e.target.closest && e.target.closest('.wl-row');
+1764:        var wlRow = e.target.closest && e.target.closest('.wl-row');
+1769:        } else if (wlRow) {
+1770:            dragSym = wlRow.getAttribute('data-sym'); dragSource = 'watchlist';
+1774:        dragStartX = e.clientX; dragStartY = e.clientY; isDraggingWL = false;
+1780:            if (wlRow) wlRow.classList.add('wl-dragging');
+1787:        var dx = Math.abs(e.clientX - dragStartX), dy = Math.abs(e.clientY - dragStartY);
+2252:  st.textContent = 'body.is-mobile #pairsContainer .item-main, body.is-mobile .wl-row { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } .wl-drag-ghost { pointer-events:none; }';
+2264:    'body.is-mobile #wlTableWrap,body.is-mobile #wlRows{overscroll-behavior:contain;}';
+2289:  var ids = ['pairsContainer','wlRows','wlTableWrap'];
+2293:  ['pairsContainer','wlRows'].forEach(function(id){
+
+######## stocks.html : watchlist lines
+408:        .wl-widget { margin-bottom:8px; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--surface); }
+418:        .wl-row { display:flex; align-items:center; padding:5px 8px; font-size:12px; border-bottom:1px solid var(--border); position:relative; -webkit-user-select:none; user-select:none; }
+419:        .wl-row span:nth-child(1){flex:1.4;font-weight:600;} .wl-row span:nth-child(2){flex:1;text-align:right;}
+432:    <div class="wl-widget" id="wlWidget">
+439:            <div class="wl-rows" id="wlRows"></div>
+1680:    function wlLoad() {
+1686:    function wlSave() { localStorage.setItem(WL_KEY, JSON.stringify(wlData)); }
+1687:    function wlGetActiveTab() {
+1691:    function wlRenderTabs() {
+1699:            btn.onclick = function(){ wlData.active = tab.id; wlSave(); wlRenderTabs(); wlRenderRows(); };
+1707:                        wlSave(); wlRenderTabs(); wlRenderRows();
+1722:        wlSave(); wlRenderTabs(); wlRenderRows();
+1742:        if (idx > -1) { tab.symbols.splice(idx, 1); wlSave(); wlRenderTabs(); wlRenderRows(); }
+1744:    function wlAddSymbol(sym) {
+1748:            wlSave(); wlRenderTabs(); wlRenderRows();
+1751:    function wlGetPriceChange(sym) {
+1759:    function wlRenderRows() {
+1761:        var rowsEl = document.getElementById('wlRows');
+1773:            html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
+1779:    wlRenderTabs();
+1780:    wlRenderRows();
+1781:    setInterval(wlRenderRows, 3000);
+1801:    var dragSym = null, dragSource = null, dragStartX = 0, dragStartY = 0, dragTimer = null, isDraggingWL = false, ghostEl = null;
+1803:    function wlCreateGhost(text) {
+1810:    function wlMoveGhost(x, y) { if (ghostEl) { ghostEl.style.left = x + 'px'; ghostEl.style.top = y + 'px'; } }
+1811:    function wlRemoveGhost() { if (ghostEl) { ghostEl.remove(); ghostEl = null; } }
+1812:    function wlCloseContextMenu() { if (wlContextMenuEl) { wlContextMenuEl.remove(); wlContextMenuEl = null; } }
+1816:        var row = e.target.closest && e.target.closest('.wl-row');
+1835:        var wlRow = e.target.closest && e.target.closest('.wl-row');
+1840:        } else if (wlRow) {
+1841:            dragSym = wlRow.getAttribute('data-sym'); dragSource = 'watchlist';
+1845:        dragStartX = e.clientX; dragStartY = e.clientY; isDraggingWL = false;
+1851:            if (wlRow) wlRow.classList.add('wl-dragging');
+1858:        var dx = Math.abs(e.clientX - dragStartX), dy = Math.abs(e.clientY - dragStartY);
+2323:  st.textContent = 'body.is-mobile #pairsContainer .item-main, body.is-mobile .wl-row { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } .wl-drag-ghost { pointer-events:none; }';
+2335:    'body.is-mobile #wlTableWrap,body.is-mobile #wlRows{overscroll-behavior:contain;}';
+2360:  var ids = ['pairsContainer','wlRows','wlTableWrap'];
+2364:  ['pairsContainer','wlRows'].forEach(function(id){
+
+######## crypto.html : watchlist lines
+371:        .wl-widget { margin-bottom:8px; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--surface); }
+381:        .wl-row { display:flex; align-items:center; padding:5px 8px; font-size:12px; border-bottom:1px solid var(--border); position:relative; -webkit-user-select:none; user-select:none; }
+382:        .wl-row span:nth-child(1){flex:1.4;font-weight:600;} .wl-row span:nth-child(2){flex:1;text-align:right;}
+395:    <div class="wl-widget" id="wlWidget">
+402:            <div class="wl-rows" id="wlRows"></div>
+1524:    function wlLoad() {
+1530:    function wlSave() { localStorage.setItem(WL_KEY, JSON.stringify(wlData)); }
+1531:    function wlGetActiveTab() {
+1535:    function wlRenderTabs() {
+1543:            btn.onclick = function(){ wlData.active = tab.id; wlSave(); wlRenderTabs(); wlRenderRows(); };
+1551:                        wlSave(); wlRenderTabs(); wlRenderRows();
+1566:        wlSave(); wlRenderTabs(); wlRenderRows();
+1586:        if (idx > -1) { tab.symbols.splice(idx, 1); wlSave(); wlRenderTabs(); wlRenderRows(); }
+1588:    function wlAddSymbol(sym) {
+1592:            wlSave(); wlRenderTabs(); wlRenderRows();
+1595:    function wlGetPriceChange(sym) {
+1603:    function wlRenderRows() {
+1605:        var rowsEl = document.getElementById('wlRows');
+1617:            html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
+1623:    wlRenderTabs();
+1624:    wlRenderRows();
+1625:    setInterval(wlRenderRows, 3000);
+1645:    var dragSym = null, dragSource = null, dragStartX = 0, dragStartY = 0, dragTimer = null, isDraggingWL = false, ghostEl = null;
+1647:    function wlCreateGhost(text) {
+1654:    function wlMoveGhost(x, y) { if (ghostEl) { ghostEl.style.left = x + 'px'; ghostEl.style.top = y + 'px'; } }
+1655:    function wlRemoveGhost() { if (ghostEl) { ghostEl.remove(); ghostEl = null; } }
+1656:    function wlCloseContextMenu() { if (wlContextMenuEl) { wlContextMenuEl.remove(); wlContextMenuEl = null; } }
+1660:        var row = e.target.closest && e.target.closest('.wl-row');
+1679:        var wlRow = e.target.closest && e.target.closest('.wl-row');
+1684:        } else if (wlRow) {
+1685:            dragSym = wlRow.getAttribute('data-sym'); dragSource = 'watchlist';
+1689:        dragStartX = e.clientX; dragStartY = e.clientY; isDraggingWL = false;
+1695:            if (wlRow) wlRow.classList.add('wl-dragging');
+1702:        var dx = Math.abs(e.clientX - dragStartX), dy = Math.abs(e.clientY - dragStartY);
+2167:  st.textContent = 'body.is-mobile #pairsContainer .item-main, body.is-mobile .wl-row { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } .wl-drag-ghost { pointer-events:none; }';
+2179:    'body.is-mobile #wlTableWrap,body.is-mobile #wlRows{overscroll-behavior:contain;}';
+2204:  var ids = ['pairsContainer','wlRows','wlTableWrap'];
+2208:  ['pairsContainer','wlRows'].forEach(function(id){
+
+######## index.html : watchlist CSS+HTML
+429:        .wl-widget { margin-bottom:8px; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--surface); }
+430:        .wl-tabs-row { display:flex; align-items:center; gap:4px; padding:4px 6px; border-bottom:1px solid var(--border); }
+431:        .wl-tab { padding:2px 10px; font-size:11px; font-weight:700; border-radius:5px; background:var(--pill-bg); color:var(--txt); cursor:pointer; border:1px solid var(--border); }
+432:        .wl-tab.active { background:var(--acc); color:#fff; border-color:var(--acc); }
+433:        .wl-add-tab-btn { width:20px; height:20px; border-radius:5px; border:1px solid var(--border); background:var(--pill-bg); color:var(--txt); font-size:13px; font-weight:700; cursor:pointer; line-height:1; }
+434:        .wl-table-wrap { overflow-y:auto; overflow-x:hidden; position:relative; height:140px; scrollbar-width:none; -ms-overflow-style:none; }
+435:        .wl-table-wrap::-webkit-scrollbar { display:none; width:0; height:0; }
+436:        .wl-drop-target { outline:2px dashed var(--acc) !important; outline-offset:-2px; background:rgba(0,98,255,0.08); }
+437:        .wl-header-row { display:flex; padding:4px 8px; font-size:9px; font-weight:700; color:var(--muted); text-transform:uppercase; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--surface); }
+438:        .wl-header-row span:nth-child(1){flex:1.4;} .wl-header-row span:nth-child(2){flex:1;text-align:right;} .wl-header-row span:nth-child(3){flex:1;text-align:right;padding-right:16px;}
+439:        .wl-row { display:flex; align-items:center; padding:5px 8px; font-size:12px; border-bottom:1px solid var(--border); position:relative; -webkit-user-select:none; user-select:none; }
+440:        .wl-row span:nth-child(1){flex:1.4;font-weight:600;} .wl-row span:nth-child(2){flex:1;text-align:right;}
+441:        .wl-chg{flex:1;text-align:right;padding-right:16px;font-weight:600;}
+442:        .wl-chg.up{color:var(--green);} .wl-chg.down{color:var(--red);}
+444:        .wl-empty-hint { padding:14px 8px; text-align:center; font-size:11px; color:var(--muted); }
+445:        .wl-resize-handle { height:8px; cursor:ns-resize; display:flex; align-items:center; justify-content:center; background:var(--pill-bg); }
+446:        .wl-resize-handle::after { content:''; width:30px; height:3px; border-radius:2px; background:var(--border); }
+447:        .wl-dragging { opacity:0.4; }
+448:        .wl-drag-ghost { position:fixed; pointer-events:none; z-index:3000; background:var(--acc); color:#fff; font-size:12px; font-weight:700; padding:6px 12px; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.3); transform:translate(-50%,-50%); }
+449:        .wl-context-menu { position:fixed; z-index:3001; background:var(--surface); border:1px solid var(--border); border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,0.25); overflow:hidden; min-width:120px; }
+450:        .wl-context-menu-item { padding:8px 14px; font-size:12px; font-weight:600; color:var(--red); cursor:pointer; }
+451:        .wl-context-menu-item:hover { background:var(--pill-bg); }
+453:    <div class="wl-widget" id="wlWidget">
+454:        <div class="wl-tabs-row">
+455:            <div class="wl-tabs" id="wlTabs"></div>
+456:            <button class="wl-add-tab-btn" onclick="wlAddTab()">+</button>
+458:        <div class="wl-table-wrap" id="wlTableWrap">
+459:            <div class="wl-header-row"><span>Symbol</span><span>Last</span><span>Chg%</span></div>
+460:            <div class="wl-rows" id="wlRows"></div>
+462:        <div class="wl-resize-handle" id="wlResizeHandle"></div>
+1626:            btn.className = 'wl-tab' + (tab.id === wlData.active ? ' active' : '');
+1693:            rowsEl.innerHTML = '<div class="wl-empty-hint">Press &amp; hold a pair below, then drag up here to add</div>';
+1702:            html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
+1734:        g.className = 'wl-drag-ghost';
+1745:        var row = e.target.closest && e.target.closest('.wl-row');
+1751:        menu.className = 'wl-context-menu';
+1755:        item.className = 'wl-context-menu-item';
+1764:        var wlRow = e.target.closest && e.target.closest('.wl-row');
+1779:            if (main) main.classList.add('wl-dragging');
+1780:            if (wlRow) wlRow.classList.add('wl-dragging');
+1796:                    w.classList.toggle('wl-drop-target', over);
+1804:                    chartEl.classList.toggle('wl-drop-target', over2);
+1817:                    w.classList.remove('wl-drop-target');
+1826:                    chartEl.classList.remove('wl-drop-target');
+1830:            var dragging = document.querySelectorAll('.wl-dragging');
+1831:            for (var j = 0; j < dragging.length; j++) dragging[j].classList.remove('wl-dragging');
+2211:.wl-tabs-row #marketDropdownWrap { margin-left:auto; flex-shrink:0; }
+2212:.wl-tabs-row #marketDropdownPanel { position:fixed; z-index:3002; }
+2218:  var row = document.querySelector('.wl-tabs-row');
+2241:    if (document.querySelector('.wl-dragging') && e.cancelable) e.preventDefault();
+
+######## apply_wl_drag2.js (pehla drag banane wali script)
+const fs = require('fs');
+const files = ['index.html', 'crypto.html', 'stocks.html'];
+
+// 1. CSS: remove red-x rule, add ghost/menu/generic-droptarget CSS, make drop-target generic
+const oldCSS1 = `        .wl-row-remove { position:absolute; right:2px; top:50%; transform:translateY(-50%); color:var(--red); font-size:11px; cursor:pointer; padding:2px 6px; }`;
+const newCSS1 = ``;
+
+const oldCSS2 = `        .wl-table-wrap.wl-drop-target { outline:2px dashed var(--acc); outline-offset:-2px; background:rgba(0,98,255,0.08); }`;
+const newCSS2 = `        .wl-drop-target { outline:2px dashed var(--acc) !important; outline-offset:-2px; background:rgba(0,98,255,0.08); }`;
+
+const oldCSS3 = `        .wl-dragging { opacity:0.4; }`;
+const newCSS3 = `        .wl-dragging { opacity:0.4; }
+        .wl-drag-ghost { position:fixed; pointer-events:none; z-index:3000; background:var(--acc); color:#fff; font-size:12px; font-weight:700; padding:6px 12px; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.3); transform:translate(-50%,-50%); }
+        .wl-context-menu { position:fixed; z-index:3001; background:var(--surface); border:1px solid var(--border); border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,0.25); overflow:hidden; min-width:120px; }
+        .wl-context-menu-item { padding:8px 14px; font-size:12px; font-weight:600; color:var(--red); cursor:pointer; }
+        .wl-context-menu-item:hover { background:var(--pill-bg); }`;
+
+// 2. Row template: remove red-x span, add data-sym attribute
+const oldRow = `html += '<div class="wl-row"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span><span class="wl-row-remove" onclick="wlRemoveSymbol(\\'' + sym + '\\')"><i class="fas fa-times"></i></span></div>';`;
+const newRow = `html += '<div class="wl-row" data-sym="' + sym + '"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';`;
+
+// 3. Full drag block replace (start anchor to end anchor)
+const startAnchor = `var dragSym = null, dragStartX = 0, dragStartY = 0, dragTimer = null, isDraggingWL = false;`;
+const endAnchor = `})();
+</script>`;
+
+const newDragBlock = `var dragSym = null, dragSource = null, dragStartX = 0, dragStartY = 0, dragTimer = null, isDraggingWL = false, ghostEl = null;
+    var wlContextMenuEl = null;
+    function wlCreateGhost(text) {
+        var g = document.createElement('div');
+        g.className = 'wl-drag-ghost';
+        g.textContent = text;
+        document.body.appendChild(g);
+        return g;
+    }
+    function wlMoveGhost(x, y) { if (ghostEl) { ghostEl.style.left = x + 'px'; ghostEl.style.top = y + 'px'; } }
+    function wlRemoveGhost() { if (ghostEl) { ghostEl.remove(); ghostEl = null; } }
+    function wlCloseContextMenu() { if (wlContextMenuEl) { wlContextMenuEl.remove(); wlContextMenuEl = null; } }
+    document.addEventListener('click', function() { wlCloseContextMenu(); });
+    document.addEventListener('contextmenu', function(e) {
+        var row = e.target.closest && e.target.closest('.wl-row');
+        if (!row) return;
+        e.preventDefault();
+        wlCloseContextMenu();
+        var sym = row.getAttribute('data-sym');
+        var menu = document.createElement('div');
+        menu.className = 'wl-context-menu';
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+        var item = document.createElement('div');
+        item.className = 'wl-context-menu-item';
+        item.textContent = 'Delete';
+        item.onclick = function(ev) { ev.stopPropagation(); wlRemoveSymbol(sym); wlCloseContextMenu(); };
+        menu.appendChild(item);
+        document.body.appendChild(menu);
+        wlContextMenuEl = menu;
+    });
+    document.addEventListener('pointerdown', function(e) {
+        var main = e.target.closest && e.target.closest('#pairsContainer .item-main');
+        var wlRow = e.target.closest && e.target.closest('.wl-row');
+        if (main) {
+            var m = (main.getAttribute('onclick') || '').match(/openChartForPair\\('([^']+)'\\)/);
+            if (!m) return;
+            dragSym = m[1]; dragSource = 'screener';
+        } else if (wlRow) {
+            dragSym = wlRow.getAttribute('data-sym'); dragSource = 'watchlist';
+        } else {
+            return;
+        }
+        dragStartX = e.clientX; dragStartY = e.clientY; isDraggingWL = false;
+
+######## fix_drag_reorder.js
+const fs = require('fs');
+const file = 'drawing-tools.js';
+let js = fs.readFileSync(file, 'utf8');
+let changes = 0;
+
+// 1. add dragFromIndex tracking var
+const A_OLD = `  var toolbarEl = null, pinsEl = null, flyoutEl = null, colorBtnEl = null, deleteBtnEl = null;`;
+const A_NEW = A_OLD + `\n  var dragFromIndex = null;`;
+if (!js.includes('var dragFromIndex')) {
+  if (js.includes(A_OLD)) { js = js.replace(A_OLD, A_NEW); changes++; }
+  else console.log('⚠️  anchor A not found');
+}
+
+// 2. container-level dragover/drop
+const B_OLD = `    pinsEl = document.createElement('div');
+    pinsEl.style.display = 'flex';
+    pinsEl.style.flexDirection = 'column';
+    pinsEl.style.gap = '2px';
+    toolbarEl.appendChild(pinsEl);`;
+const B_NEW = B_OLD + `
+
+    pinsEl.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    pinsEl.addEventListener('drop', function (e) {
+      e.preventDefault();
+      if (dragFromIndex == null) return;
+      var children = Array.prototype.slice.call(pinsEl.children);
+      var targetIdx = children.length - 1;
+      for (var i = 0; i < children.length; i++) {
+        var rect = children[i].getBoundingClientRect();
+        if (e.clientY < rect.top + rect.height / 2) { targetIdx = i; break; }
+      }
+      if (targetIdx !== dragFromIndex && dragFromIndex >= 0 && dragFromIndex < favorites.length) {
+        var moved = favorites.splice(dragFromIndex, 1)[0];
+        if (targetIdx > dragFromIndex) targetIdx--;
+        favorites.splice(targetIdx, 0, moved);
+        saveFavorites();
+      }
+      dragFromIndex = null;
+      renderPins();
+    });`;
+if (!js.includes("pinsEl.addEventListener('drop'")) {
+  if (js.includes(B_OLD)) { js = js.replace(B_OLD, B_NEW); changes++; }
+  else console.log('⚠️  anchor B not found');
+}
+
+// 3. replace fragile per-pin dragstart/dragover/drop
+const C_OLD = `      b.addEventListener('click', function (e) { e.stopPropagation(); selectTool(tool.id); });
+      b.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('text/plain', String(idx));
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      b.addEventListener('dragover', function (e) { e.preventDefault(); });
+      b.addEventListener('drop', function (e) {
+        e.preventDefault();
+        var from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+        var to = idx;
+        if (isNaN(from) || from === to) return;
+
+######## fix_wl_hold_scroll.js
+const fs = require('fs');
+const files = ['index.html', 'crypto.html', 'stocks.html'];
+
+const oldDelay = `}, 320);`;
+const newDelay = `}, 150);`;
+
+const oldCSS = `        .wl-table-wrap { overflow-y:auto; position:relative; height:140px; }`;
+const newCSS = `        .wl-table-wrap { overflow-y:auto; overflow-x:hidden; position:relative; height:140px; scrollbar-width:none; -ms-overflow-style:none; }
+        .wl-table-wrap::-webkit-scrollbar { display:none; width:0; height:0; }`;
+
+files.forEach(file => {
+  if (!fs.existsSync(file)) { console.log('SKIP (not found):', file); return; }
+  let content = fs.readFileSync(file, 'utf8');
+  let log = [];
+
+  const delayCount = content.split(oldDelay).length - 1;
+  if (delayCount > 0) { content = content.split(oldDelay).join(newDelay); log.push('hold delay reduced (' + delayCount + ' occurrence(s))'); }
+  else log.push('WARNING: delay pattern not found');
+
+  if (content.includes(oldCSS)) { content = content.split(oldCSS).join(newCSS); log.push('scrollbar hidden OK'); }
+  else log.push('WARNING: scrollbar CSS pattern not found');
+
+  fs.writeFileSync(file, content, 'utf8');
+  console.log(`--- ${file} ---`);
+  log.forEach(l => console.log('  ' + l));
+});
+
+######## wl script blocks me kya hai

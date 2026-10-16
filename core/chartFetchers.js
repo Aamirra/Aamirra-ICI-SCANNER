@@ -11,15 +11,15 @@ function parseCustomInterval(intervalStr) {
 }
 
 function aggregateCandles(candles, groupSize) {
-    if (groupSize <= 1) return candles;
+    if (groupSize <= 1) return candles.map(c => ({ time: c.time, open: c.open, high: Math.max(c.high, c.open, c.close), low: Math.min(c.low, c.open, c.close), close: c.close }));
     const agg = [];
     for (let i = 0; i + groupSize <= candles.length; i += groupSize) {
         const group = candles.slice(i, i + groupSize);
         agg.push({
             time: group[0].time,
             open: group[0].open,
-            high: Math.max.apply(null, group.map(c => c.high)),
-            low: Math.min.apply(null, group.map(c => c.low)),
+            high: Math.max.apply(null, group.map(c => c.high).concat([group[0].open, group[group.length - 1].close])),
+            low: Math.min.apply(null, group.map(c => c.low).concat([group[0].open, group[group.length - 1].close])),
             close: group[group.length - 1].close
         });
     }
@@ -49,7 +49,7 @@ function resolveBinanceInterval(interval) {
 
 function binanceSymbolOf(symbol) { return symbol.replace('USD', 'USDT'); }
 
-function fetchKlines(binanceSymbol, binanceInterval, endTime) {
+function fetchKlinesSpot(binanceSymbol, binanceInterval, endTime) {
     return new Promise((resolve) => {
         let url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${binanceInterval}&limit=1000`;
         if (endTime) url += `&endTime=${endTime}`;
@@ -64,6 +64,27 @@ function fetchKlines(binanceSymbol, binanceInterval, endTime) {
             });
         }).on('error', () => resolve([]));
     });
+}
+
+// ---- Binance FUTURES klines (preferred); falls back to spot for symbols not listed on futures ----
+function fetchKlinesFutures(binanceSymbol, binanceInterval, endTime) {
+    return new Promise((resolve) => {
+        let url = 'https://fapi.binance.com/fapi/v1/klines?symbol=' + binanceSymbol + '&interval=' + binanceInterval + '&limit=1000';
+        if (endTime) url += '&endTime=' + endTime;
+        https.get(url, { agent: keepAliveAgent, headers: { 'User-Agent': 'Mozilla/5.0' } }, (r) => {
+            let data = '';
+            r.on('data', c => data += c);
+            r.on('end', () => {
+                try { const j = JSON.parse(data); resolve(Array.isArray(j) ? j : null); }
+                catch (e) { resolve(null); }
+            });
+        }).on('error', () => resolve(null));
+    });
+}
+async function fetchKlines(binanceSymbol, binanceInterval, endTime) {
+    const f = await fetchKlinesFutures(binanceSymbol, binanceInterval, endTime);
+    if (f && f.length) return f;
+    return fetchKlinesSpot(binanceSymbol, binanceInterval, endTime);
 }
 
 function klinesToCandles(klines) {
@@ -155,10 +176,11 @@ function yahooToCandles(result) {
         candles.push({ time: result.timestamp[i], open: o, high: h, low: l, close: c });
     }
     if (candles.length > 1) {
-        const last = candles[candles.length - 1];
-        if (last.high === last.low && last.open === last.close) {
-            candles.pop();
-        }
+        const isFlat = c => c.high === c.low && c.open === c.close;
+        let n = 0;
+        while (n < candles.length - 1 && isFlat(candles[candles.length - 1 - n])) n++;
+        if (n >= 3) candles.splice(candles.length - n, n);
+        else if (n > 0) candles.pop();
     }
     return candles;
 }
@@ -221,7 +243,7 @@ async function fetchYahooCustomCandles(yahooSymbol, custom) {
     const { value, unit } = custom;
     if (unit === 'm') {
         if (YAHOO_NATIVE_MINUTES.has(value)) {
-            return yahooToCandles(await fetchYahooChart(yahooSymbol, value + 'm', '60d'));
+            return yahooToCandles(await fetchYahooChart(yahooSymbol, value + 'm', value === 1 ? '7d' : '60d'));
         }
         const base = yahooToCandles(await fetchYahooChart(yahooSymbol, '1m', '7d'));
         return aggregateCandles(base, value);
@@ -286,19 +308,60 @@ const NON_FOREX_YAHOO_MAP = {
     'ETHUSD': 'ETH-USD',
 };
 
+// Yahoo futures ~24h chalte hain (CFD jaisa); cash index sirf ~7 bars/day deta hai
+const INDEX_FUT_CHART = { US500: 'ES=F', US100: 'NQ=F', US30: 'YM=F', JPN225: 'NKD=F' };
+
 function forexYahooSymbol(pairName) {
     if (NON_FOREX_YAHOO_MAP[pairName]) return NON_FOREX_YAHOO_MAP[pairName];
     return `${pairName}=X`;
 }
 
+// Yahoo forex bad-tick wicks hatao: wick ko recent median range ke 1.5x tak limit karo
+function cleanForexWicks(candles) {
+    const N = 50, K = 0.6;
+    const ranges = candles.map(c => c.high - c.low);
+    const out = new Array(candles.length);
+    for (let i = 0; i < candles.length; i++) {
+        const c = candles[i];
+        const from = Math.max(0, i - N);
+        const win = ranges.slice(from, i + 1).filter(r => r > 0).sort((x, y) => x - y);
+        if (win.length < 10) { out[i] = c; continue; }
+        const med = win[Math.floor(win.length / 2)];
+        const allow = med * K;
+        const bodyHi = Math.max(c.open, c.close), bodyLo = Math.min(c.open, c.close);
+        out[i] = {
+            time: c.time,
+            open: c.open,
+            high: Math.min(c.high, bodyHi + allow),
+            low: Math.max(c.low, bodyLo - allow),
+            close: c.close
+        };
+    }
+    return out;
+}
+
 async function fetchForexCandlesFull(symbol, interval, totalWanted) {
+    if (symbol === 'BTCUSD' || symbol === 'ETHUSD') {
+        try { const bc = await fetchCryptoCandlesFull(symbol, interval, totalWanted); if (bc && bc.length) return bc; } catch (e) {}
+    }
     const yahooSymbol = forexYahooSymbol(symbol);
+    const futSym = INDEX_FUT_CHART[symbol];
+    if (futSym && (interval === '1h' || interval === '4h')) {
+        try {
+            const fut = yahooToCandles(await fetchYahooChart(futSym, '60m', '730d'));
+            if (fut.length >= 200) {
+                let out = interval === '4h' ? aggregate4h(fut) : fut;
+                if (out.length > totalWanted) out = out.slice(out.length - totalWanted);
+                return out;
+            }
+        } catch (e) { /* fallback: cash index neeche */ }
+    }
     let candles = [];
     try {
         if (interval === '1h') {
-            candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d'));
+            candles = cleanForexWicks(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
         } else if (interval === '4h') {
-            candles = aggregate4h(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d')));
+            candles = aggregate4h(cleanForexWicks(yahooToCandles(await fetchYahooChart(yahooSymbol, '60m', '730d'))));
         } else if (interval === '1week') {
             candles = yahooToCandles(await fetchYahooChart(yahooSymbol, '1wk', '20y'));
         } else {

@@ -207,9 +207,145 @@
 .tv-btn-cancel{background:transparent;color:#787b86;}
 .tv-btn-cancel:hover{color:#131722;}
 
+#countdownDisplay{display:none !important;}
+button[onclick*="chartPairName"][title="Set Alert"]{display:none !important;}
+</style>
+<style>
+/* PAIRS-SCROLL-FIX */
+body.desktop-mode .phone-container { display:flex; flex-direction:column; overflow:hidden; }
+body.desktop-mode .phone-container > * { flex-shrink:0; }
+body.desktop-mode .phone-container > #pairsContainer {
+  flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
+  overscroll-behavior:contain; scrollbar-width:none; -ms-overflow-style:none;
+}
+body.desktop-mode .phone-container > #pairsContainer::-webkit-scrollbar { display:none; }
+</style>
+<style id="ici-mobile-css">
+/* ici-mobile-css */
+body.is-mobile { display:block !important; padding:8px !important; height:auto !important; min-height:100vh; overflow-x:hidden !important; overflow-y:auto !important; }
+body.is-mobile .phone-container { width:100% !important; max-width:none !important; margin:0 auto; padding:10px !important; border-radius:16px; }
+body.is-mobile .chat-panel, body.is-mobile .chat-toggle-btn, body.is-mobile .dash-toggle-btn { display:none !important; }
+body.is-mobile .header-row { flex-wrap:wrap; gap:6px; }
+body.is-mobile .header-actions { flex-wrap:wrap; gap:6px; }
+body.is-mobile .pills-row { gap:6px; }
+body.is-mobile .screener-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+body.is-mobile .col-header-cell { min-width:44px; font-size:9px; }
+
+/* chart overlay */
+body.is-mobile #chartOverlay { position:fixed !important; top:0; left:0; width:100% !important; height:100% !important; display:none; flex-direction:column; z-index:1000 !important; }
+body.is-mobile #chartOverlay > div:first-child { padding:4px 6px !important; gap:4px !important; }
+body.is-mobile #chartOverlay > div:first-child span[style*="font-size:11px"] { display:none !important; }
+body.is-mobile .chart-interval-btn { padding:4px 7px !important; font-size:11px !important; }
+body.is-mobile .tf-preset-btn { padding:2px 8px !important; }
+body.is-mobile .chart-interval-selector, body.is-mobile .tf-preset-selector { gap:4px !important; }
+body.is-mobile #chartPairName { flex:1 1 100% !important; order:-1; text-align:left !important; }
+body.is-mobile #ici-toolbar-col { flex:0 0 34px !important; overflow-y:auto; }
+body.is-mobile .layout-controls { padding:4px 8px; }
+
+/* chart grid: portrait me stack */
+body.is-mobile .chart-grid.layout-2, body.is-mobile .chart-grid.layout-3, body.is-mobile .chart-grid.layout-4 { grid-template-columns:1fr !important; grid-template-rows:none !important; grid-auto-rows:minmax(260px,1fr); overflow-y:auto; }
+body.is-mobile .layout-3 .chart-box:nth-child(3) { grid-column:auto !important; }
+body.is-mobile .chart-box { touch-action:none; overscroll-behavior:contain; }
+body.is-mobile .chart-box:empty { display:none !important; }
+</style>
+<style id="ici-mobile-chat">
+/* ici-mobile-chat: purana hide override karke mobile chat wapas */
+body.is-mobile .chat-toggle-btn { display:flex !important; position:fixed !important; right:12px !important; bottom:calc(16px + env(safe-area-inset-bottom, 0px)) !important; left:auto !important; top:auto !important; transform:none !important; width:48px !important; height:48px !important; border-radius:50% !important; z-index:2500 !important; align-items:center; justify-content:center; background:var(--acc); color:#fff; border:none; box-shadow:0 4px 14px rgba(0,0,0,.3); font-size:18px; }
+body.is-mobile .chat-panel { display:flex !important; position:fixed !important; top:0; left:0; right:0; bottom:0; width:100% !important; height:100% !important; flex:none !important; min-width:0 !important; z-index:2400 !important; border-left:none !important; background:var(--surface); }
+body.is-mobile.chat-hidden .chat-panel { display:none !important; }
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn { top:calc(10px + env(safe-area-inset-top, 0px)) !important; bottom:auto !important; right:10px !important; width:40px !important; height:40px !important; background:var(--red); }
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn i { transform:rotate(180deg); }
+body.is-mobile .chat-messages { overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+body.is-mobile .chat-input { font-size:16px !important; }
+</style>
+<style id="ici-mobile-chat2">
+/* ici-mobile-chat2: chat icon + 3D buttons */
+body.is-mobile .chat-toggle-btn { width:auto !important; height:auto !important; min-height:46px; padding:0 18px !important; border-radius:28px !important; gap:8px; font-family:'Inter',sans-serif; font-size:14px !important; font-weight:700; letter-spacing:.3px; color:#fff !important; cursor:pointer; transition:transform .08s, box-shadow .08s; }
+body.is-mobile .chat-toggle-btn i { display:none !important; }
+body.is-mobile .chat-toggle-btn::before { content:'\f075'; font-family:"Font Awesome 6 Free"; font-weight:900; font-size:17px; }
+body.is-mobile .chat-toggle-btn::after { content:'Chat'; }
+body.is-mobile.chat-hidden .chat-toggle-btn { background:linear-gradient(180deg,#5aa0ff,#0062ff) !important; border:none !important; border-bottom:4px solid #0043b3 !important; box-shadow:0 5px 0 #003082, 0 9px 16px rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.4) !important; }
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn { top:calc(26px + env(safe-area-inset-top, 0px)) !important; right:12px !important; bottom:auto !important; background:linear-gradient(180deg,#ff7b7b,#dc2626) !important; border:none !important; border-bottom:4px solid #991b1b !important; box-shadow:0 5px 0 #6f1111, 0 9px 16px rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.4) !important; }
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn::before { content:'\f00d'; font-size:18px; }
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn::after { content:'Close'; }
+body.is-mobile .chat-toggle-btn:active { transform:translateY(4px) !important; box-shadow:0 1px 0 rgba(0,0,0,.5), 0 3px 6px rgba(0,0,0,.3), inset 0 2px 0 rgba(255,255,255,.3) !important; }
+</style>
+<style id="ici-mobile-chat3">
+/* ici-mobile-chat3: close button fix */
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn {
+  top:calc(8px + env(safe-area-inset-top, 0px)) !important;
+  right:52px !important;
+  bottom:auto !important; left:auto !important;
+  width:auto !important; min-width:0 !important;
+  height:34px !important; min-height:0 !important;
+  padding:0 12px !important;
+  gap:6px !important;
+  border-radius:10px !important;
+  font-size:13px !important;
+  white-space:nowrap !important;
+  overflow:visible !important;
+  background:linear-gradient(180deg,#ef5350,#c62828) !important;
+  border:none !important;
+  border-bottom:3px solid #8e1a1a !important;
+  box-shadow:0 3px 0 #6a1212, 0 5px 8px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.35) !important;
+}
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn::before { font-size:13px !important; }
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn:active { transform:translateY(3px) !important; box-shadow:0 0 0 #6a1212, inset 0 1px 0 rgba(255,255,255,.25) !important; }
+</style>
+<style id="ici-mobile-chat4">
+/* ici-mobile-chat4: close = flat icon, trash jaisa, header ke andar */
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn {
+  top:calc(1px + env(safe-area-inset-top, 0px)) !important;
+  right:42px !important; bottom:auto !important; left:auto !important;
+  width:28px !important; height:26px !important; min-height:0 !important; min-width:0 !important;
+  padding:0 !important; gap:0 !important;
+  border-radius:6px !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  color:var(--muted) !important;
+}
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn::before { content:'\f00d' !important; font-size:15px !important; }
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn::after { content:'' !important; }
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn:active { transform:none !important; box-shadow:none !important; background:var(--pill-bg) !important; }
+</style>
+<style id="ici-mobile-chat5">
+/* ici-mobile-chat5: X neeche + laal, button text Trade Talk */
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn {
+  top:calc(5px + env(safe-area-inset-top, 0px)) !important;
+  color:#ef4444 !important;
+}
+body.is-mobile:not(.chat-hidden) .chat-toggle-btn::before { color:#ef4444 !important; }
+body.is-mobile.chat-hidden .chat-toggle-btn::after { content:'Trade Talk' !important; }
+</style>
+<style id="ici-mobile-chat6">
+/* ici-mobile-chat6: chhota Trade Talk button, neeche */
+body.is-mobile.chat-hidden .chat-toggle-btn {
+  min-height:0 !important;
+  height:34px !important;
+  padding:0 12px !important;
+  gap:6px !important;
+  font-size:12px !important;
+  border-radius:20px !important;
+  bottom:calc(2px + env(safe-area-inset-bottom, 0px)) !important;
+  right:10px !important;
+  border-bottom-width:3px !important;
+  box-shadow:0 3px 0 #003082, 0 5px 10px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.4) !important;
+}
+body.is-mobile.chat-hidden .chat-toggle-btn::before { font-size:13px !important; }
+body.is-mobile.chat-hidden .chat-toggle-btn:active { transform:translateY(3px) !important; box-shadow:0 0 0 #003082, inset 0 1px 0 rgba(255,255,255,.3) !important; }
 </style>
 </head>
 <body class="desktop-mode chat-hidden">
+<script>
+(function(){try{
+  var q=(location.search.match(/[?&]view=(mobile|desktop|auto)/)||[])[1];
+  if(q) localStorage.setItem('ici_view',q);
+  var v=localStorage.getItem('ici_view')||'auto';
+  var m = v==='mobile' || (v==='auto' && navigator.maxTouchPoints>0 && Math.min(window.innerWidth, screen.width)<=900);
+  if(m){ document.body.classList.remove('desktop-mode'); document.body.classList.add('is-mobile'); }
+}catch(e){}})();
+</script>
 <div class="phone-container" id="app">
     <div class="header-row">
         <div class="brand"><span id="scanStatusText" class="scan-status-line" style="margin-left:0;"></span><span id="lastScanTime" class="last-scan-line" style="margin-left:6px;" title="Last scan time">🕒 never</span></div>
@@ -270,7 +406,7 @@
     <div class="dir-slevel-bar" style="display:flex;align-items:center;gap:3px;margin-bottom:8px;flex-wrap:nowrap;justify-content:space-between;">
         <span id="dirToggleBtn" class="dir-toggle-btn long" onclick="toggleDirection()">LONG</span>
         <span id="dirDot" class="dir-dot" onclick="toggleDirection()"></span>
-        <button class="slevel-btn active" id="sLevelBtn1" onclick="setSLevelFilter(1)">S01</button>
+        <button class="slevel-btn" id="sLevelBtn1" onclick="setSLevelFilter(1)">S01</button>
         <button class="slevel-btn" id="sLevelBtn2" onclick="setSLevelFilter(2)">S02</button>
         <button class="slevel-btn" id="sLevelBtn3" onclick="setSLevelFilter(3)">S03</button>
         <button class="slevel-btn" id="sLevelBtn4" onclick="setSLevelFilter(4)">S04</button>
@@ -414,7 +550,7 @@ if (typeof openAlertDialog !== 'function') window.openAlertDialog = p=>alert('Al
 if (typeof openAlertsList !== 'function') window.openAlertsList = ()=>alert('Alerts list');
 </script>
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="ici-indicator.js?v=5"></script>
+<script src="ici-indicator.js?v=1791300001"></script>
 <script src="Alerts.js"></script>
 <script>
 (function() {
@@ -488,7 +624,7 @@ let chartIntervals = ['60','60','60','60'];
 let currentTFPreset = 'H';
 let currentHTF = 'W'; // 1W / 4H / 1H — feeds S01-S05 structure calc
 let currentDirection = 'long';
-let currentSLevel = 1;
+let currentSLevel = null;
 const TF_PRESET_MAP = {
     H: { intervals: ['W','D','240','60'], labels: ['1W','1D','4H','1H'], htf: 'W' },
     M: { intervals: ['D','240','60','5m'], labels: ['1D','4H','1H','M5'], htf: '240' },
@@ -528,10 +664,10 @@ function toggleDirection() {
 function setSLevelFilter(level) {
     if (currentSLevel === level) {
         currentSLevel = null;
-        document.querySelectorAll('.slevel-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.slevel-btn[id^="sLevelBtn"]').forEach(b => b.classList.remove('active'));
     } else {
         currentSLevel = level;
-        document.querySelectorAll('.slevel-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.slevel-btn[id^="sLevelBtn"]').forEach(b => b.classList.remove('active'));
         document.getElementById('sLevelBtn' + level).classList.add('active');
     }
     if (typeof refreshSLevels === 'function') refreshSLevels();
@@ -866,18 +1002,18 @@ function getColumnValue(pairName, col) {
     const t = techMetrics[pairName] || {};
     const s = sentimentData[pairName] || {};
     const m = MARKET_DATA[pairName] || {};
-    const lm = liveMarketData[pairName] || {};
+    const lm0 = liveMarketData[pairName] || {}; const lm = (lm0.updatedAt && (Date.now() - lm0.updatedAt) < 600000) ? lm0 : {};
 
     if (col.type === 'tf_alignment') {
         const livePrice = lm.price || lm.currentPrice;
-        const ema20_1h = m.ema20 || m['1h_ema20'];
-        const sig1h = (livePrice != null && ema20_1h != null) ? (livePrice > ema20_1h ? 'bull' : 'bear') : (m['1h'] || '');
-        const ema20_4h = m['4h_ema20'];
-        const sig4h = (livePrice != null && ema20_4h != null) ? (livePrice > ema20_4h ? 'bull' : 'bear') : (m['4h'] || '');
-        const ema20_1d = m['1day_ema20'];
-        const sig1d = (livePrice != null && ema20_1d != null) ? (livePrice > ema20_1d ? 'bull' : 'bear') : (m['1day'] || '');
-        const ema20_1w = m['1week_ema20'];
-        const sig1w = (livePrice != null && ema20_1w != null) ? (livePrice > ema20_1w ? 'bull' : 'bear') : (m['1week'] || '');
+        const ema20_1h = m['1h_sma50'];
+        const sig1h = (livePrice != null && ema20_1h != null) ? (livePrice > ema20_1h ? 'bull' : 'bear') : (m['1h_s50'] || m['1h'] || '');
+        const ema20_4h = m['4h_sma50'];
+        const sig4h = (livePrice != null && ema20_4h != null) ? (livePrice > ema20_4h ? 'bull' : 'bear') : (m['4h_s50'] || m['4h'] || '');
+        const ema20_1d = m['1day_sma50'];
+        const sig1d = (livePrice != null && ema20_1d != null) ? (livePrice > ema20_1d ? 'bull' : 'bear') : (m['1day_s50'] || m['1day'] || '');
+        const ema20_1w = m['1week_sma50'];
+        const sig1w = (livePrice != null && ema20_1w != null) ? (livePrice > ema20_1w ? 'bull' : 'bear') : (m['1week_s50'] || m['1week'] || '');
         return [sig1h, sig4h, sig1d, sig1w];
     }
     if (col.type === 'sentiment') {
@@ -1242,6 +1378,7 @@ function startCandleTimer(slot, candles, resolution) {
 
 async function softRefreshChart(slot) {
     if (!lwCharts[slot] || !lwSeries[slot]) { drawChart(slot); return; }
+    if (window.iciReplay && window.iciReplay[slot] && window.iciReplay[slot].active) return;
     const idx = chartIndices[slot-1];
     if (!chartPairs[idx]) return;
     const symbol = chartPairs[idx];
@@ -1250,6 +1387,7 @@ async function softRefreshChart(slot) {
         const res = await fetch(`/api/crypto-chart?symbol=${encodeURIComponent(symbol)}&interval=${interval}&limit=15000`);
         const data = await res.json();
         if (data.candles && data.candles.length) {
+            if (window.iciReplay && window.iciReplay[slot] && window.iciReplay[slot].active) return;
             lwSeries[slot].setData(data.candles);
             await window.ICIIndicator.render({
                 chart: lwCharts[slot], series: lwSeries[slot], container: document.getElementById('tv_chart_'+slot),
@@ -1390,6 +1528,8 @@ updateToggleButtons();
         }
     }
     function wlSave() { localStorage.setItem(WL_KEY, JSON.stringify(wlData)); }
+    window.__wlRender = function () { try { wlRenderRows(); } catch (e) {} };
+    window.__wlReorder = function (a, b) { try { var t = wlGetActiveTab(); if (!t || !t.symbols) return false; var i = t.symbols.indexOf(a), j = t.symbols.indexOf(b); if (i < 0 || j < 0 || i === j) return false; var m = t.symbols.splice(i, 1)[0]; t.symbols.splice(j, 0, m); wlSave(); wlRenderRows(); return true; } catch (e) { return false; } };
     function wlGetActiveTab() {
         var t = wlData.tabs.filter(function(x){ return x.id === wlData.active; })[0];
         return t || wlData.tabs[0];
@@ -1476,6 +1616,7 @@ updateToggleButtons();
             var priceStr = pc.price != null ? Number(pc.price).toFixed(2) : '--';
             var chgStr = pc.chg != null ? (pc.chg > 0 ? '+' : '') + Number(pc.chg).toFixed(2) + '%' : '--';
             var chgCls = pc.chg != null ? (pc.chg >= 0 ? 'up' : 'down') : '';
+            if (window.__wlRowHtml) { html += window.__wlRowHtml(sym); return; }
             html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
         });
         rowsEl.innerHTML = html;
@@ -1485,7 +1626,7 @@ updateToggleButtons();
     wlRenderTabs();
     wlRenderRows();
     setInterval(wlRenderRows, 3000);
-    if (!window.__chartAutoRefreshStarted) { window.__chartAutoRefreshStarted = true; setInterval(function(){ if (typeof activeChartSlot !== "undefined") { if (typeof softRefreshChart === "function" && lwCharts && lwCharts[activeChartSlot]) { softRefreshChart(activeChartSlot); } else if (typeof drawChart === "function") { drawChart(activeChartSlot); } } }, 10000); }
+    if (!window.__chartAutoRefreshStarted) { window.__chartAutoRefreshStarted = true; setInterval(function(){ if (document.hidden) return; if (typeof activeChartSlot !== "undefined") { if (typeof softRefreshChart === "function" && lwCharts && lwCharts[activeChartSlot]) { softRefreshChart(activeChartSlot); } else if (typeof drawChart === "function") { drawChart(activeChartSlot); } } }, 10000); }
 
     var wrap = document.getElementById('wlTableWrap');
     var handle = document.getElementById('wlResizeHandle');
@@ -1557,7 +1698,7 @@ updateToggleButtons();
             if (wlRow) wlRow.classList.add('wl-dragging');
             ghostEl = wlCreateGhost(dragSym);
             wlMoveGhost(e.clientX, e.clientY);
-        }, 100);
+        }, (e.pointerType === 'touch' ? 350 : 100));
     });
     document.addEventListener('pointermove', function(e) {
         if (!dragSym) return;
@@ -1685,6 +1826,12 @@ updateToggleButtons();
     var CHAT_LIST_URL = '/api/chat-msg/list';
     var CHAT_SEND_URL = '/api/chat-msg/send';
     var renderedIds = {};
+    var lastMaxTs = 0;
+    setInterval(function () {
+        if (lastMaxTs && !document.body.classList.contains('chat-hidden')) {
+            try { localStorage.setItem('ici_chat_seen_ts', String(lastMaxTs)); } catch (e) {}
+        }
+    }, 1000);
     function fmtTime(ts) {
         var d = new Date(ts);
         return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -1700,7 +1847,11 @@ updateToggleButtons();
         var sameCount = Object.keys(newIds).length === Object.keys(renderedIds).length;
         var allMatch = sameCount && Object.keys(newIds).every(function(id){ return renderedIds[id]; });
         if (allMatch) return;
-        var freshMsgs = list.filter(function(m){ return !renderedIds[m.id]; });
+        var _mx = 0; list.forEach(function(m){ if (m.timestamp > _mx) _mx = m.timestamp; });
+        var _seen = parseInt(localStorage.getItem('ici_chat_seen_ts') || '0', 10);
+        if (!_seen) { _seen = _mx; try { localStorage.setItem('ici_chat_seen_ts', String(_mx)); } catch (e) {} }
+        lastMaxTs = _mx;
+        var freshMsgs = list.filter(function(m){ return !renderedIds[m.id] && m.timestamp > _seen; });
         renderedIds = newIds;
         var html = '';
         list.forEach(function(m) {
@@ -1752,6 +1903,7 @@ updateToggleButtons();
     }
     function clearChatBadge() {
         chatUnreadCount = 0;
+        if (lastMaxTs) { try { localStorage.setItem('ici_chat_seen_ts', String(lastMaxTs)); } catch (e) {} }
         var btn = document.getElementById('chatToggleBtn');
         if (!btn) return;
         var badge = btn.querySelector('.chat-unread-badge');
@@ -1945,10 +2097,150 @@ updateToggleButtons();
     else initChat();
 })();
 </script>
-<script src="drawing-tools.js?v=9"></script>
-<script src="chart-alert-button.js?v=1"></script>
-<script src="chart-alert-lines.js?v=1"></script>
-<script src="/barReplay.js"></script>
+<script src="drawing-tools.js?v=1792008516"></script>
+<script src="chart-alert-button.js?v=tch6"></script>
+<script src="chart-alert-lines.js?v=1791236192"></script>
+<script src="/barReplay.js?v=1791300100"></script>
+<style>
+/* PAIRS-FIT-FIX */
+body.desktop-mode #pairsContainer { overflow-y:auto; overflow-x:hidden; overscroll-behavior:contain; scrollbar-width:none; -ms-overflow-style:none; }
+body.desktop-mode #pairsContainer::-webkit-scrollbar { display:none; }
+</style>
+<script>
+/* PAIRS-FIT-FIX */
+(function(){
+  function fit(){
+    var el = document.getElementById('pairsContainer');
+    var box = document.querySelector('.phone-container');
+    if (document.body.classList.contains('is-mobile')) return;
+    if (!el || !box || !document.body.classList.contains('desktop-mode')) { if (el) el.style.height=''; return; }
+    var top = el.getBoundingClientRect().top - box.getBoundingClientRect().top;
+    var h = box.clientHeight - top - 8;
+    if (h > 100) el.style.height = h + 'px';
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('load', fit);
+  setInterval(fit, 500);
+  fit();
+})();
+</script>
+<style>
+/* MOVE-MARKET-BTN */
+.wl-tabs-row #marketDropdownWrap { margin-left:auto; flex-shrink:0; }
+.wl-tabs-row #marketDropdownPanel { position:fixed; z-index:3002; }
+</style>
+<script>
+/* MOVE-MARKET-BTN */
+(function(){
+  var wrap = document.getElementById('marketDropdownWrap');
+  var row = document.querySelector('.wl-tabs-row');
+  if (wrap && row) row.appendChild(wrap);
+  var orig = window.toggleMarketDropdown;
+  if (typeof orig === 'function') {
+    window.toggleMarketDropdown = function(e){
+      orig.apply(this, arguments);
+      var p = document.getElementById('marketDropdownPanel');
+      var b = document.getElementById('marketDropdownBtn');
+      if (p && b && p.classList.contains('open')) {
+        var r = b.getBoundingClientRect();
+        p.style.position = 'fixed';
+        p.style.top = (r.bottom + 4) + 'px';
+        p.style.left = 'auto';
+        p.style.right = (window.innerWidth - r.right) + 'px';
+      }
+    };
+  }
+})();
+</script>
+<script id="ici-touch-drag">
+(function(){
+  // drag active ho to touch-scroll rok do (non-passive zaroori hai)
+  document.addEventListener('touchmove', function(e){
+    if (document.querySelector('.wl-dragging') && e.cancelable) e.preventDefault();
+  }, { passive: false });
+  // browser pointercancel bheje to usko pointerup bana do (drop/cleanup)
+  document.addEventListener('pointercancel', function(e){
+    document.dispatchEvent(new PointerEvent('pointerup', { clientX: e.clientX, clientY: e.clientY, pointerType: e.pointerType, bubbles: true }));
+  });
+  // mobile par long-press se context menu / selection na aaye
+  document.addEventListener('contextmenu', function(e){
+    if (document.body.classList.contains('is-mobile') && e.target.closest && e.target.closest('#pairsContainer .item-main')) e.preventDefault();
+  });
+  var st = document.createElement('style');
+  st.textContent = 'body.is-mobile #pairsContainer .item-main, body.is-mobile .wl-row { -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; } .wl-drag-ghost { pointer-events:none; }';
+  document.head.appendChild(st);
+})();
+</script>
+<script id="ici-mobile-split">
+(function(){
+  if (!document.body.classList.contains('is-mobile')) return;
+  var st = document.createElement('style');
+  st.textContent =
+    'body.is-mobile.ici-split{overflow:hidden !important;height:100dvh !important;min-height:0 !important;}' +
+    'body.is-mobile.ici-split .screener-wrap{overflow:visible !important;}' +
+    'body.is-mobile.ici-split #pairsContainer{overflow-y:auto !important;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}' +
+    'body.is-mobile #wlTableWrap,body.is-mobile #wlRows{overscroll-behavior:contain;}';
+  document.head.appendChild(st);
+  document.body.classList.add('ici-split');
+  function fit(){
+    var pc = document.getElementById('pairsContainer');
+    if (!pc) return;
+    var top = pc.getBoundingClientRect().top;
+    var h = Math.max(150, window.innerHeight - top - 12) + 'px';
+    if (pc.style.height !== h) pc.style.height = h;
+  }
+  window.addEventListener('resize', fit);
+  window.addEventListener('orientationchange', function(){ setTimeout(fit, 300); });
+  window.addEventListener('load', function(){ fit(); setTimeout(fit, 500); setTimeout(fit, 1500); });
+  if (window.ResizeObserver) {
+    var ro = new ResizeObserver(fit);
+    ['wlWidget','tableHeaderRow'].forEach(function(id){ var el = document.getElementById(id); if (el) ro.observe(el); });
+    var app = document.getElementById('app'); if (app) ro.observe(app);
+  }
+  setInterval(fit, 3000);
+  fit();
+})();
+</script>
+<script id="ici-scroll-keep">
+(function(){
+  if (!document.body.classList.contains('is-mobile')) return;
+  var ids = ['pairsContainer','wlRows','wlTableWrap'];
+  var d = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+  function snap(){ return ids.map(function(i){ var e = document.getElementById(i); return e ? e.scrollTop : 0; }); }
+  function back(s){ ids.forEach(function(i, k){ var e = document.getElementById(i); if (e && s[k]) e.scrollTop = s[k]; }); }
+  ['pairsContainer','wlRows'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (!el) return;
+    Object.defineProperty(el, 'innerHTML', {
+      configurable: true,
+      get: function(){ return d.get.call(this); },
+      set: function(v){ var s = snap(); d.set.call(this, v); back(s); }
+    });
+    var rc = el.replaceChildren;
+    if (rc) el.replaceChildren = function(){ var s = snap(); rc.apply(this, arguments); back(s); };
+  });
+})();
+</script>
+<script id="ici-mobile-chat-js">
+(function(){
+  if (!document.body.classList.contains('is-mobile')) return;
+  var btn = document.getElementById('chatToggleBtn');
+  if (!btn) return;
+  // app ke purane click handler chalne se pehle rok kar apna toggle chalao
+  btn.addEventListener('click', function(e){
+    e.stopImmediatePropagation(); e.preventDefault();
+    var hidden = document.body.classList.toggle('chat-hidden');
+    var m = document.getElementById('chatMessages');
+    if (!hidden && m) setTimeout(function(){ m.scrollTop = m.scrollHeight; }, 50);
+  }, true);
+})();
+</script>
+<script src="tabs-header.js?v=6"></script>
+<script src="wl-reorder.js?v=1"></script>
+<script src="wl-columns.js?v=2"></script>
+<script src="market-status.js?v=4"></script>
+<script src="tf-extra.js?v=1"></script>
+<script src="mobile-header-fix.js?v=4"></script>
 </body>
 <style>
 #iciCustomTFMenu {
@@ -2077,4 +2369,9 @@ updateToggleButtons();
   restoreSaved();
 })();
 </script>
+<script src="flags.js?v=7"></script>
+<script src="tf-keyboard.js?v=2"></script>
+<script src="tf-watermark.js?v=2"></script>
+<script src="chart-camera.js?v=2"></script>
+<script src="chat-fix.js?v=1"></script>
 </html>

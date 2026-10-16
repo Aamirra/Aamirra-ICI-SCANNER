@@ -13,6 +13,9 @@
 .ici-al-centerbox{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid #f7931a;color:#131722;font-size:11px;font-weight:700;padding:4px 8px;border-radius:5px;display:flex;align-items:center;gap:6px;white-space:nowrap;pointer-events:auto;box-shadow:0 1px 4px rgba(0,0,0,0.2);cursor:ns-resize}
 .ici-al-x{background:none;border:none;color:#787b86;font-size:13px;font-weight:800;cursor:pointer;padding:0 0 0 2px;line-height:1}
 .ici-al-x:hover{color:#ef5350}
+.ici-al-pricebox,.ici-al-centerbox{display:none}
+.ici-al-line.hover .ici-al-pricebox,.ici-al-line.sel .ici-al-pricebox{display:block}
+.ici-al-line.hover .ici-al-centerbox,.ici-al-line.sel .ici-al-centerbox{display:flex}
 `;
         document.head.appendChild(style);
     }
@@ -21,6 +24,8 @@
         var inst = _instances[slot];
         if (!inst) return;
         cancelAnimationFrame(inst.raf);
+        document.removeEventListener("mousedown", inst.onDocDown, true);
+        document.removeEventListener("touchstart", inst.onDocDown, true);
         inst.lines.forEach(function (l) { if (l.el && l.el.parentNode) l.el.parentNode.removeChild(l.el); });
         document.removeEventListener('mousemove', inst.onDragMove);
         document.removeEventListener('mouseup', inst.onDragEnd);
@@ -43,6 +48,15 @@
 
         var inst = { lines: [], raf: null, lastKey: '', dragging: null };
         _instances[slot] = inst;
+        inst.selectedId = null;
+        inst.onDocDown = function (e) {
+            if (e.target && e.target.closest && e.target.closest(".ici-al-line")) return;
+            if (inst.selectedId == null) return;
+            inst.selectedId = null;
+            inst.lines.forEach(function (l) { l.el.classList.remove("sel"); });
+        };
+        document.addEventListener("mousedown", inst.onDocDown, true);
+        document.addEventListener("touchstart", inst.onDocDown, true);
 
         function getPrecision() {
             try {
@@ -71,6 +85,11 @@
             return Number(price).toFixed(p);
         }
 
+        function selectLine(id) {
+            inst.selectedId = id;
+            inst.lines.forEach(function (l) { l.el.classList.toggle("sel", l.alert.id === id); });
+        }
+
         function buildLine(alert) {
             var wrap = document.createElement('div');
             wrap.className = 'ici-al-line';
@@ -94,6 +113,9 @@
             wrap.appendChild(priceBox);
             wrap.appendChild(centerBox);
             container.appendChild(wrap);
+            wrap.addEventListener("mouseenter", function () { wrap.classList.add("hover"); });
+            wrap.addEventListener("mouseleave", function () { wrap.classList.remove("hover"); });
+            if (inst.selectedId === alert.id) wrap.classList.add("sel");
 
             function refreshLabel(price) {
                 priceBox.textContent = fmt(price);
@@ -106,6 +128,7 @@
                 e.preventDefault();
                 e.stopPropagation();
                 inst.dragging = { alert: alert, wrap: wrap, priceBox: priceBox, refreshLabel: refreshLabel };
+                selectLine(alert.id);
                 document.addEventListener('mousemove', inst.onDragMove);
                 document.addEventListener('mouseup', inst.onDragEnd);
                 document.addEventListener('touchmove', inst.onDragMoveTouch, { passive: false });

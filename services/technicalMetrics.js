@@ -231,7 +231,7 @@ async function fetchTwelveDataVolume(pairName, retryCount = 0) {
                     const closes = sorted.map(v => parseFloat(v.close));
                     const volumes = sorted.map(v => parseInt(v.volume) || 0);
                     console.log(`[TwelveData] ✅ Success for ${pairName}`);
-                    resolve({ closes, volumes, currentPrice: closes[closes.length - 1], source: 'TwelveData' });
+                    resolve({ closes, volumes, times: sorted.map(v => v.datetime), currentPrice: closes[closes.length - 1], source: 'TwelveData' });
                 } catch (e) {
                     resolve(null);
                 }
@@ -288,7 +288,7 @@ async function calculateAndUpdateTechnicalMetrics(RAW_DAILY, RAW_1H) {
             }
         }
 
-        if (needVolume) {
+        if (needVolume && pair.n !== 'USOIL') {
             let volumeData = null;
 
             if (isCrypto) {
@@ -321,11 +321,18 @@ async function calculateAndUpdateTechnicalMetrics(RAW_DAILY, RAW_1H) {
             }
 
             if (volumeData && volumeData.closes && volumeData.closes.length >= 200) {
-                daily = {
-                    closes: volumeData.closes,
-                    volumes: volumeData.volumes,
-                    time: new Date().toISOString()
-                };
+                const oldDaily = daily;
+                const keepOld = volumeData.source === 'YahooFutures' && oldDaily && oldDaily.closes && oldDaily.closes.length >= 200;
+                let nCloses = keepOld ? oldDaily.closes : volumeData.closes;
+                let nTimes = keepOld ? oldDaily.times : volumeData.times;
+                if (volumeData.source === 'YahooFutures' && !keepOld) {
+                    const td = await fetchTwelveDataVolume(pair.n);
+                    if (td && td.closes && td.closes.length >= 200) { nCloses = td.closes; nTimes = td.times; }
+                    else { console.warn('[Metrics] ' + pair.n + ': spot closes nahi mile, futures closes use nahi kiye -> skip'); return null; }
+                }
+                let nVols = volumeData.volumes || [];
+                if (nVols.length > nCloses.length) nVols = nVols.slice(-nCloses.length);
+                daily = { closes: nCloses, volumes: nVols, times: nTimes, time: new Date().toISOString() };
             } else if (!daily || !daily.closes || daily.closes.length < 200) {
                 console.warn(`[Metrics] Skipping ${pair.n} due to unavailability of historical tracking.`);
                 return null;
@@ -333,8 +340,22 @@ async function calculateAndUpdateTechnicalMetrics(RAW_DAILY, RAW_1H) {
         }
 
         // Process final technical calculations
-        const closesD = daily.closes;
-        const volumesD = daily.volumes || [];
+        const closesRaw = daily.closes;
+        const volumesRaw = daily.volumes || [];
+        let closesD = closesRaw, volumesD = volumesRaw;
+        if ((isForex || isGold) && Array.isArray(daily.times) && daily.times.length === closesRaw.length) {
+            const kc = [], kv = [], seen = new Set();
+            for (let i = 0; i < closesRaw.length; i++) {
+                const d = String(daily.times[i]).slice(0, 10);
+                const wd = new Date(d + 'T00:00:00Z').getUTCDay();
+                if (wd === 0 || wd === 6) continue;
+                if (seen.has(d)) { kc[kc.length - 1] = closesRaw[i]; continue; }
+                seen.add(d); kc.push(closesRaw[i]); kv.push(volumesRaw[i] || 0);
+            }
+            if (kc.length >= 100) { closesD = kc; volumesD = kv; }
+        }
+        closesD = closesD.slice(-200);
+        volumesD = volumesD.slice(-200);
         const currentPriceD = closesD[closesD.length - 1];
         const close200Ago = closesD[0];
         const close10D = closesD[closesD.length - 11];
@@ -349,10 +370,13 @@ async function calculateAndUpdateTechnicalMetrics(RAW_DAILY, RAW_1H) {
             microMomentum = ((currentPriceH - close10H) / close10H) * 100;
         }
 
-        const last7Volumes = volumesD.slice(-7);
+        // Crypto: aaj ki adhoori candle volume se bahar, kal tak ki poori candles
+        const volWindow = (isCrypto && volumesD.length > 8) ? volumesD.slice(0, -1) : volumesD;
+        const volPrice = (isCrypto && closesD.length > 8) ? closesD[closesD.length - 2] : currentPriceD;
+        const last7Volumes = volWindow.slice(-7);
         const volume7dAvg = calcSMA(last7Volumes, 7);
-        const todayVolume = volumesD[volumesD.length - 1] || 0;
-        const dollarVolume1d = formatDollarVolume(todayVolume, currentPriceD);
+        const todayVolume = volWindow[volWindow.length - 1] || 0;
+        const dollarVolume1d = isIndex ? null : formatDollarVolume(todayVolume, volPrice);
 
         return {
             pair: pair.n,

@@ -229,7 +229,24 @@ function alLoadAlerts() {
     try { if (window.Android) return JSON.parse(window.Android.getAlerts() || '[]'); } catch(e) {}
     try { return JSON.parse(localStorage.getItem('ici_alerts') || '[]'); } catch(e) { return []; }
 }
+function alSyncServer(arr) {
+    var id;
+    try {
+        id = localStorage.getItem('ici_device_id');
+        if (!id) { id = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('ici_device_id', id); }
+    } catch (e) { id = 'dev'; }
+    var slim = (arr || []).map(function (a) {
+        return { id: a.id, pair: a.pair, condition: a.condition, targetPrice: a.targetPrice, name: a.name, message: a.message, frequency: a.frequency, active: a.active };
+    });
+    fetch('/api/sync-alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: id, alerts: slim })
+    }).catch(function () {});
+}
+
 function alSaveAlerts(arr) {
+    try { alSyncServer(arr); } catch(e) {}
     try { localStorage.setItem('ici_alerts', JSON.stringify(arr)); } catch(e) {}
     try { if (window.Android) { arr.forEach(function(a) { window.Android.saveAlert(JSON.stringify(a)); }); } } catch(e) {}
 }
@@ -457,6 +474,8 @@ function shouldFire(alert) {
     return true;
 }
 
+var AL_PREV_MET = {};
+
 function checkAllAlerts(pairsData) {
     if (pairsData) window._alPairs = pairsData;
     var alerts = alLoadAlerts().filter(function(a) { return a.active; });
@@ -467,12 +486,26 @@ function checkAllAlerts(pairsData) {
     alerts.forEach(function(alert) {
         var pair = pairMap[alert.pair];
         if (!pair) return;
+        var stKey = alert.id + ':' + alert.condition + ':' + alert.targetPrice;
+        var met = !!_alConditionMet(alert, pair);
+        var prev = AL_PREV_MET[stKey];
+        AL_PREV_MET[stKey] = met;
+        if (prev === undefined) return; // pehli reading sirf baseline, fire nahi
         if (alert.frequency === 'Once Per Bar Close') {
             var justClosed = _alUpdateBarState(alert);
-            if (!justClosed) return;
+            if (!justClosed || !met) return;
+        } else if (!(met && prev === false)) {
+            return; // sirf false -> true cross par fire
         }
-        if (_alConditionMet(alert, pair) && shouldFire(alert)) {
+        if (shouldFire(alert)) {
             _alFireAlert(alert, pair);
+            if ((alert.frequency || 'Only Once') === 'Only Once') {
+                try {
+                    var all = alLoadAlerts();
+                    var x = all.find(function(q) { return q.id === alert.id; });
+                    if (x) { x.active = false; alSaveAlerts(all); if (typeof render === 'function') render(); }
+                } catch (e) {}
+            }
         }
     });
 }
@@ -519,7 +552,7 @@ function _alFireAlert(alert, pair) {
     var settings = window.alertSettings;
     if (settings) {
         var formattedMsg = '[' + pair.name + '] ' + msg;
-        if (settings.telegram) { sendExternalAlert('telegram', formattedMsg, alert.name, pair.name); }
+        sendExternalAlert('telegram', formattedMsg, alert.name, pair.name);
         if (settings.whatsapp) { sendExternalAlert('whatsapp', formattedMsg, alert.name, pair.name); }
     }
 }
@@ -545,3 +578,27 @@ function alShowToast(msg, type) {
 if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
     Notification.requestPermission();
 }
+
+setTimeout(function(){ try { alSyncServer(alLoadAlerts()); } catch(e) {} }, 4000);
+
+(function () {
+    function poll() {
+        try {
+            var id = localStorage.getItem('ici_device_id');
+            if (!id) return;
+            fetch('/api/alert-status?deviceId=' + encodeURIComponent(id))
+                .then(function (r) { return r.json(); })
+                .then(function (srv) {
+                    var all = alLoadAlerts(), changed = false;
+                    all.forEach(function (a) {
+                        if (a.active && srv[String(a.id)] === false) { a.active = false; changed = true; }
+                    });
+                    if (changed) {
+                        alSaveAlerts(all);
+                        if (typeof render === 'function') render();
+                    }
+                }).catch(function () {});
+        } catch (e) {}
+    }
+    setInterval(poll, 20000);
+})();

@@ -23,6 +23,7 @@ if (!admin.apps.length) {
 const config = require('../config');
 const pullbackEngine = require('../pullback_engine');
 const calcEMA = require('../utils/emaCalc');
+function sma50Of(a) { if (!a || a.length < 50) return null; let s = 0; for (let i = a.length - 50; i < a.length; i++) s += a[i]; return s / 50; }
 const msUntilNextHourClose = require('../utils/timer');
 const firebasePut = require('../services/database');
 const { updateSLevelsForPair } = require('./slevelEngine');
@@ -53,7 +54,7 @@ const agent = new https.Agent({ keepAlive: true, maxSockets: 20 });
 const MAX_CONCURRENT = 12;       // matched to available TwelveData keys/rate       // 10 parallel requests (16 keys available)
 const REQUEST_DELAY_MS  = 50;   // small stagger only
 const BATCH_DELAY_MS    = 20;   // minimal gap between batches
-const RATE_PER_MIN   = 5;        // max 5 calls per minute per key
+const RATE_PER_MIN   = 6;        // max 5 calls per minute per key
 const MIN_CREDIT     = 10;
 const COOLDOWN_MS    = 60 * 1000;
 const DAILY_LIMIT = 800;
@@ -61,6 +62,8 @@ const MINUTE_WAIT_MS    = 65 * 1000; // wait 65 seconds if all keys exhausted
 
 // ── Indices list ──
 const INDICES = ['US500', 'US100', 'US30', 'GER40', 'UK100', 'JPN225'];
+// Yahoo futures ~24h chalte hain (CFD jaisa); cash index sirf ~7 bars/day deta hai
+const INDEX_FUT = { US500: 'ES=F', US100: 'NQ=F', US30: 'YM=F', JPN225: 'NKD=F' };
 const INDEX_SYMBOLS = {
     'US500': { finnhub: '^GSPC', yahoo: '^GSPC', twelvedata: 'SPY', alphavantage: 'SPY' },
     'US100': { finnhub: '^NDX', yahoo: '^NDX', twelvedata: 'QQQ', alphavantage: 'QQQ' },
@@ -123,7 +126,7 @@ async function fetchIndexCandles(pair, tf) {
         {
             name: 'Yahoo',
             fetch: async () => {
-                const yahooSymbol = symMap.yahoo;
+                const yahooSymbol = (INDEX_FUT[pair] && (tf === '1h' || tf === '4h' || tf === '15m')) ? INDEX_FUT[pair] : symMap.yahoo;
                 const interval = tf === '4h' ? '1h' : tf === '1day' ? '1d' : tf === '1week' ? '1wk' : '1h';
                 const range = (interval === '1h') ? '60d' : '1y';
                 const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?range=${range}&interval=${interval}`;
@@ -204,6 +207,8 @@ async function fetchIndexCandles(pair, tf) {
         }
     ];
 
+    sources.sort((a, b) => (a.name === 'Yahoo' ? -1 : 0) - (b.name === 'Yahoo' ? -1 : 0));
+    sources.forEach(s => { if (s.name === 'Finnhub') s.retries = 1; });
     for (const source of sources) {
         for (let attempt = 0; attempt < source.retries; attempt++) {
             try {
@@ -213,9 +218,9 @@ async function fetchIndexCandles(pair, tf) {
                     return data;
                 }
             } catch (e) {
-                console.error(`[Index] ${source.name} error for ${pair} (${tf}):`, e.message);
+                console.error(`[Index] ${source.name} error for ${pair} (${tf}):`, e.message, '| cause:', e.cause && (e.cause.code || e.cause.message));
             }
-            await sleep(500);
+            await sleep(500 * (attempt + 1));
         }
     }
     console.warn(`[Index] All sources failed for ${pair} (${tf})`);
@@ -281,6 +286,27 @@ function aggregateTo4Hour(hourlyCloses, hourlyHighs, hourlyLows, hourlyTimes, ho
 }
 
 // ── Binance candles fetcher (crypto primary) ──
+function fetchNativeWeeklyDot(symbol) {
+    const binanceSymbol = symbol.replace('USD', 'USDT');
+    const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=1w&limit=300`;
+    return new Promise((resolve) => {
+        https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+            let data = '';
+            res.on('data', c => data += c);
+            res.on('end', () => {
+                try {
+                    const k = JSON.parse(data);
+                    if (!Array.isArray(k) || k.length < 20) return resolve(null);
+                    const cl = k.map(x => parseFloat(x[4]));
+                    const e = calcEMA(cl, 20);
+                    if (!e) return resolve(null);
+                    const sm = sma50Of(cl); resolve({ sig: cl[cl.length - 1] > e ? 'bull' : 'bear', ema: parseFloat(e.toFixed(5)), sma: sm ? parseFloat(sm.toFixed(5)) : null, s50: sm ? (cl[cl.length - 1] > sm ? 'bull' : 'bear') : null });
+                } catch (err) { resolve(null); }
+            });
+        }).on('error', () => resolve(null));
+    });
+}
+
 function fetchBinanceCandles(symbol, tf) {
     const binanceSymbol = symbol.replace('USD', 'USDT');
     let interval;
@@ -291,7 +317,7 @@ function fetchBinanceCandles(symbol, tf) {
     else if (tf === '15m') interval = '15m'; // ✅ 15m added
     else interval = '1h';
 
-    const limit = tf === '1week' ? 700 : 200;
+    const limit = tf === '1week' ? 700 : (tf === '4h' ? 1000 : 200);
     const url = `https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=${limit}`;
 
     return new Promise((resolve) => {
@@ -349,7 +375,7 @@ async function fetchTF_Yahoo(p, tf) {
             const currentPrice = cls[cls.length - 1];
             if (ema20) {
                 DATA_STORE[p.n][tf] = currentPrice > ema20 ? 'bull' : 'bear';
-                DATA_STORE[p.n][tf + '_ema20'] = parseFloat(ema20.toFixed(5));
+                DATA_STORE[p.n][tf + '_ema20'] = parseFloat(ema20.toFixed(5)); { const __s = sma50Of(cls); if (__s) { DATA_STORE[p.n][tf + '_sma50'] = parseFloat(__s.toFixed(5)); DATA_STORE[p.n][tf + '_s50'] = cls[cls.length - 1] > __s ? 'bull' : 'bear'; } }
                 if (tf === '1h') {
                     DATA_STORE[p.n].currentPrice = parseFloat(currentPrice.toFixed(5));
                     DATA_STORE[p.n].ema20        = parseFloat(ema20.toFixed(5));
@@ -374,6 +400,7 @@ async function fetchTF_Yahoo(p, tf) {
             if (tf === '1week') {
                 RAW_WEEKLY[p.n] = { opens: binanceData.opens, closes: binanceData.closes, highs: binanceData.highs, lows: binanceData.lows, times: binanceData.times, time: binanceData.times[binanceData.times.length-1] };
             }
+            if (tf === '1week') { try { const nw = await fetchNativeWeeklyDot(p.n); if (nw) { DATA_STORE[p.n]['1week'] = nw.sig; DATA_STORE[p.n]['1week_ema20'] = nw.ema; if (nw.sma) { DATA_STORE[p.n]['1week_sma50'] = nw.sma; DATA_STORE[p.n]['1week_s50'] = nw.s50; } } } catch (e) {} }
             console.log(`[Binance] Fetched ${p.n} (${tf})`);
             return true;
         } catch (e) {
@@ -394,7 +421,7 @@ async function fetchTF_Yahoo(p, tf) {
         const currentPrice = cls[cls.length - 1];
         if (ema20) {
             DATA_STORE[p.n][tf] = currentPrice > ema20 ? 'bull' : 'bear';
-            DATA_STORE[p.n][tf + '_ema20'] = parseFloat(ema20.toFixed(5));
+            DATA_STORE[p.n][tf + '_ema20'] = parseFloat(ema20.toFixed(5)); { const __s = sma50Of(cls); if (__s) { DATA_STORE[p.n][tf + '_sma50'] = parseFloat(__s.toFixed(5)); DATA_STORE[p.n][tf + '_s50'] = cls[cls.length - 1] > __s ? 'bull' : 'bear'; } }
             if (tf === '1h') {
                 DATA_STORE[p.n].currentPrice = parseFloat(currentPrice.toFixed(5));
                 DATA_STORE[p.n].ema20        = parseFloat(ema20.toFixed(5));
@@ -580,14 +607,14 @@ function allKeysExhaustedForMinute() {
 }
 
 async function getKey() {
-    const maxWaitMs = 30000; // wait up to 30s for the per-minute window to clear
+    const maxWaitMs = 90000; // wait up to 30s for the per-minute window to clear
     const start = Date.now();
     while (Date.now() - start < maxWaitMs) {
         const key = getAvailableKey();
         if (key) return key;
         await sleep(1000);
     }
-    console.warn('[getKey] No key available after 30s — skipping this job to keep scan moving.');
+    console.warn('[getKey] No key available after 90s — skipping this job to keep scan moving.');
     return null;
 }
 
@@ -657,7 +684,7 @@ async function fetchTF(p, tf, retryCount = 0) {
                         if (ema20) {
                             DATA_STORE[p.n][tf] = currentPrice > ema20 ? 'bull' : 'bear';
                             // ✅ SAVE EMA20 FOR THIS TIMEFRAME
-                            DATA_STORE[p.n][tf + '_ema20'] = parseFloat(ema20.toFixed(5));
+                            DATA_STORE[p.n][tf + '_ema20'] = parseFloat(ema20.toFixed(5)); { const __s = sma50Of(cls); if (__s) { DATA_STORE[p.n][tf + '_sma50'] = parseFloat(__s.toFixed(5)); DATA_STORE[p.n][tf + '_s50'] = cls[cls.length - 1] > __s ? 'bull' : 'bear'; } }
                             if (tf === '1h') {
                                 DATA_STORE[p.n].currentPrice = parseFloat(currentPrice.toFixed(5));
                                 DATA_STORE[p.n].ema20        = parseFloat(ema20.toFixed(5));
@@ -710,6 +737,29 @@ async function fetchTF(p, tf, retryCount = 0) {
 }
 
 async function fetchIndexCandlesAndStore(p, tf) {
+    const ok = await fetchIndexCandlesAndStore_orig(p, tf);
+    if (ok && INDEX_FUT[p.n] && (tf === '1day' || tf === '1week') && DATA_STORE[p.n]) {
+        try {
+            const iv = tf === '1week' ? '1wk' : '1d';
+            const rg = tf === '1week' ? '5y' : '1y';
+            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(INDEX_FUT[p.n])}?range=${rg}&interval=${iv}`;
+            const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+            const json = await res.json();
+            const q = json?.chart?.result?.[0]?.indicators?.quote?.[0];
+            const closes = q && q.close ? q.close.filter(v => v !== null) : [];
+            if (closes.length >= 20) {
+                const ema = calcEMA(closes, 20);
+                if (ema) {
+                    DATA_STORE[p.n][tf] = closes[closes.length - 1] > ema ? 'bull' : 'bear';
+                    DATA_STORE[p.n][tf + '_ema20'] = parseFloat(ema.toFixed(5)); { const __s = sma50Of(closes); if (__s) { DATA_STORE[p.n][tf + '_sma50'] = parseFloat(__s.toFixed(5)); DATA_STORE[p.n][tf + '_s50'] = closes[closes.length - 1] > __s ? 'bull' : 'bear'; } }
+                }
+            }
+        } catch (e) { console.error(`[Index] futures dot error ${p.n} (${tf}):`, e.message); }
+    }
+    return ok;
+}
+
+async function fetchIndexCandlesAndStore_orig(p, tf) {
     const data = await fetchIndexCandles(p.n, tf);
     if (!data) return false;
     try {
@@ -720,7 +770,7 @@ async function fetchIndexCandlesAndStore(p, tf) {
         if (ema20) {
             DATA_STORE[p.n][tf] = currentPrice > ema20 ? 'bull' : 'bear';
             // ✅ SAVE EMA20 FOR THIS TIMEFRAME
-            DATA_STORE[p.n][tf + '_ema20'] = parseFloat(ema20.toFixed(5));
+            DATA_STORE[p.n][tf + '_ema20'] = parseFloat(ema20.toFixed(5)); { const __s = sma50Of(cls); if (__s) { DATA_STORE[p.n][tf + '_sma50'] = parseFloat(__s.toFixed(5)); DATA_STORE[p.n][tf + '_s50'] = cls[cls.length - 1] > __s ? 'bull' : 'bear'; } }
             if (tf === '1h') {
                 DATA_STORE[p.n].currentPrice = parseFloat(currentPrice.toFixed(5));
                 DATA_STORE[p.n].ema20        = parseFloat(ema20.toFixed(5));
@@ -737,10 +787,30 @@ async function fetchIndexCandlesAndStore(p, tf) {
             RAW_4H[p.n] = { opens: data.opens, closes: data.closes, highs: data.highs, lows: data.lows, times: data.times, time: data.times[data.times.length-1] };
         }
         if (tf === '15m') {
-            // Indices ke liye Twelve Data se 15m data fetch karo
+            let gotFut15 = false;
+        if (INDEX_FUT[p.n]) {
+            try {
+                const r15 = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(INDEX_FUT[p.n]) + '?range=60d&interval=15m', { headers: { 'User-Agent': 'Mozilla/5.0' } });
+                const j15 = await r15.json();
+                const res15 = j15 && j15.chart && j15.chart.result && j15.chart.result[0];
+                const q15 = res15 && res15.indicators && res15.indicators.quote && res15.indicators.quote[0];
+                if (res15 && q15 && res15.timestamp) {
+                    const o = [], h = [], l = [], c = [], t = [];
+                    res15.timestamp.forEach((ts, i) => {
+                        if (q15.open[i] == null || q15.high[i] == null || q15.low[i] == null || q15.close[i] == null) return;
+                        o.push(q15.open[i]); h.push(q15.high[i]); l.push(q15.low[i]); c.push(q15.close[i]); t.push(new Date(ts * 1000).toISOString());
+                    });
+                    if (c.length >= 50) {
+                        RAW_15M[p.n] = { opens: o.slice(-1500), closes: c.slice(-1500), highs: h.slice(-1500), lows: l.slice(-1500), times: t.slice(-1500), time: t[t.length - 1] };
+                        gotFut15 = true;
+                    }
+                }
+            } catch (e) { console.error('[Index] futures 15m error for ' + p.n + ':', e.message); }
+        }
+        // Indices ke liye Twelve Data se 15m data fetch karo
             const key = config.KEYS[0];
             if (key) {
-                const twSymbol = INDEX_SYMBOLS[p.n]?.twelvedata;
+                const twSymbol = gotFut15 ? null : INDEX_SYMBOLS[p.n]?.twelvedata;
                 if (twSymbol) {
                     const url = `https://api.twelvedata.com/time_series?symbol=${twSymbol}&interval=15min&outputsize=200&apikey=${key}`;
                     try {
@@ -934,8 +1004,22 @@ async function masterScan() {
         // ✅ Weekend/weekday dono mein fetch karo — TwelveData/Binance purana valid data
         // dete hain chahe market band ho, is se S-level backscan (S01-S05) forex ke liye
         // bhi hamesha up to date rehta hai. shouldSkip() ab yahan use nahi hoti.
+        if (!global.__mdPreloaded) {
+            global.__mdPreloaded = true;
+            try {
+                const __snap = await admin.database().ref('marketData').once('value');
+                const __md = __snap.val() || {};
+                for (const __n of Object.keys(__md)) {
+                    if (!DATA_STORE[__n]) DATA_STORE[__n] = {};
+                    for (const __k of Object.keys(__md[__n] || {})) {
+                        if (DATA_STORE[__n][__k] === undefined) DATA_STORE[__n][__k] = __md[__n][__k];
+                    }
+                }
+                console.log('[Preload] marketData restored from Firebase');
+            } catch (e) { console.error('[Preload] failed:', e.message); }
+        }
         forexTfCycleCount++;
-        const fetchSlowTFsThisCycle = (forexTfCycleCount % WEEKLY_DAILY_REFRESH_EVERY === 0);
+        const fetchSlowTFsThisCycle = (forexTfCycleCount === 1 || forexTfCycleCount % WEEKLY_DAILY_REFRESH_EVERY === 0);
         const jobs = config.PAIRS.flatMap(p => {
             const isFastSource = p.isCrypto || INDICES.includes(p.n);
             const tfs = (isFastSource || fetchSlowTFsThisCycle)
@@ -968,6 +1052,8 @@ async function masterScan() {
         console.time('⏱️ [Phase 4] Pullback notifications');
         await sendStrongPullbackNotifications();
         console.timeEnd('⏱️ [Phase 4] Pullback notifications');
+        const failedFetchKeys = new Set((failed || []).map(f => f.p.n + "|" + f.tf));
+        const sLevelFetchFailed = (n) => ["4h", "15m", "1week"].some(tf => failedFetchKeys.has(n + "|" + tf));
         const processPair = async (p) => {
             if (DATA_STORE[p.n]) {
                 await firebasePut(`marketData/${p.n}`, DATA_STORE[p.n]);
@@ -988,12 +1074,12 @@ async function masterScan() {
             };
             const category = p.isCrypto ? 'crypto' : 'forex';
 
-            if (dailyData.closes && hourlyData.closes) {
+            if (false && dailyData.closes && hourlyData.closes) {
                 await bullMonitor(`${pairName}_BULL`, pairName, dailyData, hourlyData, (msg) => conditionalSendTG(msg, category), firebasePut, category, alertSettings);
                 await bearMonitor(`${pairName}_BEAR`, pairName, dailyData, hourlyData, (msg) => conditionalSendTG(msg, category), firebasePut, category, alertSettings);
             }
 
-            if (RAW_4H[pairName] && RAW_15M[pairName]) {
+            if (false && RAW_4H[pairName] && RAW_15M[pairName]) {
                 const fourHourData = { closes: RAW_4H[pairName].closes };
                 const fifteenMinData = { closes: RAW_15M[pairName].closes };
                 await ltfBullMonitor(
@@ -1008,7 +1094,7 @@ async function masterScan() {
                 );
             }
 
-            if (RAW_WEEKLY[pairName] && RAW_4H[pairName] && RAW_15M[pairName]) {
+            if (RAW_WEEKLY[pairName] && RAW_4H[pairName] && RAW_15M[pairName] && !sLevelFetchFailed(pairName)) {
                 await updateSLevelsForPair(pairName, RAW_WEEKLY[pairName], RAW_4H[pairName], RAW_15M[pairName], firebasePut);
             }
         };

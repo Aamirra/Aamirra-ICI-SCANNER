@@ -1,0 +1,78 @@
+######## 1. toolbar / tools list / buttons
+12:  var TOOLS = [
+13:    { id: 'trend',  name: 'Trend Line',       icon: 'fa-slash',               pts: 2 },
+14:    { id: 'ray',    name: 'Ray',              icon: 'fa-location-arrow',      pts: 2 },
+15:    { id: 'hray',   name: 'Horizontal Ray',   icon: 'fa-arrow-right',         pts: 1 },
+16:    { id: 'hline',  name: 'Horizontal Line',  icon: 'fa-grip-lines',          pts: 1 },
+17:    { id: 'vline',  name: 'Vertical Line',    icon: 'fa-grip-lines-vertical', pts: 1 },
+18:    { id: 'rect',   name: 'Rectangle',        icon: 'fa-vector-square',       pts: 2 },
+19:    { id: 'fib',    name: 'Fib Retracement',  icon: 'fa-wave-square',         pts: 2 },
+20:    { id: 'text',   name: 'Text',             icon: 'fa-font',                pts: 1 },
+21:    { id: 'brush',  name: 'Brush',            icon: 'fa-paintbrush',          pts: -1 },
+22:    { id: 'long',   name: 'Long Position',    icon: 'fa-arrow-up',            pts: 2 },
+23:    { id: 'short',  name: 'Short Position',   icon: 'fa-arrow-down',          pts: 2 }
+41:  var toolbarEl = null, pinsEl = null, flyoutEl = null, colorBtnEl = null, deleteBtnEl = null;
+184:  function buildToolbarOnce() {
+197:    toolbarEl.appendChild(cursorBtn);
+203:    toolbarEl.appendChild(pinsEl);
+230:    toolbarEl.appendChild(sep1);
+234:    toolbarEl.appendChild(moreBtn);
+238:    toolbarEl.appendChild(sep2);
+240:    colorBtnEl = makeBtn(null, 'Color', toggleColorPanel);
+245:    colorBtnEl.appendChild(swatch);
+246:    toolbarEl.appendChild(colorBtnEl);
+256:    toolbarEl.appendChild(trashBtn);
+263:    deleteBtnEl = document.createElement('div');
+264:    deleteBtnEl.className = 'ici-draw-del-btn';
+265:    deleteBtnEl.innerHTML = '<i class="fas fa-times"></i>';
+266:    deleteBtnEl.style.display = 'none';
+267:    deleteBtnEl.title = 'Delete drawing';
+268:    deleteBtnEl.addEventListener('mousedown', function (e) { e.stopPropagation(); e.preventDefault(); });
+269:    deleteBtnEl.addEventListener('click', function (e) {
+273:    grid.appendChild(deleteBtnEl);
+281:      if (colorPanel && colorPanel.style.display !== 'none' && !colorPanel.contains(e.target) && !colorBtnEl.contains(e.target)) {
+299:  function makeBtn(icon, title, onClick) {
+381:  function renderPins() {
+417:  function selectTool(toolId) {
+1298:    if (deleteBtnEl) deleteBtnEl.style.display = 'none';
+1319:    if (!deleteBtnEl) return;
+1320:    deleteBtnEl.style.left = (xy.x - 11) + 'px';
+1321:    deleteBtnEl.style.top = (xy.y - 11) + 'px';
+1322:    deleteBtnEl.style.display = 'flex';
+
+######## 2. coordinate conversion
+1395:      var __x = __ts.timeToCoordinate(time);
+1403:      return __ts.logicalToCoordinate(__lg);
+1409:      var __t = __ts.coordinateToTime(x);
+1413:      var __lg = __ts.coordinateToLogical(x);
+1421:    try { return st.series.priceToCoordinate(price); } catch (e) { return null; }
+1424:    try { return st.series.coordinateToPrice(y); } catch (e) { return null; }
+
+######## 3. candle data access
+397:        try { e.dataTransfer.setData('text/plain', String(idx)); } catch (err) {}
+1383:    try { arr = (typeof st.series.data === 'function') ? st.series.data() : null; } catch (e) {}
+1669:    try { arr = (typeof st.series.data === 'function') ? st.series.data() : null; } catch (e) {}
+
+######## 4. mouse/pointer handlers
+268:    deleteBtnEl.addEventListener('mousedown', function (e) { e.stopPropagation(); e.preventDefault(); });
+276:    document.addEventListener('mousedown', function (e) {
+556:      hdrEl.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+559:    hdrEl.addEventListener('mousedown', function (e) {
+584:      document.addEventListener('mousemove', mv, true);
+585:      document.addEventListener('mouseup', up, true);
+986:    ov.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+1472:    input.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+2083:    st.container.addEventListener('mousedown', st.onDown, opts);
+2084:    st.container.addEventListener('mousemove', st.onMove, opts);
+2085:    st.container.addEventListener('mouseup', st.onUp, opts);
+2122:    st.container.addEventListener('touchmove', st.onTouchMove, { capture: true, passive: false });
+
+######## 5. shortcut keys / localStorage keys
+285:    document.addEventListener('keydown', function (e) {
+581:          try { localStorage.setItem('iciDrawHdrPos:' + location.pathname, JSON.stringify(hdrEl._lt)); } catch (e2) {}
+955:    if (ov._esc) document.removeEventListener('keydown', ov._esc, true);
+1012:    document.addEventListener('keydown', onKey, true);
+1466:    input.addEventListener('keydown', function (e) {
+1699:      var j = JSON.parse(localStorage.getItem('iciDrawHdrPos:' + location.pathname));
+
+######## 6. 70 lines around first tool-point creation

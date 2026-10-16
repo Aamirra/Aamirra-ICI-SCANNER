@@ -1,0 +1,172 @@
+######## A. header functions
+43:  var hdrEl = null;
+500:      var pal = hdrEl.querySelector('.ici-draw-hdr-pal');
+507:      hdrEl._key = null;
+515:      hdrEl._key = null;
+545:        '.ici-draw-hdr{position:absolute;transform:translateX(-50%);display:none;align-items:center;gap:2px;background:#1e222d;border:1px solid #363a45;border-radius:6px;padding:3px 4px;z-index:60;box-shadow:0 2px 8px rgba(0,0,0,.45);}' +
+549:        '.ici-draw-hdr-pal{position:absolute;top:100%;left:0;margin-top:4px;display:none;gap:5px;background:#1e222d;border:1px solid #363a45;border-radius:6px;padding:6px;box-shadow:0 2px 8px rgba(0,0,0,.45);}' +
+553:    if (!hdrEl) {
+554:      hdrEl = document.createElement('div');
+555:      hdrEl.className = 'ici-draw-hdr';
+559:      hdrEl.innerHTML =
+565:        '<div class="ici-draw-hdr-pal">' + sw + '</div>';
+566:      hdrEl.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+567:      hdrEl.addEventListener('click', onHdrClick);
+569:    hdrEl.addEventListener('mousedown', function (e) {
+572:      var par = hdrEl.parentNode;
+575:      var offX = e.clientX - pr.left - parseFloat(hdrEl.style.left || 0);
+576:      var offY = e.clientY - pr.top - parseFloat(hdrEl.style.top || 0);
+577:      hdrEl._drag = true;
+581:        hdrEl.style.left = l + 'px';
+582:        hdrEl.style.top = t + 'px';
+583:        hdrEl._lt = { l: l, t: t };
+588:        hdrEl._drag = false;
+589:        if (hdrEl._lt) {
+590:          hdrEl._pos = hdrEl._lt; hdrEl._posLoaded = true;
+591:          try { localStorage.setItem('iciDrawHdrPos:' + location.pathname, JSON.stringify(hdrEl._lt)); } catch (e2) {}
+597:    hdrEl.addEventListener('dblclick', function (e) {
+600:      hdrEl._pos = null; hdrEl._posLoaded = true;
+603:    if (hdrEl.parentNode !== st.container) st.container.appendChild(hdrEl);
+609:    if (!an) { hdrEl.style.display = 'none'; return; }
+611:    if (hdrEl._key !== key) {
+612:      if (hdrEl._selId !== d.id) hdrEl.querySelector('.ici-draw-hdr-pal').style.display = 'none';
+613:      hdrEl._key = key;
+614:      hdrEl._selId = d.id;
+616:      var cb = hdrEl.querySelector('[data-act="color"]');
+619:      hdrEl.querySelector('[data-act="lock"]').innerHTML = '<i class="fas ' + (d.locked ? 'fa-lock' : 'fa-lock-open') + '"></i>';
+620:      hdrEl.querySelector('[data-act="lock"]').classList.toggle('on', !!d.locked);
+623:    if (!hdrEl._drag) {
+625:        hdrEl.style.left = Math.max(60, Math.min(st.cw - 60, __sp.l)) + 'px';
+626:        hdrEl.style.top = Math.max(0, Math.min(st.ch - 40, __sp.t)) + 'px';
+628:        hdrEl.style.left = Math.max(90, Math.min(st.cw - 90, an.cx)) + 'px';
+629:        hdrEl.style.top = Math.max(6, an.top - 42) + 'px';
+633:    hdrEl.style.display = 'flex';
+663:    var t = hdrEl._pt || 'line';
+671:    if (!cd || !hdrEl) return;
+672:    var pal = hdrEl.querySelector('.ici-draw-hdr-pal');
+684:    if (hdrEl._pt === 'line' && !isPosType(cd.d)) {
+701:    var d = cd.d, t = hdrEl._pt || 'line';
+704:    hdrEl._key = null;
+710:    var q = function (a) { return hdrEl.querySelector('[data-act="' + a + '"]'); };
+727:      'div.ici-draw-hdr{background:#fff;border:1px solid #e0e3eb;border-radius:8px;padding:4px 6px;gap:2px;box-shadow:0 2px 10px rgba(0,0,0,.18);}' +
+
+######## B. header build code
+start line: 554
+        '.ici-draw-hdr-pal{position:absolute;top:100%;left:0;margin-top:4px;display:none;gap:5px;background:#1e222d;border:1px solid #363a45;border-radius:6px;padding:6px;box-shadow:0 2px 8px rgba(0,0,0,.45);}' +
+        '.ici-draw-sw{width:18px;height:18px;border-radius:50%;border:1px solid #787b86;cursor:pointer;display:block;}';
+      document.head.appendChild(sty);
+    }
+    if (!hdrEl) {
+      hdrEl = document.createElement('div');
+      hdrEl.className = 'ici-draw-hdr';
+      var sw = PALETTE.map(function (c) {
+        return '<span class="ici-draw-sw" data-act="swatch" data-c="' + c + '" style="background:' + c + '"></span>';
+      }).join('');
+      hdrEl.innerHTML =
+        '<div class="ici-draw-hb ici-draw-grip" data-act="grip" title="Drag (double-click: reset)" style="cursor:move"><i class="fas fa-grip-vertical"></i></div>' +
+        '<div class="ici-draw-hb" data-act="color" title="Color"><span class="ici-draw-dot"></span></div>' +
+        
+        '<div class="ici-draw-hb" data-act="lock" title="Lock"><i class="fas fa-lock-open"></i></div>' +
+        '<div class="ici-draw-hb" data-act="del" title="Delete"><i class="fas fa-trash"></i></div>' +
+        '<div class="ici-draw-hdr-pal">' + sw + '</div>';
+      hdrEl.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+      hdrEl.addEventListener('click', onHdrClick);
+    initHdrPicker();
+    hdrEl.addEventListener('mousedown', function (e) {
+      if (!(e.target.closest && e.target.closest('.ici-draw-grip'))) return;
+      e.preventDefault();
+      var par = hdrEl.parentNode;
+      if (!par) return;
+      var pr = par.getBoundingClientRect();
+      var offX = e.clientX - pr.left - parseFloat(hdrEl.style.left || 0);
+      var offY = e.clientY - pr.top - parseFloat(hdrEl.style.top || 0);
+      hdrEl._drag = true;
+      var mv = function (ev) {
+        var l = Math.max(60, Math.min(par.clientWidth - 60, ev.clientX - pr.left - offX));
+        var t = Math.max(0, Math.min(par.clientHeight - 40, ev.clientY - pr.top - offY));
+        hdrEl.style.left = l + 'px';
+        hdrEl.style.top = t + 'px';
+        hdrEl._lt = { l: l, t: t };
+      };
+      var up = function () {
+        document.removeEventListener('mousemove', mv, true);
+        document.removeEventListener('mouseup', up, true);
+        hdrEl._drag = false;
+        if (hdrEl._lt) {
+          hdrEl._pos = hdrEl._lt; hdrEl._posLoaded = true;
+          try { localStorage.setItem('iciDrawHdrPos:' + location.pathname, JSON.stringify(hdrEl._lt)); } catch (e2) {}
+        }
+      };
+      document.addEventListener('mousemove', mv, true);
+      document.addEventListener('mouseup', up, true);
+    });
+    hdrEl.addEventListener('dblclick', function (e) {
+      if (!(e.target.closest && e.target.closest('.ici-draw-grip'))) return;
+      try { localStorage.removeItem('iciDrawHdrPos:' + location.pathname); } catch (e2) {}
+      hdrEl._pos = null; hdrEl._posLoaded = true;
+    });
+    }
+    if (hdrEl.parentNode !== st.container) st.container.appendChild(hdrEl);
+  }
+
+  function positionHeader(slot, st, d) {
+    ensureHeader(st);
+    var an = hdrAnchor(st, d);
+    if (!an) { hdrEl.style.display = 'none'; return; }
+    var key = d.id + '|' + (d.locked ? 1 : 0) + '|' + (d.color || '');
+    if (hdrEl._key !== key) {
+      if (hdrEl._selId !== d.id) hdrEl.querySelector('.ici-draw-hdr-pal').style.display = 'none';
+      hdrEl._key = key;
+      hdrEl._selId = d.id;
+      var isPos = d.type === 'long' || d.type === 'short';
+      var cb = hdrEl.querySelector('[data-act="color"]');
+      updHdrBars(d, isPos);
+      
+      hdrEl.querySelector('[data-act="lock"]').innerHTML = '<i class="fas ' + (d.locked ? 'fa-lock' : 'fa-lock-open') + '"></i>';
+      hdrEl.querySelector('[data-act="lock"]').classList.toggle('on', !!d.locked);
+    }
+    var __sp = getHdrPos();
+    if (!hdrEl._drag) {
+      if (__sp) {
+        hdrEl.style.left = Math.max(60, Math.min(st.cw - 60, __sp.l)) + 'px';
+        hdrEl.style.top = Math.max(0, Math.min(st.ch - 40, __sp.t)) + 'px';
+      } else {
+        hdrEl.style.left = Math.max(90, Math.min(st.cw - 90, an.cx)) + 'px';
+        hdrEl.style.top = Math.max(6, an.top - 42) + 'px';
+      }
+    }
+    
+    hdrEl.style.display = 'flex';
+  }
+
+    // ==================================================================
+  // Phase 2a: TradingView-style color picker (line / fill / stop) + opacity
+  // ==================================================================
+  var ICI_GRAYS = ['#FFFFFF', '#D1D4DC', '#B2B5BE', '#9598A1', '#787B86', '#5D606B', '#434651', '#2A2E39', '#131722', '#000000'];
+  var ICI_HUES = ['#F23645', '#FF9800', '#FFEB3B', '#4CAF50', '#089981', '#00BCD4', '#2962FF', '#673AB7', '#9C27B0', '#E91E63'];
+  var ICI_TINTS = [0.8, 0.65, 0.5, 0.35, 0.2, -0.2, -0.4];
+
+  function iciMix(hex, t) {
+    var n = parseInt(hex.slice(1), 16);
+    var ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    return '#' + ch.map(function (c) {
+      var v = Math.round(t >= 0 ? c + (255 - c) * t : c * (1 + t));
+      return ('0' + v.toString(16)).slice(-2);
+    }).join('');
+  }
+
+  function curDrawingInfo() {
+    if (!selection) return null;
+    var st = slots[selection.slot];
+    if (!st) return null;
+    var d = st.drawings.find(function (x) { return x.id === selection.id; });
+    return d ? { d: d, slot: selection.slot } : null;
+  }
+
+  function isPosType(d) { return d.type === 'long' || d.type === 'short'; }
+
+  function pcCurrent(d) {
+    var t = hdrEl._pt || 'line';
+    if (t === 'fill') return { c: d.fc || (isPosType(d) ? '#089981' : (d.color || PALETTE[0])), o: d.fo != null ? d.fo : (isPosType(d) ? 0.25 : 0.12) };
+
+######## C. straight/magnet button

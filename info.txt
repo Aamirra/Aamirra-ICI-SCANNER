@@ -1,0 +1,187 @@
+##### 1. openChartForPair
+function openChartForPair(pairName) {
+    window.activeChartSource = 'screener';
+    chartPairs = currentDisplayPairs.length ? currentDisplayPairs : PAIRS.map(p=>p.n);
+    let idx = chartPairs.indexOf(pairName);
+    if (idx===-1) idx = 0;
+    chartIndices[activeChartSlot-1] = idx;
+    updateChartPairName();
+    drawChart(activeChartSlot);
+    document.getElementById('chartOverlay').style.display = 'flex';
+    activeChartPair = pairName;
+    render();
+    startCountdownTimer();
+}
+function movePair(step) {
+    const total = chartPairs.length;
+    chartIndices[activeChartSlot-1] = (chartIndices[activeChartSlot-1] + step + total) % total;
+    updateChartPairName();
+    activeChartPair = chartPairs[chartIndices[activeChartSlot-1]];
+    drawChart(activeChartSlot);
+    render();
+}
+function changeChartInterval(interval, btn) {
+    chartIntervals[activeChartSlot-1] = interval;
+    highlightIntervalButton(interval);
+    drawChart(activeChartSlot);
+    startCountdownTimer();
+}
+async function setChartLayout(count) {
+    count = parseInt(count);
+    currentChartLayout = count;
+    document.getElementById('layoutSelect').value = count;
+    document.getElementById('chart-grid').className = 'chart-grid layout-'+count;
+    for (let i=1;i<=4;i++) document.getElementById('tv_chart_'+i).classList.toggle('active', i<=count);
+    for (let i=1;i<=count;i++) { drawChart(i); if (i<count) await new Promise(r=>setTimeout(r,100)); }
+    const slotSel = document.getElementById('slotSelect');
+    slotSel.innerHTML = '';
+    for (let i=1;i<=count;i++) { const o=document.createElement('option'); o.value=i; o.textContent=i; slotSel.appendChild(o); }
+    if (activeChartSlot > count) {
+        activeChartSlot = 1;
+        slotSel.value = 1;
+        updateChartPairName();
+        highlightIntervalButton(chartIntervals[0]);
+    } else {
+        slotSel.value = activeChartSlot;
+    }
+    startCountdownTimer();
+}
+function lwIntervalMap(tvInterval) {
+    const map = { '60': '1h', '240': '4h', 'D': '1day', 'W': '1week' };
+    return map[tvInterval] || tvInterval;
+}
+async function fetchHTFCandles(symbol, tfKey) {
+    try {
+        const res = await fetch(`/api/forex-chart?symbol=${encodeURIComponent(symbol)}&interval=${tfKey}&limit=15000`);
+        const data = await res.json();
+        return data.candles || [];
+    } catch (e) { return []; }
+}
+
+
+window.__candleTimerState = window.__candleTimerState || {};
+function resolutionToSeconds(res) {
+    if (res === 'D') return 86400;
+    if (res === 'W') return 604800;
+    const n = parseInt(res);
+    return (isNaN(n) ? 60 : n) * 60;
+}
+function formatCandleCountdown(sec) {
+    if (sec < 0) sec = 0;
+    const d = Math.floor(sec / 86400); sec %= 86400;
+    const h = Math.floor(sec / 3600); sec %= 3600;
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    if (d > 0) return d + 'd ' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+    if (h > 0) return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+##### 2. chart container/close
+534:<div id="chartOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:1000;display:none;flex-direction:column;">
+538:            <button class="chart-interval-btn active" id="chartIntBtn1" data-interval="60" onclick="changeChartInterval(this.dataset.interval, this)" oncontextmenu="iciOpenCustomTFMenu(event, this)">1H</button>
+539:            <button class="chart-interval-btn" id="chartIntBtn2" data-interval="240" onclick="changeChartInterval(this.dataset.interval, this)" oncontextmenu="iciOpenCustomTFMenu(event, this)">4H</button>
+540:            <button class="chart-interval-btn" id="chartIntBtn3" data-interval="D" onclick="changeChartInterval(this.dataset.interval, this)" oncontextmenu="iciOpenCustomTFMenu(event, this)">1D</button>
+541:            <button class="chart-interval-btn" id="chartIntBtn4" data-interval="W" onclick="changeChartInterval(this.dataset.interval, this)" oncontextmenu="iciOpenCustomTFMenu(event, this)">1W</button>
+544:        <span id="chartPairName" style="flex:1;text-align:center;font-weight:700;font-size:13px;color:var(--txt)"></span>
+565:        <button id="chartCloseBtn" onclick="closeChart()" style="background:none;border:none;font-size:15px;padding:5px;margin-left:4px;color:var(--red)"><i class="fas fa-times"></i></button>
+569:    <div id="chart-area-wrapper" style="display:flex;flex-direction:row;flex:1;min-height:0;width:100%;">
+571:        <div id="chart-grid" class="chart-grid layout-1" style="flex:1;min-height:0;width:auto;">
+1550:function closeChart() {
+
+##### 3. body start
+<body class="desktop-mode chat-hidden">
+<script>
+(function(){try{
+  var q=(location.search.match(/[?&]view=(mobile|desktop|auto)/)||[])[1];
+  if(q) localStorage.setItem('ici_view',q);
+  var v=localStorage.getItem('ici_view')||'auto';
+  var m = v==='mobile' || (v==='auto' && navigator.maxTouchPoints>0 && Math.min(window.innerWidth, screen.width)<=900);
+  if(m){ document.body.classList.remove('desktop-mode'); document.body.classList.add('is-mobile'); }
+}catch(e){}})();
+</script>
+<div class="phone-container" id="app">
+    <div class="header-row">
+        <div class="brand"><span id="scanStatusText" class="scan-status-line" style="margin-left:0;"></span><span id="lastScanTime" class="last-scan-line" style="margin-left:6px;" title="Last scan time">🕒 never</span></div>
+        <div class="header-actions">
+                        <button class="slevel-btn" onclick="setFilter('bull')">Bull <span id="bc" style="color:var(--green)">0</span></button>
+            <button class="slevel-btn" onclick="setFilter('bear')">Bear <span id="rc" style="color:var(--red)">0</span></button>
+            <button class="icon-btn" onclick="toggleTheme()" id="themeBtn"><i class="fas fa-moon"></i></button>
+            <div class="alert-dropdown-wrap" id="alertDropdownWrap">
+                <button class="icon-btn" onclick="toggleAlertDropdown(event)" id="alertDropdownBtn"><i class="fas fa-bars"></i></button>
+                <div class="alert-dropdown-panel" id="alertDropdownPanel">
+                    <a href="/journal" class="alert-toggle" style="text-decoration:none;">📒 Journal</a>
+                    <button class="alert-toggle" onclick="actualScan()" style="background:var(--acc);color:#fff;">Scan</button>
+                    <button class="alert-toggle" onclick="openAlertsList()" style="background:var(--gold); color:#fff; border-color:var(--gold);">Alerts</button>
+                    <span class="toggle-4h active" id="toggle4hBtn" onclick="event.stopPropagation(); toggle4H()">4H ON</span>
+                    <button class="alert-toggle" id="tgToggle" onclick="toggleAlert('telegram')">TG</button>
+                    <button class="alert-toggle" id="waToggle" onclick="toggleAlert('whatsapp')">WA</button>
+                    <button class="alert-toggle" id="ltfAlertBtn" onclick="toggleLtfAlert()">LTF OFF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        .wl-widget { margin-bottom:8px; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--surface); }
+        .wl-tabs-row { display:flex; align-items:center; gap:4px; padding:4px 6px; border-bottom:1px solid var(--border); }
+
+##### 4. timeframe
+let currentTFPreset = 'H';
+let currentHTF = 'W'; // 1W / 4H / 1H — feeds S01-S05 structure calc
+let currentDirection = 'long';
+let currentSLevel = null;
+const TF_PRESET_MAP = {
+    H: { intervals: ['W','D','240','60'], labels: ['1W','1D','4H','1H'], htf: 'W' },
+    M: { intervals: ['D','240','60','5m'], labels: ['1D','4H','1H','M5'], htf: '240' },
+    L: { intervals: ['240','60','5m','1m'], labels: ['4H','1H','M5','M1'], htf: '60' }
+};
+
+function setTFPreset(preset) {
+    currentTFPreset = preset;
+    currentHTF = TF_PRESET_MAP[preset].htf;
+    document.querySelectorAll('.tf-preset-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tfPreset' + preset).classList.add('active');
+    const ivals = TF_PRESET_MAP[preset].intervals;
+    const labels = TF_PRESET_MAP[preset].labels;
+    for (let i = 0; i < 4; i++) {
+        const btn = document.getElementById('chartIntBtn' + (i + 1));
+        btn.dataset.interval = ivals[i];
+        btn.textContent = labels[i];
+    }
+    chartIntervals[activeChartSlot-1] = ivals[0];
+    document.querySelectorAll('.chart-interval-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('chartIntBtn1').classList.add('active');
+    localStorage.setItem('tfPreset', preset);
+    if (typeof drawChart === 'function') drawChart(activeChartSlot);
+    if (typeof refreshSLevels === 'function') refreshSLevels();
+}
+
+function toggleDirection() {
+    currentDirection = currentDirection === 'long' ? 'short' : 'long';
+    const btn = document.getElementById('dirToggleBtn');
+
+##### 5. server routes
+477:    // ── Scan & static files ──
+679:    if (safePath === '/stocks' || safePath === '/stocks.html') {
+687:    if (safePath === '/crypto' || safePath === '/crypto.html') {
+
+##### 6. stocks/crypto chart fns
+stocks.html:992:            html += `<div style="padding:12px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;" onclick="openChartForPair('${pair}')">
+stocks.html:1319:        let row = `<div class="item-row ${sym === activeChartPair ? 'highlighted-row' : ''}"><div class="item-main" onclick="openChartForPair('${sym}')">${cells}</div>`;
+stocks.html:1402:function openChartForPair(pairName) {
+stocks.html:1621:function closeChart() {
+stocks.html:1837:            var m = (main.getAttribute('onclick') || '').match(/openChartForPair\('([^']+)'\)/);
+crypto.html:954:            html += `<div style="padding:12px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;gap:8px;" onclick="openChartForPair('${pair}')">
+crypto.html:1232:        let row = `<div class="item-row ${p.n === activeChartPair ? 'highlighted-row' : ''}"><div class="item-main" onclick="openChartForPair('${p.n}')">${cells}</div>`;
+crypto.html:1261:function openChartForPair(pairName) {
+crypto.html:1474:function closeChart() {
+crypto.html:1681:            var m = (main.getAttribute('onclick') || '').match(/openChartForPair\('([^']+)'\)/);
+
+##### 7. pm2
+┌────┬────────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name           │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼────────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ ici-scanner    │ default     │ 1.0.0   │ fork    │ 44986    │ 11m    │ 28   │ online    │ 0%       │ 192.9mb  │ ubuntu   │ disabled │
+│ 1  │ keepalive      │ default     │ N/A     │ fork    │ 2054     │ 5D     │ 0    │ online    │ 0%       │ 4.6mb    │ ubuntu   │ disabled │
+└────┴────────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+host metrics | cpu: 16.9% | ram usage: 60.1% | ens3: ⇓ 0.245mb/s ⇑ 0.006mb/s | disk: ⇓ 0mb/s ⇑ 0.001mb/s /snap/core18/2855 100% /snap/lxd/32662 100% /snap/core18/3084 100% /snap/core20/2922 100% /snap/core20/2582 100% /snap/lxd/40953 100% /snap/oracle-cloud-agent/94 100% /snap/snapd/27738 100% /snap/snapd/28254 100%

@@ -1,0 +1,322 @@
+######## A. index.html 1040-1250 (column types, menu, edit modal)
+// ── Columns ──
+const COLUMN_TYPES = {
+    tf_alignment: { label:'TF Alignment', kind:'dots', filterable:false },
+    sentiment:    { label:'Sentiment',    kind:'bar',  filterable:false },
+    change_200:   { label:'200 Candle Change', kind:'pct', field:'longTermTrend', filterable:true },
+    change_10:    { label:'10 Candle Change',  kind:'pct', field:'shortTermMomentum', filterable:true },
+    change_1h:    { label:'1H Momentum',       kind:'pct', field:'microMomentum', filterable:true },
+    vol_7d:       { label:'Vol 7D Avg',        kind:'num', field:'volume7dAvg', filterable:true },
+    dollar_vol:   { label:'$ Volume 1D',       kind:'num', field:'dollarVolume1d', filterable:true },
+    price:        { label:'Price',             kind:'num', field:'price', filterable:true }
+};
+
+let columnDefs = [];
+let sortColumn = null, sortDir = 'desc';
+let colMenuTargetId = null, filterTargetId = null;
+
+function defaultColumns() {
+    return [
+        { id:'c_tf', type:'tf_alignment', label:'1H/4H/1D/1W' },
+        { id:'c_sent', type:'sentiment', label:'Sentiment' },
+        { id:'c_200', type:'change_200', label:'200C', style:'colored', filterMin:null, filterMax:null }
+    ];
+}
+function loadColumns() {
+    try {
+        const raw = localStorage.getItem('ici_columns');
+        if (raw) { const parsed = JSON.parse(raw); if (Array.isArray(parsed) && parsed.length) return parsed; }
+    } catch(e) {}
+    return defaultColumns();
+}
+function saveColumns() { localStorage.setItem('ici_columns', JSON.stringify(columnDefs)); }
+columnDefs = loadColumns();
+
+function getColumnValue(pairName, col) {
+    const type = COLUMN_TYPES[col.type];
+    const t = techMetrics[pairName] || {};
+    const s = sentimentData[pairName] || {};
+    const m = MARKET_DATA[pairName] || {};
+    const lm = liveMarketData[pairName] || {};
+    if (col.type === 'tf_alignment') {
+        const livePrice = lm.price || lm.currentPrice;
+        const ema20_1h = m.ema20 || m['1h_ema20'];
+        const sig1h = (livePrice != null && ema20_1h != null) ? (livePrice > ema20_1h ? 'bull' : 'bear') : (m['1h'] || '');
+        const ema20_4h = m['4h_ema20'];
+        const sig4h = (livePrice != null && ema20_4h != null) ? (livePrice > ema20_4h ? 'bull' : 'bear') : (m['4h'] || '');
+        const ema20_1d = m['1day_ema20'];
+        const sig1d = (livePrice != null && ema20_1d != null) ? (livePrice > ema20_1d ? 'bull' : 'bear') : (m['1day'] || '');
+        const ema20_1w = m['1week_ema20'];
+        const sig1w = (livePrice != null && ema20_1w != null) ? (livePrice > ema20_1w ? 'bull' : 'bear') : (m['1week'] || '');
+        return [sig1h, sig4h, sig1d, sig1w];
+    }
+    if (col.type === 'sentiment') {
+        const bullPct = s.bullish_pct || 0, bearPct = s.bearish_pct || 0, total = bullPct + bearPct || 1;
+        return { bullPct: Math.round((bullPct/total)*100), bearPct: Math.round((bearPct/total)*100) };
+    }
+    if (col.type === 'price') return (lm.price || lm.currentPrice || m.price || m.currentPrice || null);
+    return t[type.field] != null ? t[type.field] : null;
+}
+
+function sortValueFor(pairName, col) {
+    const v = getColumnValue(pairName, col);
+    if (typeof v === 'number') return v;
+    if (v && typeof v === 'object' && 'bullPct' in v) return v.bullPct;
+    return null;
+}
+
+function applyColumnSortAndFilter(list) {
+    let out = list;
+    columnDefs.forEach(col => {
+        if (col.filterMin == null && col.filterMax == null) return;
+        out = out.filter(p => {
+            const v = sortValueFor(p.n, col);
+            if (v == null) return false;
+            if (col.filterMin != null && v < col.filterMin) return false;
+            if (col.filterMax != null && v > col.filterMax) return false;
+            return true;
+        });
+    });
+    if (sortColumn) {
+        const col = columnDefs.find(c => c.id === sortColumn);
+        if (col) {
+            out = [...out].sort((a,b) => {
+                const va = sortValueFor(a.n, col), vb = sortValueFor(b.n, col);
+                return sortDir === 'desc' ? (vb == null ? -Infinity : vb) - (va == null ? -Infinity : va) : (va == null ? -Infinity : va) - (vb == null ? -Infinity : vb);
+            });
+        }
+    }
+    return out;
+}
+
+function renderHeader() {
+    let html = '<div class="col-pair-fixed col-header-cell">Pair</div>';
+    columnDefs.forEach(col => {
+        const type = COLUMN_TYPES[col.type];
+        const arrow = sortColumn === col.id ? `<span class="sort-arrow">${sortDir === 'desc' ? '▼' : '▲'}</span>` : '';
+        const badge = (col.filterMin != null || col.filterMax != null) ? '<span class="filter-badge" style="background:var(--gold);color:#fff;border-radius:8px;font-size:8px;font-weight:700;padding:1px 4px;">F</span>' : '';
+        html += `<div class="col-header-cell" onclick="openColMenu('${col.id}')">${col.label || type.label}${arrow}${badge}</div>`;
+    });
+    html += '<div class="col-add-btn" onclick="openColEditModal(null)"><i class="fas fa-plus-circle"></i></div>';
+    document.getElementById('tableHeaderRow').innerHTML = html;
+}
+
+function renderColumnCell(pairName, col) {
+    const type = COLUMN_TYPES[col.type];
+    const val = getColumnValue(pairName, col);
+    if (col.type === 'tf_alignment') {
+        const dots = val.map(sig => `<span class="trend-dot" style="background:${sig==='bull'?'var(--green)':(sig==='bear'?'var(--red)':'#cbd5e1')}"></span>`).join('');
+        return `<div class="col-cell dots-container">${dots}</div>`;
+    }
+    if (col.type === 'sentiment') {
+        return `<div class="col-cell"><div class="sentiment-progress"><div class="sent-red" style="width:${val.bearPct}%">${val.bearPct}%</div><div class="sent-green" style="width:${val.bullPct}%">${val.bullPct}%</div></div></div>`;
+    }
+    if (val == null) return '<div class="col-cell" style="color:var(--muted)">--</div>';
+    if (type.kind === 'pct') {
+        const cls = col.style === 'mono' ? '' : (val >= 0 ? 'up' : 'down');
+        return `<div class="col-cell change-val ${cls}">${val > 0 ? '+' : ''}${val.toFixed(2)}%</div>`;
+    }
+    if (col.type === 'price') return `<div class="col-cell">${val.toFixed(4)}</div>`;
+    return `<div class="col-cell">${typeof val === 'number' ? val.toLocaleString() : val}</div>`;
+}
+
+function openColMenu(colId) {
+    colMenuTargetId = colId;
+    const col = columnDefs.find(c => c.id === colId);
+    if (!col) return;
+    const type = COLUMN_TYPES[col.type];
+    let items = `<div class="sheet-item" onclick="sortByColumn('desc')"><i class="fas fa-sort-amount-down"></i> Sort: Highest first</div>
+                 <div class="sheet-item" onclick="sortByColumn('asc')"><i class="fas fa-sort-amount-up"></i> Sort: Lowest first</div>
+                 <div class="sheet-item" onclick="openColEditModal('${colId}')"><i class="fas fa-edit"></i> Edit column</div>`;
+    if (type.filterable) items += `<div class="sheet-item" onclick="openColFilterModal('${colId}')"><i class="fas fa-filter"></i> Filter</div>`;
+    items += `<div class="sheet-item" onclick="deleteColumn('${colId}')"><i class="fas fa-trash"></i> Delete column</div>
+              <div class="sheet-item" onclick="closeColMenu()" style="color:var(--txt);"><i class="fas fa-times"></i> Cancel</div>`;
+    document.getElementById('colMenuBox').innerHTML = items;
+    document.getElementById('colMenuSheet').classList.add('open');
+}
+function closeColMenu() { document.getElementById('colMenuSheet').classList.remove('open'); }
+function sortByColumn(dir) { sortColumn = colMenuTargetId; sortDir = dir; closeColMenu(); render(); }
+function deleteColumn(colId) {
+    columnDefs = columnDefs.filter(c => c.id !== colId);
+    if (sortColumn === colId) sortColumn = null;
+    saveColumns(); closeColMenu(); render();
+}
+
+function openColEditModal(colId) {
+    closeColMenu();
+    const isEdit = !!colId;
+    document.getElementById('colEditTitle').textContent = isEdit ? 'Edit Column' : 'Add Column';
+    const sel = document.getElementById('colTypeSelect');
+    sel.innerHTML = Object.entries(COLUMN_TYPES).map(([k,v]) => `<option value="${k}">${v.label}</option>`).join('');
+    sel.dataset.editId = colId || '';
+    if (isEdit) {
+        const col = columnDefs.find(c => c.id === colId);
+        sel.value = col.type;
+        document.getElementById('colLabelInput').value = col.label || '';
+        document.getElementById('colDisplayStyleSelect').value = col.style || 'colored';
+    } else {
+        document.getElementById('colLabelInput').value = '';
+        document.getElementById('colDisplayStyleSelect').value = 'colored';
+    }
+    onColTypeChange();
+    document.getElementById('colEditModal').classList.add('open');
+}
+function onColTypeChange() {
+    const type = COLUMN_TYPES[document.getElementById('colTypeSelect').value];
+    document.getElementById('colDisplayStyleGroup').style.display = type.kind === 'pct' ? 'block' : 'none';
+}
+function closeColEditModal() { document.getElementById('colEditModal').classList.remove('open'); }
+function saveColumnFromModal() {
+    const sel = document.getElementById('colTypeSelect');
+    const editId = sel.dataset.editId;
+    const type = sel.value;
+    const label = document.getElementById('colLabelInput').value.trim();
+    const style = document.getElementById('colDisplayStyleSelect').value;
+    if (editId) {
+        const col = columnDefs.find(c => c.id === editId);
+        col.type = type; col.label = label; col.style = style;
+    } else {
+        columnDefs.push({ id:'c_'+Date.now(), type, label, style, filterMin:null, filterMax:null });
+    }
+    saveColumns(); closeColEditModal(); render();
+}
+
+function openColFilterModal(colId) {
+    closeColMenu();
+    filterTargetId = colId;
+    const col = columnDefs.find(c => c.id === colId);
+    document.getElementById('filterMinInput').value = col.filterMin ?? '';
+    document.getElementById('filterMaxInput').value = col.filterMax ?? '';
+    document.getElementById('colFilterModal').classList.add('open');
+}
+function closeColFilterModal() { document.getElementById('colFilterModal').classList.remove('open'); }
+
+function applyColFilter() {
+    const col = columnDefs.find(c => c.id === filterTargetId);
+    col.filterMin = document.getElementById('filterMinInput').value === '' ? null : parseFloat(document.getElementById('filterMinInput').value);
+    col.filterMax = document.getElementById('filterMaxInput').value === '' ? null : parseFloat(document.getElementById('filterMaxInput').value);
+    sortColumn = filterTargetId;
+    sortDir = 'desc';
+    saveColumns(); closeColFilterModal(); render();
+}
+
+function clearColFilter() {
+    const col = columnDefs.find(c => c.id === filterTargetId);
+    col.filterMin = null; col.filterMax = null;
+    if (!columnDefs.some(c => c.filterMin != null || c.filterMax != null)) sortColumn = null;
+    saveColumns(); closeColFilterModal(); render();
+}
+
+// ── Render ──
+function render() {
+    if (!document.body.classList.contains('desktop-mode') && document.getElementById('chartOverlay').style.display === 'flex') return;
+
+######## B. renderColumnCell
+line 1142
+function renderColumnCell(pairName, col) {
+    const type = COLUMN_TYPES[col.type];
+    const val = getColumnValue(pairName, col);
+    if (col.type === 'tf_alignment') {
+        const dots = val.map(sig => `<span class="trend-dot" style="background:${sig==='bull'?'var(--green)':(sig==='bear'?'var(--red)':'#cbd5e1')}"></span>`).join('');
+        return `<div class="col-cell dots-container">${dots}</div>`;
+    }
+    if (col.type === 'sentiment') {
+        return `<div class="col-cell"><div class="sentiment-progress"><div class="sent-red" style="width:${val.bearPct}%">${val.bearPct}%</div><div class="sent-green" style="width:${val.bullPct}%">${val.bullPct}%</div></div></div>`;
+    }
+    if (val == null) return '<div class="col-cell" style="color:var(--muted)">--</div>';
+    if (type.kind === 'pct') {
+        const cls = col.style === 'mono' ? '' : (val >= 0 ? 'up' : 'down');
+        return `<div class="col-cell change-val ${cls}">${val > 0 ? '+' : ''}${val.toFixed(2)}%</div>`;
+    }
+    if (col.type === 'price') return `<div class="col-cell">${val.toFixed(4)}</div>`;
+    return `<div class="col-cell">${typeof val === 'number' ? val.toLocaleString() : val}</div>`;
+}
+
+function openColMenu(colId) {
+    colMenuTargetId = colId;
+    const col = columnDefs.find(c => c.id === colId);
+    if (!col) return;
+    const type = COLUMN_TYPES[col.type];
+    let items = `<div class="sheet-item" onclick="sortByColumn('desc')"><i class="fas fa-sort-amount-down"></i> Sort: Highest first</div>
+                 <div class="sheet-item" onclick="sortByColumn('asc')"><i class="fas fa-sort-amount-up"></i> Sort: Lowest first</div>
+                 <div class="sheet-item" onclick="openColEditModal('${colId}')"><i class="fas fa-edit"></i> Edit column</div>`;
+    if (type.filterable) items += `<div class="sheet-item" onclick="openColFilterModal('${colId}')"><i class="fas fa-filter"></i> Filter</div>`;
+    items += `<div class="sheet-item" onclick="deleteColumn('${colId}')"><i class="fas fa-trash"></i> Delete column</div>
+              <div class="sheet-item" onclick="closeColMenu()" style="color:var(--txt);"><i class="fas fa-times"></i> Cancel</div>`;
+    document.getElementById('colMenuBox').innerHTML = items;
+    document.getElementById('colMenuSheet').classList.add('open');
+}
+function closeColMenu() { document.getElementById('colMenuSheet').classList.remove('open'); }
+function sortByColumn(dir) { sortColumn = colMenuTargetId; sortDir = dir; closeColMenu(); render(); }
+function deleteColumn(colId) {
+    columnDefs = columnDefs.filter(c => c.id !== colId);
+    if (sortColumn === colId) sortColumn = null;
+    saveColumns(); closeColMenu(); render();
+}
+
+function openColEditModal(colId) {
+    closeColMenu();
+    const isEdit = !!colId;
+    document.getElementById('colEditTitle').textContent = isEdit ? 'Edit Column' : 'Add Column';
+    const sel = document.getElementById('colTypeSelect');
+
+######## C. watchlist: tabs + wlData structure
+})();
+updateToggleButtons();
+</script>
+<script>
+(function(){
+    var WL_KEY = 'ici_wl_tabs';
+    var wlData = null;
+    var suppressNextClick = false;
+
+    function wlLoad() {
+        try { wlData = JSON.parse(localStorage.getItem(WL_KEY)); } catch(e) { wlData = null; }
+        if (!wlData || !wlData.tabs || !wlData.tabs.length) {
+            wlData = { tabs: [{ id: 1, symbols: [] }], active: 1, height: 140 };
+        }
+    }
+    function wlSave() { localStorage.setItem(WL_KEY, JSON.stringify(wlData)); }
+    window.__wlReorder = function (a, b) { try { var t = wlGetActiveTab(); if (!t || !t.symbols) return false; var i = t.symbols.indexOf(a), j = t.symbols.indexOf(b); if (i < 0 || j < 0 || i === j) return false; var m = t.symbols.splice(i, 1)[0]; t.symbols.splice(j, 0, m); wlSave(); wlRenderRows(); return true; } catch (e) { return false; } };
+    function wlGetActiveTab() {
+        var t = wlData.tabs.filter(function(x){ return x.id === wlData.active; })[0];
+        return t || wlData.tabs[0];
+    }
+    function wlRenderTabs() {
+        var tabsEl = document.getElementById('wlTabs');
+        if (!tabsEl) return;
+        tabsEl.innerHTML = '';
+        wlData.tabs.forEach(function(tab) {
+
+######## D. column modal html ids
+488:<div class="sheet-overlay" id="colMenuSheet" onclick="if(event.target===this) closeColMenu()">
+489:    <div class="sheet-box" id="colMenuBox"></div>
+493:<div class="modal" id="colEditModal" onclick="if(event.target===this) closeColEditModal()">
+495:        <h3 style="margin-bottom:16px;" id="colEditTitle">Add Column</h3>
+498:            <select class="form-select" id="colTypeSelect" onchange="onColTypeChange()"></select>
+502:            <input class="form-input" id="colLabelInput" placeholder="Custom label">
+504:        <div class="form-group" id="colDisplayStyleGroup" style="display:none;">
+506:            <select class="form-select" id="colDisplayStyleSelect">
+519:<div class="modal" id="colFilterModal" onclick="if(event.target===this) closeColFilterModal()">
+1054:let colMenuTargetId = null, filterTargetId = null;
+1162:    colMenuTargetId = colId;
+1172:    document.getElementById('colMenuBox').innerHTML = items;
+1173:    document.getElementById('colMenuSheet').classList.add('open');
+1175:function closeColMenu() { document.getElementById('colMenuSheet').classList.remove('open'); }
+1176:function sortByColumn(dir) { sortColumn = colMenuTargetId; sortDir = dir; closeColMenu(); render(); }
+1200:    document.getElementById('colEditModal').classList.add('open');
+1206:function closeColEditModal() { document.getElementById('colEditModal').classList.remove('open'); }
+1228:    document.getElementById('colFilterModal').classList.add('open');
+1230:function closeColFilterModal() { document.getElementById('colFilterModal').classList.remove('open'); }
+
+######## E. stocks/crypto: same functions?
+stocks.html:1028:function loadColumns() {
+stocks.html:1035:function saveColumns() { localStorage.setItem('ici_stocks_columns', JSON.stringify(columnDefs)); }
+stocks.html:1155:function renderHeader() {
+stocks.html:1167:function renderColumnCell(pairName, col) {
+stocks.html:1187:function openColMenu(colId) {
+crypto.html:990:function loadColumns() {
+crypto.html:997:function saveColumns() { localStorage.setItem('ici_crypto_columns', JSON.stringify(columnDefs)); }
+crypto.html:1066:function renderHeader() {
+crypto.html:1078:function renderColumnCell(pairName, col) {
+crypto.html:1098:function openColMenu(colId) {

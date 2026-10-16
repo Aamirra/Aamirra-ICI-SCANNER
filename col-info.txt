@@ -1,0 +1,214 @@
+######## A. column header / options / metric definitions
+46:        .counters-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin-bottom:16px; }
+61:        /* Auto‑adjust columns, no scroll */
+64:        .header-row-table { display:flex; align-items:center; padding-bottom:8px; border-bottom:1px solid var(--border); width:100%; }
+65:        .col-header-cell {
+85:        .col-pair-fixed.col-header-cell { flex: 1 1 0%; min-width:70px; justify-content:flex-start; cursor:default; padding-left:4px; }
+86:        .col-bell-fixed.col-header-cell { flex: none; min-width:30px; cursor:default; }
+169:        .layout-1 { grid-template-columns:1fr; grid-template-rows:1fr; }
+170:        .layout-2 { grid-template-columns:1fr 1fr; grid-template-rows:1fr; }
+171:        .layout-3 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
+173:        .layout-4 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }
+290:body.is-mobile .col-header-cell { min-width:44px; font-size:9px; }
+304:body.is-mobile .chart-grid.layout-2, body.is-mobile .chart-grid.layout-3, body.is-mobile .chart-grid.layout-4 { grid-template-columns:1fr !important; grid-template-rows:none !important; grid-auto-rows:minmax(260px,1fr); overflow-y:auto; }
+482:        <div class="header-row-table" id="tableHeaderRow"></div>
+1040:// ── Columns ──
+1047:    vol_7d:       { label:'Vol 7D Avg',        kind:'num', field:'volume7dAvg', filterable:true },
+1048:    dollar_vol:   { label:'$ Volume 1D',       kind:'num', field:'dollarVolume1d', filterable:true },
+1052:let columnDefs = [];
+1056:function defaultColumns() {
+1060:        { id:'c_200', type:'change_200', label:'200C', style:'colored', filterMin:null, filterMax:null }
+1063:function loadColumns() {
+1065:        const raw = localStorage.getItem('ici_columns');
+1068:    return defaultColumns();
+1070:function saveColumns() { localStorage.setItem('ici_columns', JSON.stringify(columnDefs)); }
+1071:columnDefs = loadColumns();
+1106:function applyColumnSortAndFilter(list) {
+1108:    columnDefs.forEach(col => {
+1119:        const col = columnDefs.find(c => c.id === sortColumn);
+1130:function renderHeader() {
+1131:    let html = '<div class="col-pair-fixed col-header-cell">Pair</div>';
+1132:    columnDefs.forEach(col => {
+1136:        html += `<div class="col-header-cell" onclick="openColMenu('${col.id}')">${col.label || type.label}${arrow}${badge}</div>`;
+1161:function openColMenu(colId) {
+1163:    const col = columnDefs.find(c => c.id === colId);
+1178:    columnDefs = columnDefs.filter(c => c.id !== colId);
+1180:    saveColumns(); closeColMenu(); render();
+1191:        const col = columnDefs.find(c => c.id === colId);
+1214:        const col = columnDefs.find(c => c.id === editId);
+1217:        columnDefs.push({ id:'c_'+Date.now(), type, label, style, filterMin:null, filterMax:null });
+1219:    saveColumns(); closeColEditModal(); render();
+1225:    const col = columnDefs.find(c => c.id === colId);
+1233:    const col = columnDefs.find(c => c.id === filterTargetId);
+1238:    saveColumns(); closeColFilterModal(); render();
+1242:    const col = columnDefs.find(c => c.id === filterTargetId);
+1244:    if (!columnDefs.some(c => c.filterMin != null || c.filterMax != null)) sortColumn = null;
+1245:    saveColumns(); closeColFilterModal(); render();
+1284:    filtered = applyColumnSortAndFilter(filtered);
+1292:        cells += columnDefs.map(col => renderColumnCell(p.n, col)).join('');
+
+######## B. render of main list rows
+render() line 1249
+function render() {
+    if (!document.body.classList.contains('desktop-mode') && document.getElementById('chartOverlay').style.display === 'flex') return;
+
+    const currentPairs = filteredPairs.length ? filteredPairs : PAIRS;
+    let filtered;
+    const validTargets = new Set(getUniqueAutoSetups().keys());
+    if (curF === 'all') filtered = currentPairs;
+    else if (curF === 'bull' || curF === 'bear')
+        filtered = currentPairs.filter(p => {
+            const d = MARKET_DATA[p.n] || {};
+            return ['4h','1day','1week'].every(tf => d[tf] === curF);
+        });
+    else if (curF === 'target') filtered = currentPairs.filter(p => validTargets.has(p.n));
+    else filtered = currentPairs;
+
+    if (currentSLevel) {
+        const SLEVEL_HTF_MAP = { H: 'W', M: '240', L: '30' };
+        const sLevelHtfKey = SLEVEL_HTF_MAP[currentTFPreset] || 'W';
+        const sLevelWantDir = currentDirection === 'long' ? 'bull' : 'bear';
+        filtered = filtered.filter(p => {
+            const s = (SLEVEL_STATE[sLevelHtfKey] || {})[p.n];
+            return s && s.direction === sLevelWantDir && s.level === currentSLevel;
+        });
+        if (!sortColumn) {
+            const moveCol = { type: 'change_200' };
+            filtered = [...filtered].sort((a, b) => {
+                const va = sortValueFor(a.n, moveCol);
+                const vb = sortValueFor(b.n, moveCol);
+                const aAbs = va == null ? -Infinity : Math.abs(va);
+                const bAbs = vb == null ? -Infinity : Math.abs(vb);
+                return bAbs - aAbs;
+            });
+        }
+    }
+
+    filtered = applyColumnSortAndFilter(filtered);
+    currentDisplayPairs = filtered.map(p => p.n);
+    if (window.activeChartSource !== 'watchlist') { chartPairs = filtered.map(p => p.n); }
+
+    renderHeader();
+
+    document.getElementById('pairsContainer').innerHTML = filtered.map(p => {
+        let cells = `<div class="col-pair-fixed"><span style="font-weight:700;font-size:14px;">${p.n}</span></div>`;
+        cells += columnDefs.map(col => renderColumnCell(p.n, col)).join('');
+        cells += '<div class="col-add-btn" style="visibility:hidden;"></div>';
+
+        let row = `<div class="item-row ${p.n === activeChartPair ? 'highlighted-row' : ''}"><div class="item-main" onclick="openChartForPair('${p.n}')">${cells}</div>`;
+        if (curF === 'target') {
+            const info = getUniqueAutoSetups().get(p.n);
+            if (info) {
+                const badgeBg = info.dir === 'bull' ? '#22c55e' : '#ef4444';
+                row += `<div class="phase-row"><span style="color:var(--muted);">Phase:</span><span style="background:${badgeBg};color:#fff;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:700;">${info.dir.toUpperCase()} ${info.phase}</span></div>`;
+            }
+        }
+        row += '</div>';
+        return row;
+    }).join('');
+    updateCounts();
+}
+
+// ── Chart functions (with highlight and star button update) ──
+function activateChartSlot(s) {
+    s = parseInt(s);
+    activeChartSlot = s;
+    document.getElementById('slotSelect').value = s;
+    updateChartPairName();
+    highlightIntervalButton(chartIntervals[s-1]);
+    startCountdownTimer();
+}
+function updateChartPairName() {
+    document.getElementById('chartPairName').textContent = (currentChartLayout>1?`[Slot ${activeChartSlot}] `:'') + (chartPairs[chartIndices[activeChartSlot-1]]||'Select a pair');
+}
+function highlightIntervalButton(interval) {
+    document.querySelectorAll('.chart-interval-btn').forEach(b => b.classList.toggle('active', b.dataset.interval===interval));
+}
+function openChartForPair(pairName) {
+    window.activeChartSource = 'screener';
+    chartPairs = currentDisplayPairs.length ? currentDisplayPairs : PAIRS.map(p=>p.n);
+    let idx = chartPairs.indexOf(pairName);
+    if (idx===-1) idx = 0;
+    chartIndices[activeChartSlot-1] = idx;
+    updateChartPairName();
+    drawChart(activeChartSlot);
+    document.getElementById('chartOverlay').style.display = 'flex';
+    activeChartPair = pairName;
+    render();
+    startCountdownTimer();
+}
+function movePair(step) {
+    const total = chartPairs.length;
+    chartIndices[activeChartSlot-1] = (chartIndices[activeChartSlot-1] + step + total) % total;
+
+######## C. watchlist rows + price change
+    function wlGetPriceChange(sym) {
+        var m = (typeof MARKET_DATA !== 'undefined' && MARKET_DATA[sym]) || {};
+        var lm = (typeof liveMarketData !== 'undefined' && liveMarketData[sym]) || {};
+        var t = (typeof techMetrics !== 'undefined' && techMetrics[sym]) || {};
+        var price = lm.price || lm.currentPrice || m.price || m.currentPrice || null;
+        var chg = (t.longTermTrend != null) ? t.longTermTrend : (m.longTermTrend != null ? m.longTermTrend : null);
+        return { price: price, chg: chg };
+    }
+    function wlRenderRows() {
+        var tab = wlGetActiveTab();
+        var rowsEl = document.getElementById('wlRows');
+        if (!rowsEl) return;
+        if (!tab || !tab.symbols.length) {
+            rowsEl.innerHTML = '<div class="wl-empty-hint">Press &amp; hold a pair below, then drag up here to add</div>';
+            return;
+        }
+        var html = '';
+        tab.symbols.forEach(function(sym) {
+            var pc = wlGetPriceChange(sym);
+            var priceStr = pc.price != null ? Number(pc.price).toFixed(2) : '--';
+            var chgStr = pc.chg != null ? (pc.chg > 0 ? '+' : '') + Number(pc.chg).toFixed(2) + '%' : '--';
+            var chgCls = pc.chg != null ? (pc.chg >= 0 ? 'up' : 'down') : '';
+            html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
+        });
+        rowsEl.innerHTML = html;
+    }
+
+    wlLoad();
+    wlRenderTabs();
+    wlRenderRows();
+    setInterval(wlRenderRows, 3000);
+    if (!window.__chartAutoRefreshStarted) { window.__chartAutoRefreshStarted = true; setInterval(function(){ if (document.hidden) return; if (typeof activeChartSlot !== "undefined") { if (typeof softRefreshChart === "function" && lwCharts && lwCharts[activeChartSlot]) { softRefreshChart(activeChartSlot); } else if (typeof drawChart === "function") { drawChart(activeChartSlot); } } }, 10000); }
+
+    var wrap = document.getElementById('wlTableWrap');
+    var handle = document.getElementById('wlResizeHandle');
+    if (wrap) wrap.style.height = (wlData.height || 140) + 'px';
+    var resizing = false, startY = 0, startH = 0;
+    if (handle) {
+        handle.addEventListener('pointerdown', function(e) { resizing = true; startY = e.clientY; startH = wrap.offsetHeight; e.preventDefault(); });
+    }
+    document.addEventListener('pointermove', function(e) {
+
+######## D. localStorage keys for columns
+401:  if(q) localStorage.setItem('ici_view',q);
+402:  var v=localStorage.getItem('ici_view')||'auto';
+657:                const raw = localStorage.getItem(key);
+661:                    if (i !== -1) { list[i].active = false; localStorage.setItem(key, JSON.stringify(list)); }
+723:    localStorage.setItem('tfPreset', preset);
+887:    localStorage.setItem('ici-theme', h.getAttribute('data-theme'));
+1065:        const raw = localStorage.getItem('ici_columns');
+1070:function saveColumns() { localStorage.setItem('ici_columns', JSON.stringify(columnDefs)); }
+1563:    localStorage.setItem('show4H', show4H);
+1569:    show4H = localStorage.getItem('show4H') !== 'false';
+1594:    const savedTheme = localStorage.getItem('ici-theme');
+1610:        try { wlData = JSON.parse(localStorage.getItem(WL_KEY)); } catch(e) { wlData = null; }
+1615:    function wlSave() { localStorage.setItem(WL_KEY, JSON.stringify(wlData)); }
+1862:        var saved = localStorage.getItem(WIDTH_KEY);
+1865:    function saveWidth(px) { localStorage.setItem(WIDTH_KEY, String(px)); }
+1915:            try { localStorage.setItem('ici_chat_seen_ts', String(lastMaxTs)); } catch (e) {}
+1934:        var _seen = parseInt(localStorage.getItem('ici_chat_seen_ts') || '0', 10);
+1935:        if (!_seen) { _seen = _mx; try { localStorage.setItem('ici_chat_seen_ts', String(_mx)); } catch (e) {} }
+1942:            var myName = localStorage.getItem(DASH_NAME_KEY);
+1965:            var myName = localStorage.getItem(DASH_NAME_KEY);
+1989:        if (lastMaxTs) { try { localStorage.setItem('ici_chat_seen_ts', String(lastMaxTs)); } catch (e) {} }
+2005:        var name = localStorage.getItem(DASH_NAME_KEY);
+2010:            localStorage.setItem(DASH_NAME_KEY, name);
+2114:        var saved = localStorage.getItem(CHAT_WIDTH_KEY);
+2117:    function saveChatWidth(px) { localStorage.setItem(CHAT_WIDTH_KEY, String(px)); }
+2383:    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) { return {}; }
+2392:    localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));

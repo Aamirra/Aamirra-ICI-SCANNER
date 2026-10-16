@@ -195,7 +195,8 @@ async function updateSLevelsForPair(pairName, weeklyRaw, h4Raw, m15Raw, firebase
 
         const result = computeSLevel(candles);
         if (result) {
-            await firebasePut(path, { level: result.level, direction: result.direction, updatedAt: Date.now() });
+            const lastT = new Date(candles[candles.length - 1].time).getTime();
+            await firebasePut(path, { level: result.level, direction: result.direction, updatedAt: Date.now(), candleTime: isNaN(lastT) ? null : lastT });
         } else {
             await firebaseDeleteSLevel(path);
         }

@@ -66,6 +66,7 @@ function isWeekendGap(unixSeconds) {
 
 http.createServer((req, res) => {
     const safePath = req.url.split('?')[0];
+    if (require('./access').gate(req, res, safePath)) return;
 
     // ── AI Chat Proxy ──
     if (req.method === 'POST' && safePath === '/api/chat') {
@@ -147,6 +148,57 @@ Always put the action block FIRST, then your reply.`;
             } catch (error) {
                 res.writeHead(500, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ error: `Server Error: ${error.message}` }));
+            }
+        });
+        return;
+    }
+
+    // ── Alert status for browser (so fired alerts get deactivated locally) ──
+    if (req.method === 'GET' && safePath === '/api/alert-status') {
+        const u = new URL(req.url, 'http://x');
+        const dev = String(u.searchParams.get('deviceId') || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+        if (!dev) { res.writeHead(400, { 'Content-Type': 'application/json' }); res.end('{}'); return; }
+        admin.database().ref('userAlerts/' + dev).once('value').then(snap => {
+            const v = snap.val() || {};
+            const out = {};
+            Object.keys(v).forEach(k => { out[k] = !!(v[k] && v[k].active); });
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(out));
+        }).catch(() => { res.writeHead(500, { 'Content-Type': 'application/json' }); res.end('{}'); });
+        return;
+    }
+
+    // ── Sync chart alerts from browser/app to Firebase (server-side checking) ──
+    if (req.method === 'POST' && safePath === '/api/sync-alerts') {
+        let body = '';
+        req.on('data', chunk => { body += chunk.toString(); });
+        req.on('end', async () => {
+            try {
+                const parsed = JSON.parse(body);
+                const dev = String(parsed.deviceId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+                const alerts = parsed.alerts;
+                if (!dev || !Array.isArray(alerts)) throw new Error('bad payload');
+                const obj = {};
+                alerts.slice(0, 200).forEach(a => {
+                    const id = String(a.id || '').replace(/[^A-Za-z0-9_-]/g, '');
+                    if (!id) return;
+                    obj[id] = {
+                        id: id,
+                        pair: String(a.pair || ''),
+                        condition: String(a.condition || ''),
+                        targetPrice: a.targetPrice == null ? null : Number(a.targetPrice),
+                        name: String(a.name || '').slice(0, 80),
+                        message: String(a.message || '').slice(0, 200),
+                        frequency: String(a.frequency || 'Only Once'),
+                        active: !!a.active
+                    };
+                });
+                await admin.database().ref('userAlerts/' + dev).set(Object.keys(obj).length ? obj : null);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: true, count: Object.keys(obj).length }));
+            } catch (e) {
+                res.writeHead(400, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify({ success: false, message: e.message }));
             }
         });
         return;
@@ -979,3 +1031,5 @@ function runSafeMasterScan() {
 
     console.log('⏰ All Automated Scans Scheduled Successfully without broken scrapers!');
 })();
+
+require('./services/userAlertChecker').start();

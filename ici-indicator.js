@@ -73,7 +73,20 @@ window.ICIIndicator = (function() {
         if (!st.fractalRafActive) {
             st.fractalRafActive = true;
             const loop = () => {
-                try { redrawFractalCanvas(st); } catch(e) {}
+                if (st.container && chartStates[st.container.id] !== st) { st.fractalRafActive = false; return; }
+                try {
+                    const w = st.container.clientWidth, h = st.container.clientHeight;
+                    const r = st.chart.timeScale().getVisibleLogicalRange();
+                    const lc = st.candles && st.candles.length ? st.candles[st.candles.length-1] : null;
+                    const y1 = lc ? st.series.priceToCoordinate(lc.high) : 0;
+                    const y2 = lc ? st.series.priceToCoordinate(lc.low) : 0;
+                    const fc = indicatorSettings.fractals;
+                    const key = [r && r.from, r && r.to, w, h, y1, y2, fc.visible, fc.size].join('|');
+                    if (key !== st.__frKey || st.__frPts !== st.fractalPoints) {
+                        st.__frKey = key; st.__frPts = st.fractalPoints;
+                        redrawFractalCanvas(st);
+                    }
+                } catch(e) {}
                 st.fractalRafId = requestAnimationFrame(loop);
             };
             loop();
@@ -344,7 +357,7 @@ window.ICIIndicator = (function() {
         if (!st) return;
         const legend = st.container.querySelector('.tv-legend');
         if (!legend) return;
-        legend.classList.toggle('collapsed', !!legendCollapsed[containerId]);
+        legend.classList.toggle('collapsed', legendCollapsed[containerId] !== false);
         let html = `<div class="tv-legend-collapse" onclick="window.ICIIndicator._toggleCollapse('${containerId}')">${ICON_CHEVRON}<span>ICI</span></div>`;
         Object.keys(indicatorSettings).forEach(id=>{
             const cfg = indicatorSettings[id];
@@ -362,7 +375,7 @@ window.ICIIndicator = (function() {
     }
 
     function toggleLegendCollapse(containerId){
-        legendCollapsed[containerId] = !legendCollapsed[containerId];
+        legendCollapsed[containerId] = (legendCollapsed[containerId] === false);
         renderLegend(containerId);
     }
 
@@ -593,17 +606,31 @@ window.ICIIndicator = (function() {
         const marketBear = lastEma20!=null && lastClose < lastEma20;
         const wmColor = marketBull ? '#00FF7F' : marketBear ? '#FF4444' : '#CFD8DC';
         const wmBg = marketBull ? 'rgba(0,51,0,0.6)' : marketBear ? 'rgba(45,0,0,0.6)' : 'rgba(10,14,26,0.6)';
+        let _axisH = 28, _priceW = 68;
+        try {
+            const _c = (typeof st !== 'undefined' && st && st.chart) ? st.chart : null;
+            if (_c) {
+                const h = _c.timeScale().height(); if (h > 0) _axisH = h;
+                const w = _c.priceScale('right').width(); if (w > 0) _priceW = w;
+            }
+        } catch (e) {}
 
         const wmDiv = document.createElement('div');
-        wmDiv.className = 'ici-overlay-label';
-        wmDiv.textContent = '◈ ICI BY Muhammad Aamir ◈';
-        wmDiv.style.cssText = `position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:${wmBg};color:${wmColor};border:1px solid ${wmColor};padding:2px 10px;font-size:13px;font-weight:600;border-radius:3px;pointer-events:none;z-index:5;white-space:nowrap;`;
+        wmDiv.className = 'ici-overlay-label ici-wm-label';
+        if (!document.getElementById('ici-wm-style')) {
+            const _ws = document.createElement('style');
+            _ws.id = 'ici-wm-style';
+            _ws.textContent = 'body.is-mobile .ici-wm-label{left:2px !important;transform:none !important;}';
+            document.head.appendChild(_ws);
+        }
+        wmDiv.textContent = 'BY Muhammad Aamir';
+        wmDiv.style.cssText = `position:absolute;bottom:${_axisH + 10}px;left:calc(50% - ${_priceW / 2}px);transform:translateX(-50%);background:transparent;color:#000;border:none;padding:2px 10px;font-size:13px;font-weight:600;border-radius:3px;pointer-events:none;z-index:5;white-space:nowrap;`;
         container.appendChild(wmDiv);
 
         const atrDiv = document.createElement('div');
         atrDiv.className = 'ici-overlay-label';
-        atrDiv.textContent = `◈ ATR (${interval}) : ${lastAtr!=null ? lastAtr.toFixed(5) : '-'} ◈`;
-        atrDiv.style.cssText = `position:absolute;bottom:6px;right:6px;background:${wmBg};color:${wmColor};border:1px solid ${wmColor};padding:2px 8px;font-size:11px;font-weight:600;border-radius:3px;pointer-events:none;z-index:5;white-space:nowrap;`;
+        atrDiv.textContent = `ATR (${interval}) : ${lastAtr!=null ? lastAtr.toFixed(5) : '-'}`;
+        atrDiv.style.cssText = `position:absolute;bottom:${_axisH + 10}px;right:${_priceW + 10}px;background:transparent;color:#000;border:none;padding:2px 8px;font-size:11px;font-weight:600;border-radius:3px;pointer-events:none;z-index:5;white-space:nowrap;`;
         container.appendChild(atrDiv);
     }
 
@@ -622,7 +649,20 @@ window.ICIIndicator = (function() {
         if (!container.id) container.id = 'ici-anon-' + Math.random().toString(36).slice(2,9);
         const containerId = container.id;
 
-        chartStates[containerId] = { chart, series, container, candles, interval, fetchHTF, lines: {}, lastValues: {} };
+        const __oldSt = chartStates[containerId];
+        const __htfCache = {};
+        const cachedFetchHTF = fetchHTF ? function (tf) {
+            if (!__htfCache[tf]) {
+                __htfCache[tf] = Promise.resolve(fetchHTF(tf)).then(function (r) {
+                    if (!r || !r.length) delete __htfCache[tf];
+                    return r;
+                }).catch(function () { delete __htfCache[tf]; return []; });
+            }
+            return __htfCache[tf];
+        } : fetchHTF;
+        chartStates[containerId] = { chart, series, container, candles, interval, fetchHTF: cachedFetchHTF, lines: {}, lastValues: {} };
+        if (__oldSt && __oldSt.fractalCanvas && __oldSt.fractalCanvas.isConnected) chartStates[containerId].fractalCanvas = __oldSt.fractalCanvas;
+        if (__oldSt && __oldSt.lines) chartStates[containerId].lines = __oldSt.lines;
 
         await drawIndicatorSeries(chartStates[containerId]);
         buildLegend(containerId);

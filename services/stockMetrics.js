@@ -2,6 +2,8 @@ const https = require('https');
 const firebasePut = require('./database');
 const calcEMA = require('../utils/emaCalc');
 const calcSMA = require('../utils/smaCalc');
+function sma50Of(a) { if (!a || a.length < 50) return null; let s = 0; for (let i = a.length - 50; i < a.length; i++) s += a[i]; return s / 50; }
+function dotSig(price, sma) { return (sma && price != null) ? (price > sma ? 'bull' : 'bear') : null; }
 const stockList = require('../stockList');
 const psxStockList = require('../psxStockList');
 const { updateSLevelsForPair } = require('../core/slevelEngine');
@@ -67,6 +69,20 @@ function aggregateOHLCTo4Hour(hourlyOHLC) {
     return { opens: aggOpens, highs: aggHighs, lows: aggLows, closes: aggCloses, times: aggTimes };
 }
 
+function aggregateTo4HourSession(closes, times) {
+    if (!closes || closes.length === 0) return [];
+    if (!times || times.length !== closes.length) return aggregateTo4Hour(closes);
+    const out = [];
+    let curDay = null, k = 0;
+    for (let i = 0; i < closes.length; i++) {
+        const d = times[i] ? String(times[i]).slice(0, 10) : curDay;
+        if (d !== curDay) { curDay = d; k = 0; }
+        if (k % 4 === 0) out.push(closes[i]); else out[out.length - 1] = closes[i];
+        k++;
+    }
+    return out;
+}
+
 function formatDollarVolume(volume, price) {
     const total = volume * price;
     if (total >= 1e9) return (total / 1e9).toFixed(2) + ' B';
@@ -119,7 +135,7 @@ async function processStockList(list, firebaseNode, prefix = '') {
 
             const [dailyData, hourlyRaw, weeklyData, m15Data] = await Promise.all([
                 fetchYahooCandles(yahooSymbol, '1y', '1d'),
-                fetchYahooCandles(yahooSymbol, '6mo', '1h'),
+                fetchYahooCandles(yahooSymbol, prefix ? '1y' : '6mo', '1h'),
                 fetchYahooCandles(yahooSymbol, '5y', '1wk'),
                 fetchYahooCandles(yahooSymbol, '60d', '15m')
             ]);
@@ -153,13 +169,13 @@ async function processStockList(list, firebaseNode, prefix = '') {
                 const ema20h = calcEMA(hourlyCloses, 20);
                 if (ema20h) signal1h = currentHourly > ema20h ? 'bull' : 'bear';
 
-                const fourHourCloses = aggregateTo4Hour(hourlyCloses);
+                const fourHourCloses = aggregateTo4HourSession(hourlyCloses, hourlyRaw.times);
                 if (fourHourCloses.length >= MIN_4H_BARS) {
                     const ema20_4h = calcEMA(fourHourCloses, 20);
                     if (ema20_4h) signal4h = fourHourCloses[fourHourCloses.length - 1] > ema20_4h ? 'bull' : 'bear';
                 }
 
-                if (hourlyCloses.length >= 11) {
+                if (!prefix && hourlyCloses.length >= 11) {
                     const close10h = hourlyCloses[hourlyCloses.length - 11];
                     microMomentum = ((currentHourly - close10h) / close10h) * 100;
                 }
@@ -173,12 +189,14 @@ async function processStockList(list, firebaseNode, prefix = '') {
             const last7Volumes = dailyVolumes.slice(-7);
             const volume7dAvg = calcSMA(last7Volumes, 7);
             const todayVolume = dailyVolumes[dailyVolumes.length - 1] || 0;
-            const dollarVolume1d = formatDollarVolume(todayVolume, currentPrice);
+            const dollarVolume1d = formatDollarVolume(todayVolume, currentPrice) + (prefix ? ' PKR' : '');
 
             const metric = {
                 name: symbol,
                 price: parseFloat(currentPrice.toFixed(2)),
                 signal1h, signal4h, signal1d, signal1w,
+                sma50_1h: sma50Of(hourlyCloses), sma50_4h: sma50Of(aggregateTo4HourSession(hourlyCloses, hourlyRaw && hourlyRaw.times)), sma50_1d: sma50Of(dailyCloses), sma50_1w: sma50Of(weeklyData && weeklyData.closes),
+                dot1h: dotSig(currentPrice, sma50Of(hourlyCloses)), dot4h: dotSig(currentPrice, sma50Of(aggregateTo4HourSession(hourlyCloses, hourlyRaw && hourlyRaw.times))), dot1d: dotSig(currentPrice, sma50Of(dailyCloses)), dot1w: dotSig(currentPrice, sma50Of(weeklyData && weeklyData.closes)),
                 longTermTrend: parseFloat(longTermTrend.toFixed(2)),
                 shortTermMomentum: parseFloat(shortTermMomentum.toFixed(2)),
                 microMomentum: microMomentum !== null ? parseFloat(microMomentum.toFixed(2)) : null,
@@ -200,7 +218,8 @@ async function processStockList(list, firebaseNode, prefix = '') {
             const MIN_WEEKLY_FOR_SLEVEL = 100;
             const weeklyOkForSLevel = weeklyData && weeklyData.closes && weeklyData.closes.length >= MIN_WEEKLY_FOR_SLEVEL;
             const h4Raw = hourlyRaw ? aggregateOHLCTo4Hour(hourlyRaw) : null;
-            await updateSLevelsForPair(symbol, weeklyOkForSLevel ? weeklyData : null, h4Raw, m15Data, firebasePut);
+            // PSX: Yahoo .KA intraday (1h/15m) asal mai daily bars deta hai, isliye sirf weekly S-level likhte hain
+            await updateSLevelsForPair(symbol, weeklyOkForSLevel ? weeklyData : null, prefix ? null : h4Raw, prefix ? null : m15Data, firebasePut);
 
             console.log(`[Stocks] ${symbol} saved (1H:${signal1h}, 4H:${signal4h}, 1D:${signal1d}, 1W:${signal1w})`);
         } catch (err) {
