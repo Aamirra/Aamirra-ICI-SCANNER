@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
+<script src="/settings-sync.js?v=2"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ICI Crypto</title>
@@ -1183,7 +1184,15 @@ function clearColFilter() {
 }
 
 // ── Render ──
+(function(){
+  var up=function(){ window.__iciPtrDown=0; if(window.__iciRenderPending){ window.__iciRenderPending=false; setTimeout(function(){ if(typeof render==='function') render(); },80); } };
+  document.addEventListener('pointerdown',function(){ window.__iciPtrDown=Date.now(); },true);
+  document.addEventListener('pointerup',up,true);
+  document.addEventListener('pointercancel',up,true);
+  window.addEventListener('blur',up);
+})();
 function render() {
+    if (window.__iciPtrDown && Date.now()-window.__iciPtrDown < 1500) { window.__iciRenderPending = true; return; }
     if (!document.body.classList.contains('desktop-mode') && document.getElementById('chartOverlay').style.display === 'flex') return;
 
     const currentPairs = filteredPairs.length ? filteredPairs : PAIRS;
@@ -1377,6 +1386,9 @@ function startCandleTimer(slot, candles, resolution) {
 }
 
 async function softRefreshChart(slot) {
+    if (window.__iciPtrDown && Date.now()-window.__iciPtrDown < 3000) return;
+    if (window.__iciLastDraw && Date.now()-window.__iciLastDraw < 4000) return;
+    const __g0 = window.__iciDrawGen || 0;
     if (!lwCharts[slot] || !lwSeries[slot]) { drawChart(slot); return; }
     if (window.iciReplay && window.iciReplay[slot] && window.iciReplay[slot].active) return;
     const idx = chartIndices[slot-1];
@@ -1388,6 +1400,7 @@ async function softRefreshChart(slot) {
         const data = await res.json();
         if (data.candles && data.candles.length) {
             if (window.iciReplay && window.iciReplay[slot] && window.iciReplay[slot].active) return;
+            if ((window.__iciDrawGen||0) !== __g0) return;
             lwSeries[slot].setData(data.candles);
             await window.ICIIndicator.render({
                 chart: lwCharts[slot], series: lwSeries[slot], container: document.getElementById('tv_chart_'+slot),
@@ -1402,6 +1415,7 @@ async function softRefreshChart(slot) {
 }
 
 async function drawChart(slot) {
+    window.__iciDrawGen = (window.__iciDrawGen||0) + 1; window.__iciLastDraw = Date.now();
     const container = document.getElementById('tv_chart_'+slot);
     if (window.ICIDrawingTools) { try { window.ICIDrawingTools.destroy(slot); } catch(e){} }
     if (window.ICIChartAlertButton) { try { window.ICIChartAlertButton.destroy(slot); } catch(e){} }
@@ -1527,7 +1541,7 @@ updateToggleButtons();
             wlData = { tabs: [{ id: 1, symbols: [] }], active: 1, height: 140 };
         }
     }
-    function wlSave() { localStorage.setItem(WL_KEY, JSON.stringify(wlData)); }
+    function wlSave() { localStorage.setItem(WL_KEY, JSON.stringify(wlData)); try { clearTimeout(window.__wlT); window.__wlT = setTimeout(function () { fetch('/api/wl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: WL_KEY, data: wlData }) }).catch(function () {}); }, 500); } catch (e) {} }
     window.__wlRender = function () { try { wlRenderRows(); } catch (e) {} };
     window.__wlReorder = function (a, b) { try { var t = wlGetActiveTab(); if (!t || !t.symbols) return false; var i = t.symbols.indexOf(a), j = t.symbols.indexOf(b); if (i < 0 || j < 0 || i === j) return false; var m = t.symbols.splice(i, 1)[0]; t.symbols.splice(j, 0, m); wlSave(); wlRenderRows(); return true; } catch (e) { return false; } };
     function wlGetActiveTab() {
@@ -1606,6 +1620,7 @@ updateToggleButtons();
         var tab = wlGetActiveTab();
         var rowsEl = document.getElementById('wlRows');
         if (!rowsEl) return;
+        if (window.__iciPtrDown && Date.now() - window.__iciPtrDown < 3000) return;
         if (!tab || !tab.symbols.length) {
             rowsEl.innerHTML = '<div class="wl-empty-hint">Press &amp; hold a pair below, then drag up here to add</div>';
             return;
@@ -1619,10 +1634,18 @@ updateToggleButtons();
             if (window.__wlRowHtml) { html += window.__wlRowHtml(sym); return; }
             html += '<div class="wl-row" data-sym="' + sym + '" onclick="openChartFromWatchlist(\'' + sym + '\')" style="cursor:pointer;"><span>' + sym + '</span><span>' + priceStr + '</span><span class="wl-chg ' + chgCls + '">' + chgStr + '</span></div>';
         });
+        if (window.__iciWlLast === html) return;
+        window.__iciWlLast = html;
         rowsEl.innerHTML = html;
     }
 
     wlLoad();
+    fetch('/api/wl?key=' + encodeURIComponent(WL_KEY)).then(function (r) { return r.json(); }).then(function (j) {
+        if (j && j.ok && j.data && j.data.tabs && j.data.tabs.length) {
+            localStorage.setItem(WL_KEY, JSON.stringify(j.data));
+            wlLoad(); wlRenderTabs(); wlRenderRows();
+        } else { wlSave(); }
+    }).catch(function () {});
     wlRenderTabs();
     wlRenderRows();
     setInterval(wlRenderRows, 3000);
@@ -2371,7 +2394,7 @@ body.desktop-mode #pairsContainer::-webkit-scrollbar { display:none; }
 </script>
 <script src="flags.js?v=7"></script>
 <script src="tf-keyboard.js?v=2"></script>
-<script src="tf-watermark.js?v=2"></script>
+<script src="tf-watermark.js?v=3"></script>
 <script src="chart-camera.js?v=2"></script>
 <script src="chat-fix.js?v=1"></script>
 </html>

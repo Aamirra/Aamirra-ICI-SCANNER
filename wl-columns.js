@@ -35,6 +35,7 @@
     '#wlTableWrap .wl-header-row .wl-hadd{display:inline-block;margin-left:4px;padding:0 5px;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--acc);font-size:11px;line-height:14px}',
     '.wl-row .col-cell{flex:1 1 0 !important;min-width:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;text-align:center;overflow:hidden;padding:0 2px !important}',
     '.wl-row .col-cell.dots-container{justify-content:center;gap:2px}',
+    '.wl-row .col-cell.dots-container .trend-dot{flex:0 0 8px !important;width:8px !important;min-width:8px;height:8px;border-radius:50%}',
     '.wl-row .col-cell .sentiment-progress{width:100%;min-width:44px;font-size:9px}',
     '.wl-row .col-cell.change-val{justify-content:center}',
     '#iciWlColPop{position:fixed;z-index:3005;background:var(--surface,#fff);color:var(--txt,#0f172a);border:1px solid var(--border,#e2e8f0);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.28);padding:10px;width:210px;font-family:Inter,sans-serif}',

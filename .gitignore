@@ -7,3 +7,4 @@ node_modules/
 firebase-key.json
 *-key.json
 all_code.txt
+data/watchlists.json

@@ -453,9 +453,80 @@ function maskNum(c) {
   if (c.length <= 5) return c.slice(0, 1) + '****';
   return c.slice(0, 3) + '*'.repeat(Math.min(c.length - 5, 10)) + c.slice(-2);
 }
+
+const WLFILE = path.join(__dirname, 'data', 'watchlists.json');
+let wlDb = {};
+try { wlDb = JSON.parse(fs.readFileSync(WLFILE, 'utf8')); } catch (e) {}
+function wlPersist() {
+  fs.mkdirSync(path.dirname(WLFILE), { recursive: true });
+  const t = WLFILE + '.tmp';
+  fs.writeFileSync(t, JSON.stringify(wlDb));
+  fs.renameSync(t, WLFILE);
+}
+function wlRoute(req, res, who) {
+  const q = new URL(req.url, 'http://x').searchParams;
+  if (req.method === 'GET') {
+    const k = String(q.get('key') || '');
+    if (!/^[a-zA-Z0-9_-]{1,60}$/.test(k)) return send(res, 400, 'application/json', '{"ok":false}');
+    return send(res, 200, 'application/json', JSON.stringify({ ok: true, data: (wlDb[who] || {})[k] || null }));
+  }
+  if (req.method === 'POST') {
+    let b = '', dead = false;
+    req.on('data', function (c) { b += c; if (b.length > 300000) { dead = true; req.destroy(); } });
+    req.on('end', function () {
+      if (dead) return;
+      let j = {}; try { j = JSON.parse(b || '{}'); } catch (e) {}
+      const k = String(j.key || '');
+      if (!/^[a-zA-Z0-9_-]{1,60}$/.test(k) || !j.data || !Array.isArray(j.data.tabs)) return send(res, 400, 'application/json', '{"ok":false}');
+      if (!wlDb[who]) wlDb[who] = {};
+      wlDb[who][k] = j.data;
+      try { wlPersist(); } catch (e) { console.error('[wl] save failed', e.message); }
+      send(res, 200, 'application/json', '{"ok":true}');
+    });
+    return;
+  }
+  send(res, 405, 'text/plain', 'method');
+}
+
+function settingsRoute(req, res, who) {
+  if (!wlDb[who]) wlDb[who] = {};
+  if (req.method === 'GET') return send(res, 200, 'application/json', JSON.stringify({ ok: true, data: wlDb[who].__settings || {} }));
+  if (req.method === 'POST') {
+    let b = '', dead = false;
+    req.on('data', function (c) { b += c; if (b.length > 400000) { dead = true; req.destroy(); } });
+    req.on('end', function () {
+      if (dead) return;
+      let j = {}; try { j = JSON.parse(b || '{}'); } catch (e) {}
+      const cur = wlDb[who].__settings || {};
+      const st = j.set || {};
+      Object.keys(st).forEach(function (k) { if (k.length < 120 && typeof st[k] === 'string' && st[k].length < 100000 && (k in cur || Object.keys(cur).length < 300)) cur[k] = st[k]; });
+      (Array.isArray(j.del) ? j.del : []).forEach(function (k) { delete cur[k]; });
+      wlDb[who].__settings = cur;
+      try { wlPersist(); } catch (e) { console.error('[settings] save failed', e.message); }
+      send(res, 200, 'application/json', '{"ok":true}');
+    });
+    return;
+  }
+  send(res, 405, 'text/plain', 'method');
+}
+
 function gate(req, res, p) {
   try {
     if (p.indexOf('/access/') === 0) { accessRoute(req, res, p); return true; }
+    if (p === '/api/settings') {
+      const sid = resolveId(cookies(req).ici_uid);
+      const sst = effective(db.users[sid]);
+      const swho = sst === 'active' ? sid : (adminOk(req) ? 'admin' : null);
+      if (!swho) { deny(req, res, p, sst); return true; }
+      settingsRoute(req, res, swho); return true;
+    }
+    if (p === '/api/wl') {
+      const wid = resolveId(cookies(req).ici_uid);
+      const wst = effective(db.users[wid]);
+      const who = wst === 'active' ? wid : (adminOk(req) ? 'admin' : null);
+      if (!who) { deny(req, res, p, wst); return true; }
+      wlRoute(req, res, who); return true;
+    }
     if (p === '/admin' || p.indexOf('/admin/') === 0) { adminRoute(req, res, p); return true; }
     if (isLocal(req)) return false;
     if (adminOk(req)) return false; /* ici-admin-bypass */

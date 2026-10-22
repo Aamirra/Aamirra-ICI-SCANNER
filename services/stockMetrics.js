@@ -5,23 +5,26 @@ const calcSMA = require('../utils/smaCalc');
 function sma50Of(a) { if (!a || a.length < 50) return null; let s = 0; for (let i = a.length - 50; i < a.length; i++) s += a[i]; return s / 50; }
 function dotSig(price, sma) { return (sma && price != null) ? (price > sma ? 'bull' : 'bear') : null; }
 const stockList = require('../stockList');
+let stockBrokers = {};
+try { stockBrokers = require('../stockBrokers.json'); } catch (e) { console.log('[Stocks] stockBrokers.json nahi mila'); }
 const psxStockList = require('../psxStockList');
 const { updateSLevelsForPair } = require('../core/slevelEngine');
 
 // ── Fetch Yahoo candles (generic, full OHLCV, index-aligned) ──
-function fetchYahooCandles(symbol, range = '1y', interval = '1d') {
+function fetchYahooOnce(symbol, range, interval) {
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${range}&interval=${interval}`;
     return new Promise((resolve) => {
-        https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
+        const req = https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (res) => {
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
+                if (res.statusCode === 429 || res.statusCode >= 500) { resolve({ retry: true, value: null }); return; }
                 try {
                     const json = JSON.parse(data);
                     const result = json?.chart?.result?.[0];
-                    if (!result) { resolve(null); return; }
+                    if (!result) { resolve({ retry: false, value: null }); return; }
                     const quotes = result.indicators.quote[0];
-                    if (!quotes || !quotes.close || quotes.close.length === 0) { resolve(null); return; }
+                    if (!quotes || !quotes.close || quotes.close.length === 0) { resolve({ retry: false, value: null }); return; }
                     const timestamps = result.timestamp || [];
                     const rawOpens = quotes.open || [];
                     const rawHighs = quotes.high || [];
@@ -38,11 +41,22 @@ function fetchYahooCandles(symbol, range = '1y', interval = '1d') {
                         volumes.push(rawVolumes[i] || 0);
                         times.push(timestamps[i] ? new Date(timestamps[i] * 1000).toISOString() : null);
                     }
-                    resolve({ opens, highs, lows, closes, volumes, times });
-                } catch (e) { resolve(null); }
+                    resolve({ retry: false, value: { opens, highs, lows, closes, volumes, times } });
+                } catch (e) { resolve({ retry: true, value: null }); }
             });
-        }).on('error', () => resolve(null));
+        });
+        req.on('error', () => resolve({ retry: true, value: null }));
+        req.setTimeout(20000, () => { req.destroy(new Error('timeout')); });
     });
+}
+
+async function fetchYahooCandles(symbol, range = '1y', interval = '1d') {
+    for (let attempt = 0; attempt < 4; attempt++) {
+        const r = await fetchYahooOnce(symbol, range, interval);
+        if (!r.retry) return r.value;
+        if (attempt < 3) await new Promise(res => setTimeout(res, 1500 * (attempt + 1)));
+    }
+    return null;
 }
 
 // ── Aggregate 1h → 4h (closes only, used for legacy signal calc) ──
@@ -123,6 +137,44 @@ function detectStockPullback(symbol, hourlyCloses, dailySignal, weeklySignal) {
     };
 }
 
+// ── Stock sentiment (same Custom MTF Engine as stocks_sentiment.py, computed from data already fetched) ──
+function ewmSeries(arr, span) {
+    const a = 2 / (span + 1);
+    const out = new Array(arr.length);
+    out[0] = arr[0];
+    for (let i = 1; i < arr.length; i++) out[i] = a * arr[i] + (1 - a) * out[i - 1];
+    return out;
+}
+function windowScore(closes, lookback) {
+    if (!closes || closes.length < 50) return null;
+    const e10 = ewmSeries(closes, 10), e20 = ewmSeries(closes, 20);
+    const rows = [];
+    for (let i = 49; i < closes.length; i++) {
+        let sum = 0;
+        for (let j = i - 49; j <= i; j++) sum += closes[j];
+        rows.push({ c: closes[i], e10: e10[i], e20: e20[i], s50: sum / 50 });
+    }
+    if (rows.length < lookback) return null;
+    const w = rows.slice(-lookback);
+    let pts = 0;
+    w.forEach(r => { if (r.c > r.e10) pts++; if (r.e10 > r.e20) pts++; if (r.e20 > r.s50) pts++; });
+    return pts / (w.length * 3);
+}
+function stockSentiment(c15, c1h, c1d) {
+    if (!c15 || !c1h || !c1d) return null;
+    const s15 = windowScore(c15.slice(-130), 32);
+    const s1h = windowScore(c1h.slice(-147), 24);
+    const s1d = windowScore(c1d, 14);
+    if (s15 === null || s1h === null || s1d === null) return null;
+    const intra = Math.round(((s15 * 0.4) + (s1h * 0.6)) * 100);
+    const daily = Math.round(((s1h * 0.3) + (s1d * 0.7)) * 100);
+    return {
+        bullish_pct: intra, bearish_pct: 100 - intra,
+        daily_bullish_pct: daily, daily_bearish_pct: 100 - daily,
+        source: 'Custom MTF Engine'
+    };
+}
+
 // ── Process a single stock list (generic) ──
 async function processStockList(list, firebaseNode, prefix = '') {
     const results = [];
@@ -193,6 +245,7 @@ async function processStockList(list, firebaseNode, prefix = '') {
 
             const metric = {
                 name: symbol,
+                brokers: stockBrokers[symbol] || null,
                 price: parseFloat(currentPrice.toFixed(2)),
                 signal1h, signal4h, signal1d, signal1w,
                 sma50_1h: sma50Of(hourlyCloses), sma50_4h: sma50Of(aggregateTo4HourSession(hourlyCloses, hourlyRaw && hourlyRaw.times)), sma50_1d: sma50Of(dailyCloses), sma50_1w: sma50Of(weeklyData && weeklyData.closes),
@@ -206,6 +259,10 @@ async function processStockList(list, firebaseNode, prefix = '') {
             };
 
             await firebasePut(`${firebaseNode}/${symbol}`, metric);
+            if (!prefix) {
+                const sent = stockSentiment(m15Data && m15Data.closes, hourlyRaw && hourlyRaw.closes, dailyData.closes);
+                if (sent) await firebasePut(`sentiment/${symbol}`, sent);
+            }
             results.push(metric);
 
             const pbState = detectStockPullback(symbol, hourlyCloses, signal1d, signal1w);
@@ -231,6 +288,7 @@ async function processStockList(list, firebaseNode, prefix = '') {
     for (let i = 0; i < list.length; i += STOCK_BATCH_SIZE) {
         const slice = list.slice(i, i + STOCK_BATCH_SIZE);
         await Promise.all(slice.map(symbol => processSymbol(symbol)));
+        await new Promise(r => setTimeout(r, 1500));
     }
 
     if (Object.keys(pbStates).length > 0) {

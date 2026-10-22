@@ -16,7 +16,7 @@ async function getCandles(key, meta, coldFetchFn) {
     inFlight[key] = (async () => {
         try {
             const candles = await coldFetchFn();
-            if (candles && candles.length) {
+            if (candles && candles.length && !candles.partial) {
                 cache[key] = { candles, meta, updatedAt: Date.now() };
             }
             return candles || [];

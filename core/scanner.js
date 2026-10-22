@@ -1042,11 +1042,15 @@ async function masterScan() {
         console.timeEnd('⏱️ [Phase 2] Technical metrics');
 
         if (calculateAndUpdateStockMetrics) {
-            console.time('⏱️ [Phase 3] Stock metrics');
-            try { await calculateAndUpdateStockMetrics(); } catch (err) {
-                console.error('[Scanner] Stock metrics failed:', err.message);
+            if (global.__stocksRunning) {
+                console.log('[Scanner] Stock metrics abhi chal raha hai, is cycle mein skip');
+            } else {
+                global.__stocksRunning = true;
+                console.time('⏱️ [Phase 3] Stock metrics');
+                calculateAndUpdateStockMetrics()
+                    .catch(err => console.error('[Scanner] Stock metrics failed:', err.message))
+                    .finally(() => { global.__stocksRunning = false; console.timeEnd('⏱️ [Phase 3] Stock metrics'); });
             }
-            console.timeEnd('⏱️ [Phase 3] Stock metrics');
         }
 
         console.time('⏱️ [Phase 4] Pullback notifications');

@@ -1,4 +1,4 @@
-/* tf-watermark.js - shows the open timeframe at the top-right inside each chart */
+/* tf-watermark.js - shows symbol + open timeframe at the top-right inside each chart */
 (function () {
   if (window.__tfwLoaded) return;
   window.__tfwLoaded = true;
@@ -31,6 +31,17 @@
     return s.toUpperCase();
   }
 
+  function getSymbol(slot) {
+    try {
+      var idx = chartIndices[slot - 1];
+      var sym = chartPairs[idx];
+      if (sym == null) return '';
+      sym = String(sym);
+      if (sym.indexOf(':') !== -1) sym = sym.split(':').pop();   /* EXCHANGE:SYMBOL -> SYMBOL */
+      return sym;
+    } catch (e) { return ''; }
+  }
+
   function tick() {
     var ivs;
     try { ivs = chartIntervals; } catch (e) { return; }   /* app's own source of truth */
@@ -48,7 +59,9 @@
         lab.className = 'tfw-label';
         c.appendChild(lab);
       }
-      var t = pretty(ivs[slot - 1]);
+      var sym = getSymbol(slot);
+      var tf = pretty(ivs[slot - 1]);
+      var t = sym ? (sym + ' \u2022 ' + tf) : tf;
       if (lab.textContent !== t) lab.textContent = t;
     }
   }

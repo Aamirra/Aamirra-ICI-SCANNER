@@ -109,6 +109,33 @@ function dedupeSorted(klines) {
     return out;
 }
 
+function fetchJsonStrict(url) {
+    return new Promise((resolve) => {
+        https.get(url, { agent: keepAliveAgent, headers: { 'User-Agent': 'Mozilla/5.0' } }, (r) => {
+            let data = '';
+            r.on('data', c => data += c);
+            r.on('end', () => {
+                try { const j = JSON.parse(data); resolve(Array.isArray(j) ? j : null); }
+                catch (e) { resolve(null); }
+            });
+        }).on('error', () => resolve(null));
+    });
+}
+
+// null = fail (retry ke baad bhi), [] = data hai hi nahi (legit), array = data
+async function fetchKlinesStrict(binanceSymbol, binanceInterval, endTime) {
+    const q = '&interval=' + binanceInterval + '&limit=1000' + (endTime ? '&endTime=' + endTime : '');
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const f = await fetchJsonStrict('https://fapi.binance.com/fapi/v1/klines?symbol=' + binanceSymbol + q);
+        if (f && f.length) return f;
+        const s = await fetchJsonStrict('https://api.binance.com/api/v3/klines?symbol=' + binanceSymbol + q);
+        if (s && s.length) return s;
+        if (f && s) return [];
+        await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+    }
+    return null;
+}
+
 async function fetchCryptoCandlesFull(symbol, interval, totalWanted) {
     const { base, groupSize } = resolveBinanceInterval(interval);
     const stepMs = (BINANCE_CANDLE_MS[base] || 3600000) * 1000;
@@ -117,15 +144,27 @@ async function fetchCryptoCandlesFull(symbol, interval, totalWanted) {
     const batches = Math.min(Math.ceil(rawWanted / 1000), 20);
     const now = Date.now();
 
-    const jobs = [];
-    for (let i = 0; i < batches; i++) {
-        jobs.push(fetchKlines(binanceSymbol, base, i === 0 ? null : now - i * stepMs));
+    const first = await fetchKlinesStrict(binanceSymbol, base, null);
+    if (!first || !first.length) {
+        const empty = [];
+        if (first === null) empty.partial = true;
+        return empty;
     }
-    const results = await Promise.all(jobs);
+    let failed = 0;
+    const results = [first];
+    for (let i = 1; i < batches; i += 5) {
+        const jobs = [];
+        for (let j = i; j < Math.min(i + 5, batches); j++) {
+            jobs.push(fetchKlinesStrict(binanceSymbol, base, now - j * stepMs));
+        }
+        const part = await Promise.all(jobs);
+        for (const p of part) { if (p === null) failed++; else results.push(p); }
+    }
     let all = dedupeSorted([].concat(...results));
     let candles = klinesToCandles(all);
     if (groupSize > 1) candles = aggregateCandles(candles, groupSize);
     if (candles.length > totalWanted) candles = candles.slice(candles.length - totalWanted);
+    if (failed > 0) { candles.partial = true; console.error('[crypto-chart] partial', symbol, interval, 'failed batches:', failed); }
     return candles;
 }
 
